@@ -1,0 +1,121 @@
+"use client";
+
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { formatDate, formatPhone, formatWage } from "@/lib/utils/format";
+import { ApplicationActions } from "./application-actions";
+import { MemberDetailModal } from "../members/member-detail-modal";
+import type { Member } from "@/lib/supabase/queries";
+
+const statusConfig: Record<string, { label: string; variant: "secondary" | "default" | "destructive" }> = {
+  "대기": { label: "대기중", variant: "secondary" },
+  "승인": { label: "승인", variant: "default" },
+  "거절": { label: "거절", variant: "destructive" },
+};
+
+interface AppItem {
+  id: string;
+  member_id: string;
+  status: string;
+  members: { name: string; phone: string } | null;
+  job_postings: {
+    work_date: string;
+    start_time: string;
+    end_time: string;
+    clients: {
+      company_name: string;
+      hourly_wage: number;
+    };
+  };
+}
+
+interface ApplicationTableProps {
+  apps: AppItem[];
+  showActions?: boolean;
+  membersMap: Record<string, Member>;
+  profileImageUrls: Record<string, string>;
+}
+
+export function ApplicationTable({ apps, showActions, membersMap, profileImageUrls }: ApplicationTableProps) {
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+
+  if (apps.length === 0) {
+    return (
+      <p className="py-8 text-center text-sm text-muted-foreground">
+        지원 내역이 없습니다.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/50 text-left">
+              <th className="px-4 py-3 font-medium">근무일</th>
+              <th className="px-4 py-3 font-medium">근무시간</th>
+              <th className="px-4 py-3 font-medium">이름</th>
+              <th className="hidden px-4 py-3 font-medium md:table-cell">전화번호</th>
+              <th className="px-4 py-3 font-medium">근무지</th>
+              <th className="hidden px-4 py-3 font-medium md:table-cell">시급</th>
+              <th className="px-4 py-3 font-medium">상태</th>
+              {showActions && <th className="px-4 py-3 font-medium">처리</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {apps.map((app) => {
+              const config = statusConfig[app.status] ?? statusConfig["대기"];
+              const member = membersMap[app.member_id];
+              return (
+                <tr key={app.id} className="border-b last:border-0">
+                  <td className="px-4 py-3 whitespace-nowrap">{formatDate(app.job_postings.work_date)}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {app.job_postings.start_time?.slice(0, 5)}~{app.job_postings.end_time?.slice(0, 5)}
+                  </td>
+                  <td className="px-4 py-3">
+                    {member ? (
+                      <button
+                        type="button"
+                        className="font-medium text-primary underline-offset-2 hover:underline"
+                        onClick={() => setSelectedMember(member)}
+                      >
+                        {app.members?.name ?? "-"}
+                      </button>
+                    ) : (
+                      <span className="font-medium">{app.members?.name ?? "-"}</span>
+                    )}
+                  </td>
+                  <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
+                    {app.members ? formatPhone(app.members.phone) : "-"}
+                  </td>
+                  <td className="px-4 py-3">{app.job_postings.clients.company_name}</td>
+                  <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
+                    {formatWage(app.job_postings.clients.hourly_wage)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge variant={config.variant} className="text-xs">
+                      {config.label}
+                    </Badge>
+                  </td>
+                  {showActions && (
+                    <td className="px-4 py-3">
+                      {app.status === "대기" && <ApplicationActions applicationId={app.id} />}
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <MemberDetailModal
+        member={selectedMember}
+        profileImageUrl={selectedMember ? profileImageUrls[selectedMember.id] ?? null : null}
+        open={!!selectedMember}
+        onOpenChange={(open) => { if (!open) setSelectedMember(null); }}
+      />
+    </>
+  );
+}
