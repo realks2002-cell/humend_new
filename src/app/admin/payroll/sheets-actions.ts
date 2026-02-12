@@ -117,7 +117,7 @@ export async function exportPayrollToSheets(month: string) {
       ];
     });
 
-    const result = await exportToSheets(sheetName, headers, rows);
+    const result = await exportToSheets(sheetName, headers, rows as (string | number)[][]);
 
     // 이름(B=1), 전화번호(C=2) 컬럼 편집 보호
     await protectColumns(result.sheetId, [1, 2], rows.length);

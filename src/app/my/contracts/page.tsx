@@ -32,8 +32,8 @@ export default async function ContractsPage() {
   const worker = {
     name: profile?.name ?? "-",
     phone: profile?.phone ?? "",
-    rrnFront: (profile as Record<string, unknown>)?.rrn_front as string ?? "",
-    rrnBack: (profile as Record<string, unknown>)?.rrn_back as string ?? "",
+    rrnFront: (profile as unknown as Record<string, unknown>)?.rrn_front as string ?? "",
+    rrnBack: (profile as unknown as Record<string, unknown>)?.rrn_back as string ?? "",
     region: profile?.region ?? "",
   };
 

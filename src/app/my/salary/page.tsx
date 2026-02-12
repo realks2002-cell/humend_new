@@ -31,10 +31,10 @@ export default async function SalaryPage({ searchParams }: Props) {
 
   const worker = {
     name: profile?.name ?? "",
-    rrnFront: (profile as Record<string, unknown>)?.rrn_front as string ?? "",
-    rrnBack: (profile as Record<string, unknown>)?.rrn_back as string ?? "",
+    rrnFront: (profile as unknown as Record<string, unknown>)?.rrn_front as string ?? "",
+    rrnBack: (profile as unknown as Record<string, unknown>)?.rrn_back as string ?? "",
     phone: profile?.phone ?? "",
-    region: (profile as Record<string, unknown>)?.region as string ?? "",
+    region: (profile as unknown as Record<string, unknown>)?.region as string ?? "",
   };
 
   return (
