@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { CreateClientButton } from "./client-form";
 import { DraggableClientList } from "./client-list";
 import { createClient } from "@/lib/supabase/server";
