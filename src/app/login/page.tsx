@@ -205,7 +205,7 @@ export default function LoginPage() {
             <Input
               id="phone"
               type="tel"
-              placeholder="전화번호 (010-1234-5678)"
+              placeholder="010-1234-5678"
               className="pl-10"
               value={phone}
               onChange={(e) => setPhone(formatPhoneDisplay(e.target.value))}
@@ -216,12 +216,10 @@ export default function LoginPage() {
             <Input
               id="password"
               type="password"
-              placeholder="비밀번호 (숫자 6자리)"
+              placeholder="숫자+영어 6자리 이상"
               className="pl-10"
-              maxLength={6}
-              inputMode="numeric"
               value={password}
-              onChange={(e) => setPassword(e.target.value.replace(/\D/g, ""))}
+              onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleLogin(isTempLogin)}
             />
           </div>
