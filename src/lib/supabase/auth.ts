@@ -25,8 +25,8 @@ export async function memberSignup(formData: FormData) {
     return { error: "모든 항목을 입력해주세요." };
   }
 
-  if (password.length !== 6 || !/^\d{6}$/.test(password)) {
-    return { error: "비밀번호는 숫자 6자리여야 합니다." };
+  if (password.length < 6) {
+    return { error: "비밀번호는 6자리 이상이어야 합니다." };
   }
 
   const supabase = await createClient();
