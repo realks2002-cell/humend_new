@@ -23,10 +23,10 @@ export default async function JobDetailPage({
     notFound();
   }
 
-  const allImages = [
-    data.main_image_url,
-    ...(data.client_photos?.sort((a, b) => a.sort_order - b.sort_order).map((p) => p.image_url) ?? []),
-  ].filter(Boolean) as string[];
+  const photoUrls = data.client_photos?.sort((a, b) => a.sort_order - b.sort_order).map((p) => p.image_url) ?? [];
+  const allImages = photoUrls.length > 0
+    ? photoUrls
+    : [data.main_image_url].filter(Boolean) as string[];
 
   // 최대 3장 표시
   const displayImages = allImages.slice(0, 3);
