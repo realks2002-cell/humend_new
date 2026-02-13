@@ -3,11 +3,11 @@
 import { useState, useRef } from "react";
 import { X, ImagePlus, Loader2 } from "lucide-react";
 
-function compressImage(file: File, maxWidth = 1200, quality = 0.7): Promise<File> {
-  return new Promise((resolve) => {
-    const img = new Image();
+function compressToDataURL(file: File, maxWidth = 1200, quality = 0.6): Promise<string> {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
+      const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
         let w = img.width;
@@ -20,22 +20,13 @@ function compressImage(file: File, maxWidth = 1200, quality = 0.7): Promise<File
         canvas.height = h;
         const ctx = canvas.getContext("2d")!;
         ctx.drawImage(img, 0, 0, w, h);
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve(new File([blob], file.name, { type: "image/jpeg" }));
-            } else {
-              resolve(file);
-            }
-          },
-          "image/jpeg",
-          quality
-        );
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve(dataUrl);
       };
-      img.onerror = () => resolve(file);
+      img.onerror = () => reject(new Error("이미지 로드 실패"));
       img.src = reader.result as string;
     };
-    reader.onerror = () => resolve(file);
+    reader.onerror = () => reject(new Error("파일 읽기 실패"));
     reader.readAsDataURL(file);
   });
 }
@@ -43,17 +34,16 @@ function compressImage(file: File, maxWidth = 1200, quality = 0.7): Promise<File
 interface ImageUploadProps {
   value: string[];
   onChange: (urls: string[]) => void;
-  pendingFiles: File[];
-  onFilesChange: (files: File[]) => void;
+  pendingDataUrls: string[];
+  onPendingChange: (dataUrls: string[]) => void;
   maxCount?: number;
 }
 
-export function ImageUpload({ value, onChange, pendingFiles, onFilesChange, maxCount = 3 }: ImageUploadProps) {
+export function ImageUpload({ value, onChange, pendingDataUrls, onPendingChange, maxCount = 3 }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [previews, setPreviews] = useState<string[]>([]);
   const [compressing, setCompressing] = useState(false);
 
-  const totalCount = value.length + pendingFiles.length;
+  const totalCount = value.length + pendingDataUrls.length;
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -62,15 +52,10 @@ export function ImageUpload({ value, onChange, pendingFiles, onFilesChange, maxC
 
     setCompressing(true);
     try {
-      const compressed = await compressImage(file);
-      onFilesChange([...pendingFiles, compressed]);
-
-      // 미리보기 생성
-      const reader = new FileReader();
-      reader.onload = () => {
-        setPreviews((prev) => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(compressed);
+      const dataUrl = await compressToDataURL(file);
+      onPendingChange([...pendingDataUrls, dataUrl]);
+    } catch (err) {
+      console.error("압축 실패:", err);
     } finally {
       setCompressing(false);
     }
@@ -83,8 +68,7 @@ export function ImageUpload({ value, onChange, pendingFiles, onFilesChange, maxC
   };
 
   const handleRemovePending = (index: number) => {
-    onFilesChange(pendingFiles.filter((_, i) => i !== index));
-    setPreviews((prev) => prev.filter((_, i) => i !== index));
+    onPendingChange(pendingDataUrls.filter((_, i) => i !== index));
   };
 
   return (
@@ -103,8 +87,8 @@ export function ImageUpload({ value, onChange, pendingFiles, onFilesChange, maxC
             </button>
           </div>
         ))}
-        {/* 새로 추가된 파일 (미리보기) */}
-        {previews.map((dataUrl, i) => (
+        {/* 새로 추가된 사진 (미리보기) */}
+        {pendingDataUrls.map((dataUrl, i) => (
           <div key={`pending-${i}`} className="relative aspect-[4/3] overflow-hidden rounded-md border border-blue-300 bg-muted">
             <img src={dataUrl} alt={`새 사진 ${i + 1}`} className="absolute inset-0 h-full w-full object-cover" />
             <button

@@ -29,32 +29,14 @@ export async function createClientAction(formData: FormData) {
 
   if (error || !data) return { error: "고객사 등록에 실패했습니다." };
 
-  // 새 파일 업로드 + 기존 URL 합치기
+  // base64 이미지 업로드 + 기존 URL 합치기
   const photoUrlsStr = formData.get("photo_urls") as string;
   let existingUrls: string[] = [];
   try {
     existingUrls = JSON.parse(photoUrlsStr || "[]") as string[];
   } catch {}
 
-  const newFiles = formData.getAll("new_photos") as File[];
-  const uploadedUrls: string[] = [];
-  if (newFiles.length > 0) {
-    const admin = createAdminClient();
-    for (const file of newFiles) {
-      if (!file.size) continue;
-      const ext = file.name.split(".").pop() || "jpg";
-      const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const { error: upErr } = await admin.storage
-        .from("client-images")
-        .upload(filePath, buffer, { contentType: file.type || "image/jpeg" });
-      if (!upErr) {
-        const { data: urlData } = admin.storage.from("client-images").getPublicUrl(filePath);
-        uploadedUrls.push(urlData.publicUrl);
-      }
-    }
-  }
+  const uploadedUrls = await uploadBase64Images(formData.get("new_photo_data") as string);
 
   const allUrls = [...existingUrls, ...uploadedUrls];
   if (allUrls.length > 0) {
@@ -66,6 +48,41 @@ export async function createClientAction(formData: FormData) {
   revalidatePath("/admin/clients");
   revalidatePath("/");
   return { success: true };
+}
+
+async function uploadBase64Images(jsonStr: string | null): Promise<string[]> {
+  if (!jsonStr) return [];
+  let dataUrls: string[];
+  try {
+    dataUrls = JSON.parse(jsonStr) as string[];
+  } catch {
+    return [];
+  }
+  if (dataUrls.length === 0) return [];
+
+  const admin = createAdminClient();
+  const urls: string[] = [];
+
+  for (const dataUrl of dataUrls) {
+    const match = dataUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+    if (!match) continue;
+
+    const ext = match[1] === "jpeg" ? "jpg" : match[1];
+    const base64 = match[2];
+    const buffer = Buffer.from(base64, "base64");
+    const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const { error } = await admin.storage
+      .from("client-images")
+      .upload(filePath, buffer, { contentType: `image/${match[1]}` });
+
+    if (!error) {
+      const { data: urlData } = admin.storage.from("client-images").getPublicUrl(filePath);
+      urls.push(urlData.publicUrl);
+    }
+  }
+
+  return urls;
 }
 
 export async function updateClientAction(clientId: string, formData: FormData) {
@@ -92,32 +109,14 @@ export async function updateClientAction(clientId: string, formData: FormData) {
 
   if (error) return { error: "고객사 수정에 실패했습니다." };
 
-  // 새 파일 업로드 + 기존 URL 합치기
+  // base64 이미지 업로드 + 기존 URL 합치기
   const photoUrlsStr = formData.get("photo_urls") as string;
   let existingUrls: string[] = [];
   try {
     existingUrls = JSON.parse(photoUrlsStr || "[]") as string[];
   } catch {}
 
-  const newFiles = formData.getAll("new_photos") as File[];
-  const uploadedUrls: string[] = [];
-  if (newFiles.length > 0) {
-    const admin = createAdminClient();
-    for (const file of newFiles) {
-      if (!file.size) continue;
-      const ext = file.name.split(".").pop() || "jpg";
-      const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const { error: upErr } = await admin.storage
-        .from("client-images")
-        .upload(filePath, buffer, { contentType: file.type || "image/jpeg" });
-      if (!upErr) {
-        const { data: urlData } = admin.storage.from("client-images").getPublicUrl(filePath);
-        uploadedUrls.push(urlData.publicUrl);
-      }
-    }
-  }
+  const uploadedUrls = await uploadBase64Images(formData.get("new_photo_data") as string);
 
   const allUrls = [...existingUrls, ...uploadedUrls];
   await saveClientPhotos(clientId, allUrls);

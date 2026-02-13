@@ -57,7 +57,7 @@ function ClientFormDialog({
   const [photoUrls, setPhotoUrls] = useState<string[]>(
     client?.client_photos?.sort((a, b) => a.sort_order - b.sort_order).map((p) => p.image_url) ?? []
   );
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [pendingDataUrls, setPendingDataUrls] = useState<string[]>([]);
   const [workGuidelines, setWorkGuidelines] = useState(client?.work_guidelines ?? "");
   const [latitude, setLatitude] = useState<number | null>(client?.latitude ?? null);
   const [longitude, setLongitude] = useState<number | null>(client?.longitude ?? null);
@@ -70,7 +70,9 @@ function ClientFormDialog({
     const formData = new FormData(e.currentTarget);
     formData.set("work_guidelines", workGuidelines);
     formData.set("photo_urls", JSON.stringify(photoUrls));
-    pendingFiles.forEach((f) => formData.append("new_photos", f));
+    if (pendingDataUrls.length > 0) {
+      formData.set("new_photo_data", JSON.stringify(pendingDataUrls));
+    }
     if (latitude !== null) formData.set("latitude", String(latitude));
     if (longitude !== null) formData.set("longitude", String(longitude));
 
@@ -93,7 +95,7 @@ function ClientFormDialog({
   const handleDialogChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
     if (nextOpen) {
-      setPendingFiles([]);
+      setPendingDataUrls([]);
       if (mode === "edit") {
         setPhotoUrls(
           client?.client_photos?.sort((a, b) => a.sort_order - b.sort_order).map((p) => p.image_url) ?? []
@@ -134,7 +136,7 @@ function ClientFormDialog({
           <div>
             <Label>현장 사진 (최대 3장)</Label>
             <div className="mt-1.5">
-              <ImageUpload value={photoUrls} onChange={setPhotoUrls} pendingFiles={pendingFiles} onFilesChange={setPendingFiles} maxCount={3} />
+              <ImageUpload value={photoUrls} onChange={setPhotoUrls} pendingDataUrls={pendingDataUrls} onPendingChange={setPendingDataUrls} maxCount={3} />
             </div>
           </div>
 
