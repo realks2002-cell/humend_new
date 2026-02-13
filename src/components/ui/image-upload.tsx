@@ -31,7 +31,7 @@ export function ImageUpload({ value, onChange, maxCount = 3 }: ImageUploadProps)
 
       for (const file of toUpload) {
         const compressed = await imageCompression(file, {
-          maxSizeMB: 1.5,
+          maxSizeMB: 0.8,
           maxWidthOrHeight: 1280,
           useWebWorker: true,
         });

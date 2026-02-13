@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { saveClientPhotos } from "@/lib/supabase/queries";
 
@@ -29,13 +29,15 @@ export async function createClientAction(formData: FormData) {
 
   if (error || !data) return { error: "고객사 등록에 실패했습니다." };
 
-  // 사진 저장
+  // 사진 저장 + main_image_url 설정
   const photoUrlsStr = formData.get("photo_urls") as string;
   if (photoUrlsStr) {
     try {
       const urls = JSON.parse(photoUrlsStr) as string[];
       if (urls.length > 0) {
         await saveClientPhotos(data.id, urls);
+        const admin = createAdminClient();
+        await admin.from("clients").update({ main_image_url: urls[0] }).eq("id", data.id);
       }
     } catch {
       // 사진 저장 실패는 무시
@@ -43,6 +45,7 @@ export async function createClientAction(formData: FormData) {
   }
 
   revalidatePath("/admin/clients");
+  revalidatePath("/");
   return { success: true };
 }
 
@@ -70,18 +73,21 @@ export async function updateClientAction(clientId: string, formData: FormData) {
 
   if (error) return { error: "고객사 수정에 실패했습니다." };
 
-  // 사진 업데이트
+  // 사진 업데이트 + main_image_url 설정
   const photoUrlsStr = formData.get("photo_urls") as string;
   if (photoUrlsStr) {
     try {
       const urls = JSON.parse(photoUrlsStr) as string[];
       await saveClientPhotos(clientId, urls);
+      const admin = createAdminClient();
+      await admin.from("clients").update({ main_image_url: urls[0] ?? null }).eq("id", clientId);
     } catch {
       // 사진 저장 실패는 무시
     }
   }
 
   revalidatePath("/admin/clients");
+  revalidatePath("/");
   return { success: true };
 }
 

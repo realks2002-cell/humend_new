@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Briefcase, GripVertical } from "lucide-react";
@@ -68,14 +67,12 @@ function SortableCard({ client }: { client: ClientItem }) {
   return (
     <div ref={setNodeRef} style={style}>
       <Card className="overflow-hidden">
-        <div className="relative aspect-[16/8] bg-muted">
+        <div className="relative aspect-[16/8] bg-muted overflow-hidden">
           {coverImage ? (
-            <Image
+            <img
               src={coverImage}
               alt={client.company_name}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           ) : (
             <div className="flex h-full items-center justify-center">

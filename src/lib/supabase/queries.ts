@@ -177,10 +177,10 @@ export async function getClientDetail(clientId: string) {
 }
 
 export async function saveClientPhotos(clientId: string, urls: string[]) {
-  const supabase = await createClient();
+  const admin = createAdminClient();
 
-  // 기존 사진 삭제
-  await supabase.from("client_photos").delete().eq("client_id", clientId);
+  // 기존 사진 삭제 (admin으로 RLS 우회)
+  await admin.from("client_photos").delete().eq("client_id", clientId);
 
   if (urls.length === 0) return { error: null };
 
@@ -190,13 +190,13 @@ export async function saveClientPhotos(clientId: string, urls: string[]) {
     sort_order: i,
   }));
 
-  const { error } = await supabase.from("client_photos").insert(rows);
+  const { error } = await admin.from("client_photos").insert(rows);
   return { error: error?.message ?? null };
 }
 
 export async function deleteClientPhoto(photoId: string) {
-  const supabase = await createClient();
-  const { error } = await supabase.from("client_photos").delete().eq("id", photoId);
+  const admin = createAdminClient();
+  const { error } = await admin.from("client_photos").delete().eq("id", photoId);
   return { error: error?.message ?? null };
 }
 
