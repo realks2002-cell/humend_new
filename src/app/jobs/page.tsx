@@ -71,7 +71,7 @@ export default async function JobsPage({ searchParams }: Props) {
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {clientsWithJobs.map((client) => (
-            <Card key={client.id} className="group overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lg">
+            <Card key={client.id} className="group overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lg py-0 rounded-[10px]">
               <Link href={`/jobs/${client.id}`}>
                 <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/5 to-primary/15">
                   {client.main_image_url ? (
@@ -89,7 +89,7 @@ export default async function JobsPage({ searchParams }: Props) {
                   )}
                 </div>
               </Link>
-              <CardContent className="pt-4">
+              <CardContent className="p-4">
                 <Link href={`/jobs/${client.id}`}>
                   <h3 className="text-lg font-semibold transition-colors group-hover:text-primary">{client.company_name}</h3>
                 </Link>
@@ -101,36 +101,22 @@ export default async function JobsPage({ searchParams }: Props) {
                   <span className="font-medium text-primary">시급 {formatWage(client.hourly_wage)}</span>
                   <Badge variant="secondary">{client.job_postings.length}건 모집중</Badge>
                 </div>
-                <div className="mt-4 space-y-2">
-                  {Object.entries(
-                    client.job_postings.reduce<Record<string, typeof client.job_postings>>((acc, job) => {
-                      (acc[job.work_date] ||= []).push(job);
-                      return acc;
-                    }, {})
-                  ).map(([date, jobs]) => (
-                    <div key={date} className="rounded-lg border p-2.5">
-                      <Badge variant="outline" className="mb-1.5 text-xs">
-                        {formatDate(date)}
-                      </Badge>
-                      <div className="space-y-1.5">
-                        {jobs.map((job) => (
-                          <div key={job.id} className="flex items-center justify-between rounded-md transition-colors hover:bg-muted/30 px-1 py-0.5">
-                            <Badge variant="secondary" className="text-xs">
-                              <Clock className="mr-0.5 h-3 w-3" />
-                              {formatTime(job.start_time)}~{formatTime(job.end_time)}
-                            </Badge>
-                            <ApplyButton
-                              postingId={job.id}
-                              clientName={client.company_name}
-                              workDate={formatDate(job.work_date)}
-                              startTime={job.start_time}
-                              endTime={job.end_time}
-                              size="sm"
-                              className="h-5.5 text-[10px] px-2"
-                            />
-                          </div>
-                        ))}
-                      </div>
+                <div className="mt-4 grid grid-cols-3 gap-1.5">
+                  {client.job_postings.map((job) => (
+                    <div key={job.id} className="flex flex-col items-center gap-1 rounded-lg border p-2 text-center">
+                      <span className="text-[11px] font-medium">{formatDate(job.work_date)}</span>
+                      <span className="text-[11px] font-semibold text-foreground">
+                        {formatTime(job.start_time)}~{formatTime(job.end_time)}
+                      </span>
+                      <ApplyButton
+                        postingId={job.id}
+                        clientName={client.company_name}
+                        workDate={formatDate(job.work_date)}
+                        startTime={job.start_time}
+                        endTime={job.end_time}
+                        size="sm"
+                        className="h-5.5 text-[10px] px-2 w-full"
+                      />
                     </div>
                   ))}
                 </div>

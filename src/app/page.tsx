@@ -108,7 +108,7 @@ export default async function Home() {
             <div className="grid gap-6 grid-cols-2 md:grid-cols-4">
               {clientsWithJobs.map((client) => (
                 <Link key={client.id} href={`/jobs/${client.id}`}>
-                  <Card className="group overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg">
+                  <Card className="group overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg py-0 rounded-[10px]">
                     <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/5 to-primary/15">
                       {client.main_image_url ? (
                         <img
@@ -122,7 +122,7 @@ export default async function Home() {
                         </div>
                       )}
                     </div>
-                    <CardContent className="pt-4">
+                    <CardContent className="p-4">
                       <h3 className="font-semibold group-hover:text-primary">{client.company_name}</h3>
                       <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
                         <MapPin className="h-3 w-3" />
