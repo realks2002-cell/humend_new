@@ -13,14 +13,14 @@ export async function applyToJob(postingId: string) {
     return { error: "로그인이 필요합니다." };
   }
 
-  // members 존재 확인
+  // members 존재 + 필수 정보 등록 확인
   const { data: member } = await supabase
     .from("members")
-    .select("id")
+    .select("id, birth_date, gender, region, bank_name, account_number")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!member) {
+  if (!member || !member.birth_date || !member.gender || !member.region || !member.bank_name || !member.account_number) {
     return { error: "회원정보를 먼저 등록해주세요." };
   }
 
