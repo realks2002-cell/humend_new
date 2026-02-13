@@ -31,8 +31,8 @@ export function PayslipModal({ record }: { record: WorkRecord }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-red-400 text-white hover:bg-red-500">
-          <Receipt className="mr-1 h-3.5 w-3.5" />
+        <Button size="sm" className="h-7 px-2 text-xs rounded-none bg-red-400 text-white hover:bg-red-500">
+          <Receipt className="mr-1 h-3 w-3" />
           급여명세서
         </Button>
       </DialogTrigger>

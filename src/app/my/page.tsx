@@ -152,16 +152,16 @@ export default async function MyPage() {
         {/* Profile Action Badges */}
         <div className="relative mt-4 flex flex-wrap gap-2">
           <Link href="/my/resume">
-            <Badge variant="secondary" className="cursor-pointer gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors hover:bg-blue-50 hover:text-blue-700">
+            <Badge variant="secondary" className="cursor-pointer gap-1.5 rounded-none px-3 py-1.5 text-xs font-medium transition-colors hover:bg-blue-50 hover:text-blue-700">
               <FileEdit className="h-3 w-3" />
               회원정보 수정
             </Badge>
           </Link>
-          <Badge variant="secondary" className="cursor-pointer gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors hover:bg-slate-200">
+          <Badge variant="secondary" className="cursor-pointer gap-1.5 rounded-none px-3 py-1.5 text-xs font-medium transition-colors hover:bg-slate-200">
             <Settings className="h-3 w-3" />
             비밀번호 수정
           </Badge>
-          <Badge variant="secondary" className="cursor-pointer gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors hover:bg-red-50 hover:text-red-600">
+          <Badge variant="secondary" className="cursor-pointer gap-1.5 rounded-none px-3 py-1.5 text-xs font-medium transition-colors hover:bg-red-50 hover:text-red-600">
             <UserX className="h-3 w-3" />
             회원탈퇴
           </Badge>
@@ -270,7 +270,7 @@ export default async function MyPage() {
               회원정보 등록 후 채용공고에 지원할 수 있습니다.
             </p>
             <Link href="/my/resume">
-              <Button className="mt-5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 transition-all duration-300">
+              <Button className="mt-5 rounded-none bg-gradient-to-r from-amber-500 to-orange-500 px-6 shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 transition-all duration-300">
                 회원정보 등록하기
                 <ArrowRight className="h-4 w-4" />
               </Button>

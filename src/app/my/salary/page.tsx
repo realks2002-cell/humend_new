@@ -31,8 +31,10 @@ export default async function SalaryPage({ searchParams }: Props) {
     getMyProfile(),
   ]);
 
-  // 서명 안된 레코드만 표시 (서명 완료된 건은 근무내역 페이지에서 확인)
+  // 서명 안된 레코드 (급여 신청 전)
   const records = allRecords.filter((r) => !r.signature_url);
+  // 서명 완료 + payment 없음 (급여 신청 완료, 관리자 처리 대기)
+  const pendingRecords = allRecords.filter((r) => r.signature_url && !r.payments);
 
   const worker = {
     name: profile?.name ?? "",
@@ -70,7 +72,7 @@ export default async function SalaryPage({ searchParams }: Props) {
               <span className="font-medium">{profile?.account_holder ?? profile?.name ?? "-"}</span>
             </span>
             <Link href="/my/resume">
-              <Button size="sm" className="h-7 text-xs shrink-0 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+              <Button size="sm" className="h-7 text-xs shrink-0 rounded-none bg-blue-600 text-white hover:bg-blue-700">
                 수정
               </Button>
             </Link>
@@ -89,6 +91,41 @@ export default async function SalaryPage({ searchParams }: Props) {
 
       <MonthSelector currentMonth={currentMonth} basePath="/my/salary" />
 
+      {/* 급여 신청 완료 (대기 중) */}
+      {pendingRecords.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider px-1">
+            급여 신청 완료 <Badge className="ml-1 bg-amber-500/10 text-amber-700 text-[10px] font-semibold border-0">{pendingRecords.length}건 대기</Badge>
+          </h2>
+          <div className="space-y-3">
+            {pendingRecords.map((r) => (
+              <Card key={r.id} className="overflow-hidden transition-all py-0 border-amber-200/80">
+                <div className="h-0.5 bg-gradient-to-r from-amber-400 to-orange-400" />
+                <CardContent className="flex items-center justify-between p-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate">{r.client_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(r.work_date)} {r.start_time.slice(0, 5)}~{r.end_time.slice(0, 5)}
+                    </p>
+                    <div className="mt-1.5 flex items-center gap-1.5">
+                      <Badge className="text-[10px] font-semibold border-0 bg-amber-500/10 text-amber-700">
+                        대기
+                      </Badge>
+                      <Badge className="bg-emerald-500/10 text-emerald-700 text-[10px] font-semibold border-0">
+                        계약완료
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <ContractViewModal record={r} worker={worker} />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Records */}
       <div className="space-y-3">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider px-1">근무기록</h2>
@@ -104,7 +141,6 @@ export default async function SalaryPage({ searchParams }: Props) {
           <div className="space-y-3">
             {records.map((r) => {
               const p = r.payments;
-              const display = p ?? r;
               const displayStatus = p?.status ?? r.status;
               const signed = !!r.signature_url;
 
