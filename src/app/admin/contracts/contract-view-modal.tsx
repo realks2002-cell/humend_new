@@ -88,7 +88,7 @@ export function ContractViewModal({ record, signatureUrl }: { record: WorkRecord
             {/* 사용자 */}
             <div className="overflow-hidden rounded border">
               <SectionHeader>사용자</SectionHeader>
-              <TableRow label="회사명" value="휴멘드 에이치알" label2="연락처" value2="02-871-3332" />
+              <TableRow label="회사명" value="휴멘드 에이치알" label2="연락처" value2="02-875-8332" />
               <TableRow label="소재지" value="서울시 동작구 현충로151, 105호" />
             </div>
 
@@ -104,7 +104,7 @@ export function ContractViewModal({ record, signatureUrl }: { record: WorkRecord
               <SectionHeader>근무 정보</SectionHeader>
               <TableRow label="근무장소" value={record.client_name} />
               <TableRow label="근무일" value={record.work_date} />
-              <TableRow label="근무시간" value={`${record.start_time} ~ ${record.end_time}`} />
+              <TableRow label="근무시간" value={`${record.start_time.slice(0, 5)} ~ ${record.end_time.slice(0, 5)}`} />
             </div>
 
             {/* 계약 조건 */}
@@ -125,9 +125,9 @@ export function ContractViewModal({ record, signatureUrl }: { record: WorkRecord
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">4. 계약기간</p>
-                  <p>계약일시: {record.work_date}</p>
-                  <p>[1일]</p>
-                  <p>근무시간: {record.start_time} ~ {record.end_time}</p>
+
+                  <p>근무일: {record.work_date}</p>
+                  <p>근무시간: {record.start_time.slice(0, 5)} ~ {record.end_time.slice(0, 5)}</p>
                   <p>휴게시간: 8시간 미만시 30분제공 / 8시간 이상시 1시간 제공</p>
                   <p className="mt-1 text-xs text-gray-500">※ 단, 휴게시간은 행사 성격에 따라 변경될 수 있으며, 휴게시간은 임금에 산정하지 않는다.</p>
                   <p className="text-xs text-gray-500">※ 근무시간은 실제로 근무한 시간을 기입해주세요.</p>
@@ -148,7 +148,7 @@ export function ContractViewModal({ record, signatureUrl }: { record: WorkRecord
                       <div className="px-2 py-1.5">통상시급 {display.hourly_wage.toLocaleString()}원 기타수당 0원</div>
                     </div>
                     <div className="flex text-xs">
-                      <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">근무시간</div>
+                      <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">급여산정</div>
                       <div className="px-2 py-1.5">기본시급x(근무시간-공제시간)=1일임금</div>
                     </div>
                   </div>
@@ -176,6 +176,10 @@ export function ContractViewModal({ record, signatureUrl }: { record: WorkRecord
                   <p className="font-semibold text-gray-900">10. 개인정보</p>
                   <p>본 계약과 관련하여 사용자는 위 개인정보를 엄격히 관리하며, 근로자는 위 사용자가 DB(회원관리) 및 근로소득관련 제출증빙 등으로 근로자의 개인정보 보관 등에 관하여 동의한다.</p>
                 </div>
+                <div>
+                  <p className="font-semibold text-gray-900">11. 근로계약서 교부</p>
+                  <p>&ldquo;갑&rdquo;은 근로계약을 체결함과 동시에 본 계약서를 &ldquo;을&rdquo;의 교부요구와 관계없이 &ldquo;을&rdquo;에게 교부하며(근로기준법 제 17조 이행) &ldquo;을&rdquo;은 홈페이지→마이페이지에서 교부된 계약서를 확인 및 출력할 수 있다.</p>
+                </div>
               </div>
             </div>
 
@@ -201,7 +205,7 @@ export function ContractViewModal({ record, signatureUrl }: { record: WorkRecord
                 </div>
               </div>
               {record.signed_at && (
-                <TableRow label="서명일시" value={new Date(record.signed_at).toLocaleString("ko-KR")} />
+                <TableRow label="서명일시" value={new Date(record.signed_at).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })} />
               )}
             </div>
           </div>

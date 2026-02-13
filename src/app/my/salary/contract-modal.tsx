@@ -10,8 +10,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { ArrowRight, XIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ArrowRight, CalendarIcon, XIcon } from "lucide-react";
 import { formatDate } from "@/lib/utils/format";
+import { ko } from "date-fns/locale";
 import { type WorkRecord } from "@/lib/supabase/queries";
 import { SignaturePad } from "@/components/signature/SignaturePad";
 import { submitSignature } from "./actions";
@@ -23,6 +26,37 @@ interface WorkerInfo {
   rrnBack: string;
   phone: string;
   region: string;
+}
+
+// 30분 단위 시간 옵션 생성
+const TIME_OPTIONS: string[] = [];
+for (let h = 0; h < 24; h++) {
+  for (const m of [0, 30]) {
+    TIME_OPTIONS.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+  }
+}
+
+function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-8 w-[130px] rounded-md border border-gray-300 bg-white px-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+    >
+      {TIME_OPTIONS.map((t) => (
+        <option key={t} value={t}>{t}</option>
+      ))}
+    </select>
+  );
+}
+
+// 30분 단위로 스냅
+function snapToHalfHour(time: string) {
+  const [h, mStr] = time.split(":");
+  const m = parseInt(mStr || "0");
+  const snapped = m < 15 ? "00" : m < 45 ? "30" : "00";
+  const hour = snapped === "00" && m >= 45 ? String(parseInt(h) + 1).padStart(2, "0") : h;
+  return `${hour}:${snapped}`;
 }
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
@@ -58,8 +92,18 @@ export function ContractModal({ record, worker }: { record: WorkRecord; worker: 
   const [step, setStep] = useState<"confirm" | "contract" | "sign">("confirm");
   const [loading, setLoading] = useState(false);
 
+  // 회원이 직접 입력하는 근무일/시간
+  const [workDate, setWorkDate] = useState(record.work_date);
+  const [startTime, setStartTime] = useState(snapToHalfHour(record.start_time.slice(0, 5)));
+  const [endTime, setEndTime] = useState(snapToHalfHour(record.end_time.slice(0, 5)));
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [wageType, setWageType] = useState<"시급" | "일급">("시급");
+  const [dailyWage, setDailyWage] = useState("");
+  const [agreed, setAgreed] = useState(false);
+
   const p = record.payments;
   const display = p ?? record;
+  const displayWage = wageType === "일급" && dailyWage ? Number(dailyWage) : display.hourly_wage;
   const rrn = worker.rrnFront && worker.rrnBack ? `${worker.rrnFront}-${worker.rrnBack}` : "";
 
   function formatPhone(phone: string) {
@@ -70,7 +114,13 @@ export function ContractModal({ record, worker }: { record: WorkRecord; worker: 
 
   async function handleSign(dataUrl: string) {
     setLoading(true);
-    const result = await submitSignature(record.id, dataUrl);
+    const result = await submitSignature(record.id, dataUrl, {
+      work_date: workDate,
+      start_time: startTime,
+      end_time: endTime,
+      wage_type: wageType,
+      daily_wage: wageType === "일급" && dailyWage ? Number(dailyWage) : undefined,
+    });
     setLoading(false);
     if (result.error) {
       toast.error("서명 실패", { description: result.error });
@@ -84,7 +134,7 @@ export function ContractModal({ record, worker }: { record: WorkRecord; worker: 
 
   function handleOpenChange(v: boolean) {
     setOpen(v);
-    if (!v) setStep("confirm");
+    if (!v) { setStep("confirm"); setAgreed(false); }
   }
 
   return (
@@ -133,7 +183,7 @@ export function ContractModal({ record, worker }: { record: WorkRecord; worker: 
               {/* 사용자 */}
               <div className="overflow-hidden rounded border">
                 <SectionHeader>사용자</SectionHeader>
-                <TableRow label="회사명" value="휴멘드 에이치알" label2="연락처" value2="02-871-3332" />
+                <TableRow label="회사명" value="휴멘드 에이치알" label2="연락처" value2="02-875-8332" />
                 <TableRow label="소재지" value="서울시 동작구 현충로151, 105호" />
               </div>
 
@@ -146,10 +196,97 @@ export function ContractModal({ record, worker }: { record: WorkRecord; worker: 
 
               {/* 근무 정보 */}
               <div className="overflow-hidden rounded border">
-                <SectionHeader>근무 정보</SectionHeader>
+                <SectionHeader>근무지 및 근무일시</SectionHeader>
                 <TableRow label="근무장소" value={record.client_name} />
-                <TableRow label="근무일" value={record.work_date} />
-                <TableRow label="근무시간" value={`${record.start_time} ~ ${record.end_time}`} />
+                <div className="flex border-b text-sm">
+                  <div className="w-28 shrink-0 bg-gray-100 px-3 py-2 font-medium text-gray-600 border-r">근무일</div>
+                  <div className="flex-1 px-3 py-1.5 flex items-center">
+                    <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                      <PopoverTrigger asChild>
+                        <button className="inline-flex h-8 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-sm hover:bg-gray-50">
+                          <CalendarIcon className="h-3.5 w-3.5 text-gray-500" />
+                          {workDate || "날짜 선택"}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          locale={ko}
+                          selected={workDate ? new Date(workDate + "T00:00:00") : undefined}
+                          onSelect={(date) => {
+                            if (date) {
+                              const y = date.getFullYear();
+                              const m = String(date.getMonth() + 1).padStart(2, "0");
+                              const d = String(date.getDate()).padStart(2, "0");
+                              setWorkDate(`${y}-${m}-${d}`);
+                            }
+                            setCalendarOpen(false);
+                          }}
+                          modifiers={{
+                            weekend: (date) => date.getDay() === 0 || date.getDay() === 6,
+                          }}
+                          modifiersClassNames={{
+                            weekend: "text-red-500",
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+                <div className="flex border-b text-sm">
+                  <div className="w-28 shrink-0 bg-gray-100 px-3 py-2 font-medium text-gray-600 border-r">근무시간</div>
+                  <div className="flex-1 px-3 py-1.5 flex items-center gap-2">
+                    <TimeSelect value={startTime} onChange={setStartTime} />
+                    <span className="text-gray-500 font-medium">~</span>
+                    <TimeSelect value={endTime} onChange={setEndTime} />
+                  </div>
+                </div>
+                <div className="flex border-b text-sm">
+                  <div className="w-28 shrink-0 bg-gray-100 px-3 py-2 font-medium text-gray-600 border-r">급여구분</div>
+                  <div className="flex-1 px-3 py-1.5 flex items-center gap-3">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="wageType"
+                        checked={wageType === "시급"}
+                        onChange={() => setWageType("시급")}
+                        className="h-4 w-4 accent-[#1e2a5a]"
+                      />
+                      <span className="text-sm">시급</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="wageType"
+                        checked={wageType === "일급"}
+                        onChange={() => setWageType("일급")}
+                        className="h-4 w-4 accent-[#1e2a5a]"
+                      />
+                      <span className="text-sm">일급</span>
+                    </label>
+                    {wageType === "일급" && (
+                      <div className="flex items-center gap-1.5 ml-2">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={dailyWage}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/[^\d]/g, "");
+                            setDailyWage(raw);
+                          }}
+                          placeholder="금액 입력"
+                          className="h-8 w-[120px] rounded-md border border-gray-300 bg-white px-2 text-sm text-right focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-600">원</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-1 text-xs text-gray-500">
+                <p>※ 근무시간은 시작시간과 종료 시간으로 기입해주세요.</p>
+                <p>※ 휴게시간: 8시간 미만시 30분제공 / 8시간 이상시 1시간 제공</p>
+                <p>※ 단, 휴게시간은 행사 성격에 따라 변경될 수 있으며, 휴게시간은 임금에 산정하지 않는다.</p>
               </div>
 
               {/* 계약 조건 */}
@@ -169,35 +306,30 @@ export function ContractModal({ record, worker }: { record: WorkRecord; worker: 
                     <p>사용자와 근로자가 사전에 협의한 업무. [ 홀서빙, 주방보조, 기물보조, 안내 등]</p>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">4. 계약기간</p>
-                    <p>계약일시: {record.work_date}</p>
-                    <p>[1일]</p>
-                    <p>근무시간: {record.start_time} ~ {record.end_time}</p>
-                    <p>휴게시간: 8시간 미만시 30분제공 / 8시간 이상시 1시간 제공</p>
-                    <p className="mt-1 text-xs text-gray-500">※ 단, 휴게시간은 행사 성격에 따라 변경될 수 있으며, 휴게시간은 임금에 산정하지 않는다.</p>
-                    <p className="text-xs text-gray-500">※ 근무시간은 실제로 근무한 시간을 기입해주세요.</p>
+                    <p className="font-semibold text-gray-900">4. 계약일</p>
+                    <p>계약일시: {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\. /g, "-").replace(".", "")}</p>
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">5. 근로임금</p>
                     <div className="mt-2 overflow-hidden rounded border">
                       <div className="flex border-b text-xs">
                         <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">급여 구분</div>
-                        <div className="px-2 py-1.5">시급</div>
+                        <div className="px-2 py-1.5">{wageType}</div>
                       </div>
                       <div className="flex border-b text-xs">
-                        <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">기본시급</div>
-                        <div className="px-2 py-1.5">{display.hourly_wage.toLocaleString()} 원</div>
+                        <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">{wageType === "일급" ? "기본급" : "기본시급"}</div>
+                        <div className="px-2 py-1.5">{displayWage.toLocaleString()} 원</div>
                       </div>
                       <div className="flex border-b text-xs">
                         <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">인건비 구성</div>
-                        <div className="px-2 py-1.5">통상시급 {display.hourly_wage.toLocaleString()}원 기타수당 0원</div>
+                        <div className="px-2 py-1.5">{wageType === "일급" ? `기본급 ${displayWage.toLocaleString()}원 기타수당 0원` : `통상시급 ${displayWage.toLocaleString()}원 기타수당 0원`}</div>
                       </div>
                       <div className="flex text-xs">
-                        <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">근무시간</div>
-                        <div className="px-2 py-1.5">기본시급x(근무시간-공제시간)=1일임금</div>
+                        <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">급여산정</div>
+                        <div className="px-2 py-1.5">{wageType === "일급" ? "기본급=1일임금" : "기본시급x(근무시간-공제시간)=1일임금"}</div>
                       </div>
                     </div>
-                    <p className="mt-2 text-xs text-gray-500">※ 기본시급은 홈페이지에 공지된 시급이며 별도의 안내를 받으신분은 따로 기입후 지급됨</p>
+                    <p className="mt-2 text-xs text-gray-500">{wageType === "일급" ? "※ 기본급은 홈페이지에 공지된 일급이며 별도의 안내를 받으신분은 따로 기입후 지급됨" : "※ 기본시급은 홈페이지에 공지된 시급이며 별도의 안내를 받으신분은 따로 기입후 지급됨"}</p>
                     <p className="text-xs text-gray-500">※ 임금은 근무 후 익 주 월~수요일 19시 지급이며 근무업장 사정에 따라 최대 7일, 최소 2시간 지연 입금 될 수 있다.</p>
                     <p className="text-xs text-gray-500">※ 신한은행 외 타행으로 급여이체 받을 시 이체수수료 500원이 공제되어 지급됩니다</p>
                   </div>
@@ -206,25 +338,23 @@ export function ContractModal({ record, worker }: { record: WorkRecord; worker: 
                     <p>근로기준법상 단기간 근로자는 근로기준법의 주휴일, 연차휴가, 퇴직금 규정을 적용하지 아니하며, 기타 관련 사항은 회사 규정에 따른다.</p>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">7. 고용보험</p>
+                    <p className="font-semibold text-gray-900">7. 사회보험료 및 소득세</p>
                     <p>임금지급 시 근로자부담금인 고용보험료[급여액의 0.65%]는 공제 후 입금된다.</p>
                     <div className="mt-2 overflow-hidden rounded border">
                       <div className="flex border-b text-xs">
-                        <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">기본시급</div>
-                        <div className="px-2 py-1.5">{display.hourly_wage.toLocaleString()} 원</div>
+                        <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">{wageType === "일급" ? "기본급" : "기본시급"}</div>
+                        <div className="px-2 py-1.5">{displayWage.toLocaleString()} 원</div>
                       </div>
                       <div className="flex border-b text-xs">
                         <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">인건비 구성</div>
-                        <div className="px-2 py-1.5">통상시급 {display.hourly_wage.toLocaleString()}원 기타수당 0원</div>
+                        <div className="px-2 py-1.5">{wageType === "일급" ? `기본급 ${displayWage.toLocaleString()}원 기타수당 0원` : `통상시급 ${displayWage.toLocaleString()}원 기타수당 0원`}</div>
                       </div>
                       <div className="flex text-xs">
-                        <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">근무시간</div>
-                        <div className="px-2 py-1.5">기본시급x(근무시간-공제시간)=1일임금</div>
+                        <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">급여산정</div>
+                        <div className="px-2 py-1.5">{wageType === "일급" ? "기본급=1일임금" : "기본시급x(근무시간-공제시간)=1일임금"}</div>
                       </div>
                     </div>
-                    <p className="mt-2 text-xs text-gray-500">※ 임금지급 시 근로자부담분인 고용보험료(급여액의 0.65%)는 공제 후 지급 됩니다.</p>
-                    <p className="text-xs text-gray-500">※ 임금은 근무 후 익 주 월~수요일 19시 지급이며 근무업장 사정에 따라 최대 7일, 최소 2시간 지연 입금 될 수 있다.</p>
-                    <p className="text-xs text-gray-500">※ 신한은행 외 타행으로 급여이체 받을 시 이체수수료 500원이 공제되어 지급됩니다</p>
+                    <p className="mt-2 text-xs text-gray-500">※ 임금 지급시 근로자 부담금 (사회보험료와 소득세) 은 원천징수 후 근무자가 지정한 예금통장으로 지급한다.</p>
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">8. 손해배상</p>
@@ -238,39 +368,29 @@ export function ContractModal({ record, worker }: { record: WorkRecord; worker: 
                     <p className="font-semibold text-gray-900">10. 개인정보</p>
                     <p>본 계약과 관련하여 사용자는 위 개인정보를 엄격히 관리하며, 근로자는 위 사용자가 DB(회원관리) 및 근로소득관련 제출증빙 등으로 근로자의 개인정보 보관 등에 관하여 동의한다.</p>
                   </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">11. 근로계약서 교부</p>
+                    <p>&ldquo;갑&rdquo;은 근로계약을 체결함과 동시에 본 계약서를 &ldquo;을&rdquo;의 교부요구와 관계없이 &ldquo;을&rdquo;에게 교부하며(근로기준법 제 17조 이행) &ldquo;을&rdquo;은 홈페이지→마이페이지에서 교부된 계약서를 확인 및 출력할 수 있다.</p>
+                  </div>
                 </div>
               </div>
 
-              {/* 연락처 */}
-              <div className="overflow-hidden rounded border">
-                <SectionHeader>연락처</SectionHeader>
-                <TableRow label="휴대전화" value={formatPhone(worker.phone)} label2="주소" value2={worker.region || "-"} />
-              </div>
-
-              {/* 근무 정보 (하단 반복) */}
-              <div className="overflow-hidden rounded border">
-                <SectionHeader>근무 정보</SectionHeader>
-                <TableRow label="근무장소" value={record.client_name} />
-                <TableRow label="근무일" value={record.work_date} />
-                <TableRow label="근무시간" value={`${record.start_time} ~ ${record.end_time}`} />
-              </div>
-
-              {/* 사용자 서명 */}
-              <div className="text-sm">
-                <p className="font-semibold">사용자</p>
-                <p className="mt-1">휴멘드 에이치알 <span className="font-bold">이 혁</span></p>
-              </div>
-
-              {/* 근로자 서명 */}
-              <div className="overflow-hidden rounded border">
-                <SectionHeader>근로자</SectionHeader>
-                <TableRow label="이름" value={worker.name} />
-                <TableRow label="주민등록번호" value={rrn || "-"} />
-              </div>
-
-              <div className="pb-2">
-                <p className="mb-3 text-center text-xs text-gray-500">마우스 또는 손가락으로 서명하세요</p>
-                <Button className="w-full bg-[#1e2a5a] hover:bg-[#2a3a7a]" size="lg" onClick={() => setStep("sign")}>
+              <div className="pb-2 space-y-3">
+                <label className="flex items-center gap-2.5 cursor-pointer rounded-xl border p-3.5 transition-colors hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={agreed}
+                    onChange={(e) => setAgreed(e.target.checked)}
+                    className="h-4.5 w-4.5 rounded border-gray-300 text-[#1e2a5a] focus:ring-[#1e2a5a] accent-[#1e2a5a]"
+                  />
+                  <span className="text-sm font-medium text-gray-700">본 계약에 동의하고 제출 하시겠습니까?</span>
+                </label>
+                <Button
+                  className="w-full bg-[#1e2a5a] hover:bg-[#2a3a7a] disabled:opacity-50"
+                  size="lg"
+                  onClick={() => setStep("sign")}
+                  disabled={!agreed}
+                >
                   동의하고 서명하기
                 </Button>
               </div>
@@ -281,7 +401,7 @@ export function ContractModal({ record, worker }: { record: WorkRecord; worker: 
             <div className="text-center">
               <h2 className="text-lg font-bold">전자서명</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {record.client_name} / {formatDate(record.work_date)} 계약
+                {record.client_name} / {formatDate(workDate)} 계약
               </p>
             </div>
             <p className="text-center text-xs text-muted-foreground">마우스 또는 손가락으로 서명하세요</p>

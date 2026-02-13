@@ -131,18 +131,17 @@ export function PayrollTable({ records, month }: { records: WorkRecord[]; month:
                 />
               </th>
               <th className="pb-2 pr-4">이름</th>
-              <th className="pb-2 pr-4">고객사</th>
-              <th className="pb-2 pr-4 hidden sm:table-cell">근무일</th>
-              <th className="pb-2 pr-4 hidden md:table-cell">시간</th>
-              <th className="pb-2 pr-4 text-right hidden lg:table-cell">총지급액</th>
-              <th className="pb-2 pr-4 text-right">실수령액</th>
-              <th className="pb-2">상태</th>
+              <th className="pb-2 pr-4">근무지</th>
+              <th className="pb-2 pr-4 hidden sm:table-cell">급여타입</th>
+              <th className="pb-2 pr-4 hidden sm:table-cell text-right">시급</th>
+              <th className="pb-2 pr-4 hidden md:table-cell">근무시간</th>
+              <th className="pb-2 pr-4 text-right">총지급액</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                <td colSpan={7} className="py-8 text-center text-muted-foreground">
                   급여 내역이 없습니다.
                 </td>
               </tr>
@@ -176,26 +175,15 @@ export function PayrollTable({ records, month }: { records: WorkRecord[]; month:
                       )}
                     </td>
                     <td className="py-2 pr-4">{r.client_name}</td>
-                    <td className="py-2 pr-4 hidden sm:table-cell">{formatDate(r.work_date)}</td>
+                    <td className="py-2 pr-4 hidden sm:table-cell">
+                      <Badge variant={r.wage_type === "일급" ? "default" : "secondary"}>
+                        {r.wage_type ?? "시급"}
+                      </Badge>
+                    </td>
+                    <td className="py-2 pr-4 hidden sm:table-cell text-right">{formatCurrency(r.hourly_wage)}</td>
                     <td className="py-2 pr-4 hidden md:table-cell">{r.work_hours + r.overtime_hours}h</td>
-                    <td className="py-2 pr-4 text-right hidden lg:table-cell">
-                      {formatCurrency(display.grossPay)}
-                    </td>
                     <td className="py-2 pr-4 text-right font-medium">
-                      {formatCurrency(display.netPay)}
-                      {display.isDiff && (
-                        <span className="ml-1 text-xs text-blue-600">수정</span>
-                      )}
-                    </td>
-                    <td className="py-2">
-                      <div className="flex items-center gap-1">
-                        <Badge variant={statusColors[status] ?? "secondary"}>
-                          {status}
-                        </Badge>
-                        {display.hasPayment && (
-                          <Badge variant="outline" className="text-[10px] px-1">확정</Badge>
-                        )}
-                      </div>
+                      {formatCurrency(display.grossPay)}
                     </td>
                   </tr>
                 );

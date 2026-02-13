@@ -161,7 +161,7 @@ export default async function JobDetailPage({
                     <Badge variant="default">{formatDate(job.work_date)}</Badge>
                     <span className="flex items-center gap-1 text-sm text-muted-foreground">
                       <Clock className="h-3.5 w-3.5" />
-                      {job.start_time} ~ {job.end_time}
+                      {job.start_time.slice(0, 5)} ~ {job.end_time.slice(0, 5)}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">

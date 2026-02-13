@@ -3,14 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
-import { Camera, Save, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Camera, Save, Loader2, ShieldCheck, AlertTriangle, User, CreditCard, Briefcase, FileCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import imageCompression from "browser-image-compression";
 import { saveResume, getResume } from "./actions";
@@ -96,7 +94,6 @@ export default function ResumePage() {
     setMessage("");
 
     try {
-      // 1.5MB 이하로 압축
       const compressed = await imageCompression(file, {
         maxSizeMB: 1.5,
         maxWidthOrHeight: 1024,
@@ -166,7 +163,6 @@ export default function ResumePage() {
   const handleSave = async () => {
     setMessage("");
 
-    // Validation
     const errors: { label: string; id: string }[] = [];
     for (const f of fieldMap) {
       const value = form[f.key as keyof typeof form];
@@ -215,26 +211,29 @@ export default function ResumePage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-2xl font-bold">회원정보 관리</h1>
-      <p className="mt-1 text-muted-foreground">
-        회원정보를 등록하면 채용공고에 지원할 수 있습니다.
-      </p>
+    <div className="mx-auto max-w-2xl px-4 py-8 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">회원정보 관리</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          회원정보를 등록하면 채용공고에 지원할 수 있습니다.
+        </p>
+      </div>
 
       {message && (
-        <div className={`mt-4 rounded-md p-3 text-sm ${message.includes("실패") ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"}`}>
+        <div className={`rounded-xl p-3.5 text-sm font-medium ${message.includes("실패") || message.includes("오류") ? "bg-red-50 text-red-600 border border-red-200/50" : "bg-emerald-50 text-emerald-600 border border-emerald-200/50"}`}>
           {message}
         </div>
       )}
 
-      {/* 프로필 사진 */}
-      <div className="mt-6 flex flex-col items-center gap-2">
+      {/* Profile Photo */}
+      <div className="flex flex-col items-center gap-3">
         <div className="relative">
-          <div className="flex h-36 w-32 items-center justify-center overflow-hidden rounded-lg border bg-muted">
+          <div className="flex h-28 w-24 items-center justify-center overflow-hidden rounded-2xl border-2 border-white bg-gradient-to-br from-slate-100 to-slate-200 shadow-md">
             {profileImageUrl ? (
               <img src={profileImageUrl} alt="프로필" className="h-full w-full object-cover" />
             ) : (
-              <span className="text-3xl text-muted-foreground">
+              <span className="text-3xl font-medium text-muted-foreground">
                 {memberName ? memberName[0] : "?"}
               </span>
             )}
@@ -247,49 +246,45 @@ export default function ResumePage() {
             onChange={handlePhotoUpload}
           />
           <button
-            className="absolute bottom-1 right-1 rounded-full border bg-background p-1.5 shadow-sm"
+            className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-blue-500 shadow-sm transition-colors hover:bg-blue-600"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
           >
             {uploading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
             ) : (
-              <Camera className="h-4 w-4" />
+              <Camera className="h-3.5 w-3.5 text-white" />
             )}
           </button>
         </div>
-        <span className="text-sm font-semibold">사진등록</span>
+        <span className="text-xs font-medium text-muted-foreground">사진등록</span>
       </div>
 
-      {/* 기본 정보 */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="text-base">기본 정보</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {/* Section: Basic Info */}
+      <Card className="overflow-hidden py-0">
+        <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50/50 px-5 py-3 border-b">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500">
+            <User className="h-4 w-4 text-white" />
+          </div>
+          <h2 className="font-semibold text-sm">기본 정보</h2>
+        </div>
+        <CardContent className="space-y-4 p-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1.5 block text-sm font-medium">이름</label>
-              <Input
-                value={memberName}
-                readOnly
-                disabled
-                className="bg-muted"
-              />
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">이름</label>
+              <Input value={memberName} readOnly disabled className="bg-muted/50" />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium">전화번호</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">전화번호</label>
               <Input
                 value={memberPhone.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3")}
-                readOnly
-                disabled
-                className="bg-muted"
+                readOnly disabled className="bg-muted/50"
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1.5 block text-sm font-medium">생년월일</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">생년월일</label>
               <Input
                 id="field-birthDate"
                 type="date"
@@ -298,7 +293,7 @@ export default function ResumePage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium">성별</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">성별</label>
               <div id="field-gender" className="flex gap-2" tabIndex={-1}>
                 <Button
                   type="button"
@@ -322,7 +317,7 @@ export default function ResumePage() {
             </div>
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium">이메일</label>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">이메일</label>
             <Input
               id="field-email"
               type="email"
@@ -333,7 +328,7 @@ export default function ResumePage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1.5 block text-sm font-medium">거주지역</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">거주지역</label>
               <Input
                 id="field-region"
                 placeholder="서울 강남구"
@@ -342,7 +337,7 @@ export default function ResumePage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium">키 (cm)</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">키 (cm)</label>
               <Input
                 id="field-height"
                 type="number"
@@ -355,26 +350,27 @@ export default function ResumePage() {
         </CardContent>
       </Card>
 
-      {/* 신원 인증 */}
-      <Card className="mt-4">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">신원 인증</CardTitle>
-            {identityVerified ? (
-              <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-                <ShieldCheck className="mr-1 h-3 w-3" />
-                인증완료
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-muted-foreground">
-                미인증
-              </Badge>
-            )}
+      {/* Section: Identity Verification */}
+      <Card className="overflow-hidden py-0">
+        <div className="flex items-center justify-between bg-gradient-to-r from-emerald-50 to-teal-50/50 px-5 py-3 border-b">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500">
+              <ShieldCheck className="h-4 w-4 text-white" />
+            </div>
+            <h2 className="font-semibold text-sm">신원 인증</h2>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          {identityVerified ? (
+            <Badge className="bg-emerald-500/10 text-emerald-700 border-0 font-semibold">
+              <ShieldCheck className="mr-1 h-3 w-3" />
+              인증완료
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-muted-foreground">미인증</Badge>
+          )}
+        </div>
+        <CardContent className="space-y-4 p-5">
           <div>
-            <label className="mb-1.5 block text-sm font-medium">주민등록번호</label>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">주민등록번호</label>
             <div className="flex items-center gap-2">
               <Input
                 id="field-rrnFront"
@@ -387,7 +383,7 @@ export default function ResumePage() {
                 }}
                 disabled={identityVerified}
               />
-              <span className="text-muted-foreground">-</span>
+              <span className="text-muted-foreground font-bold">-</span>
               <Input
                 id="field-rrnBack"
                 type="password"
@@ -403,25 +399,22 @@ export default function ResumePage() {
             </div>
           </div>
 
-          <Separator />
-
-          <div>
-            <label className="mb-1.5 block text-sm font-medium">NICE 신용평가 본인인증</label>
+          <div className="border-t pt-4">
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">NICE 신용평가 본인인증</label>
             <p className="mb-3 text-xs text-muted-foreground">
               휴대폰 본인인증을 통해 신원을 확인합니다. (개발모드: 버튼 클릭 시 인증완료 처리)
             </p>
             {identityVerified ? (
-              <div className="flex items-center gap-2 rounded-md bg-green-50 p-3 text-sm text-green-700">
+              <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3.5 text-sm text-emerald-700 font-medium">
                 <ShieldCheck className="h-4 w-4" />
                 본인인증이 완료되었습니다.
               </div>
             ) : (
               <Button
                 type="button"
-                className="w-full bg-orange-500 text-white hover:bg-orange-600"
+                className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600"
                 disabled={verifying || !form.rrnFront || !form.rrnBack || form.rrnFront.length !== 6 || form.rrnBack.length !== 7}
                 onClick={() => {
-                  // 개발모드: 실제 NICE API 연동 없이 인증완료 처리
                   setVerifying(true);
                   setTimeout(() => {
                     setIdentityVerified(true);
@@ -447,20 +440,23 @@ export default function ResumePage() {
         </CardContent>
       </Card>
 
-      {/* 경험 */}
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle className="text-base">경험</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {/* Section: Experience */}
+      <Card className="overflow-hidden py-0">
+        <div className="flex items-center gap-3 bg-gradient-to-r from-violet-50 to-purple-50/50 px-5 py-3 border-b">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-500">
+            <Briefcase className="h-4 w-4 text-white" />
+          </div>
+          <h2 className="font-semibold text-sm">경험</h2>
+        </div>
+        <CardContent className="space-y-4 p-5">
           <div>
-            <label className="mb-1.5 block text-sm font-medium">관련 경험 유무</label>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">관련 경험 유무</label>
             <div className="flex gap-2">
               <Button
                 type="button"
                 variant={form.hasExperience === "yes" ? "default" : "outline"}
                 size="sm"
-                className={form.hasExperience === "yes" ? "bg-blue-600 hover:bg-blue-700" : ""}
+                className={form.hasExperience === "yes" ? "bg-violet-600 hover:bg-violet-700" : ""}
                 onClick={() => handleChange("hasExperience", "yes")}
               >
                 있음
@@ -469,7 +465,7 @@ export default function ResumePage() {
                 type="button"
                 variant={form.hasExperience === "no" ? "default" : "outline"}
                 size="sm"
-                className={form.hasExperience === "no" ? "bg-blue-600 hover:bg-blue-700" : ""}
+                className={form.hasExperience === "no" ? "bg-violet-600 hover:bg-violet-700" : ""}
                 onClick={() => handleChange("hasExperience", "no")}
               >
                 없음
@@ -478,7 +474,7 @@ export default function ResumePage() {
           </div>
           {form.hasExperience === "yes" && (
             <div>
-              <label className="mb-1.5 block text-sm font-medium">경험 내용</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">경험 내용</label>
               <Input
                 placeholder="웨딩홀 서빙 6개월, 케이터링 보조 3개월 등"
                 value={form.experience}
@@ -489,14 +485,17 @@ export default function ResumePage() {
         </CardContent>
       </Card>
 
-      {/* 은행 계좌 */}
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle className="text-base">급여 계좌</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {/* Section: Bank Account */}
+      <Card className="overflow-hidden py-0">
+        <div className="flex items-center gap-3 bg-gradient-to-r from-amber-50 to-orange-50/50 px-5 py-3 border-b">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-500">
+            <CreditCard className="h-4 w-4 text-white" />
+          </div>
+          <h2 className="font-semibold text-sm">급여 계좌</h2>
+        </div>
+        <CardContent className="space-y-4 p-5">
           <div>
-            <label className="mb-1.5 block text-sm font-medium">은행명</label>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">은행명</label>
             <Select value={form.bankName} onValueChange={(value) => handleChange("bankName", value)}>
               <SelectTrigger id="field-bankName">
                 <SelectValue placeholder="은행을 선택하세요" />
@@ -527,7 +526,7 @@ export default function ResumePage() {
             </Select>
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium">예금주</label>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">예금주</label>
             <Input
               id="field-accountHolder"
               placeholder="홍길동"
@@ -536,7 +535,7 @@ export default function ResumePage() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium">계좌번호</label>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">계좌번호</label>
             <Input
               id="field-accountNumber"
               placeholder="0000-0000-0000-00"
@@ -547,43 +546,46 @@ export default function ResumePage() {
         </CardContent>
       </Card>
 
-      {/* 개인정보 수집 및 이용 동의 */}
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle className="text-base">개인정보 수집 및 이용 동의</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="max-h-48 overflow-y-auto rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
+      {/* Section: Privacy */}
+      <Card className="overflow-hidden py-0">
+        <div className="flex items-center gap-3 bg-gradient-to-r from-slate-50 to-gray-50/50 px-5 py-3 border-b">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-slate-500 to-gray-600">
+            <FileCheck className="h-4 w-4 text-white" />
+          </div>
+          <h2 className="font-semibold text-sm">개인정보 수집 및 이용 동의</h2>
+        </div>
+        <CardContent className="space-y-3 p-5">
+          <div className="max-h-48 overflow-y-auto rounded-xl border bg-muted/20 p-4 text-xs leading-relaxed text-muted-foreground">
             <p>
               회사는 「개인정보 보호법」 등 관련 법령에 따라 회원정보 등록을 위해 아래와 같이 개인정보를 수집·이용합니다.
             </p>
-            <p className="mt-2 font-medium text-foreground">수집 목적</p>
+            <p className="mt-2 font-semibold text-foreground">수집 목적</p>
             <ul className="ml-4 list-disc">
               <li>채용 지원 및 인재풀 관리</li>
               <li>채용 관련 안내 및 연락</li>
             </ul>
-            <p className="mt-2 font-medium text-foreground">수집 항목</p>
+            <p className="mt-2 font-semibold text-foreground">수집 항목</p>
             <ul className="ml-4 list-disc">
               <li>필수 항목: 이름, 성별, 생년월일, 연락처(전화번호, 이메일), 거주지역, 주민등록번호, 키 등 회원정보에 기재한 정보</li>
             </ul>
-            <p className="mt-2 font-medium text-foreground">보유 및 이용 기간</p>
+            <p className="mt-2 font-semibold text-foreground">보유 및 이용 기간</p>
             <ul className="ml-4 list-disc">
               <li>회원정보 등록일로부터 회원 탈퇴 또는 회원정보 삭제 시까지 보관</li>
               <li>단, 관계 법령에 따라 보존이 필요한 경우 해당 법령에서 정한 기간 동안 보관</li>
             </ul>
-            <p className="mt-2 font-medium text-foreground">동의 거부 권리 및 불이익 안내</p>
+            <p className="mt-2 font-semibold text-foreground">동의 거부 권리 및 불이익 안내</p>
             <ul className="ml-4 list-disc">
               <li>개인정보 수집 및 이용에 대한 동의를 거부할 수 있습니다.</li>
               <li>다만, 동의를 거부할 경우 회원정보 등록 및 채용 지원 서비스 이용이 제한될 수 있습니다.</li>
             </ul>
           </div>
-          <label className="flex cursor-pointer items-center gap-2">
+          <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 transition-colors hover:bg-muted/30">
             <input
               id="field-privacy"
               type="checkbox"
               checked={privacyAgreed}
               onChange={(e) => setPrivacyAgreed(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300"
+              className="h-4 w-4 rounded border-gray-300 accent-blue-600"
             />
             <span className="text-sm font-medium">
               위 개인정보 수집 및 이용에 동의합니다.
@@ -592,9 +594,12 @@ export default function ResumePage() {
         </CardContent>
       </Card>
 
-      <Separator className="my-6" />
-
-      <Button className="w-full bg-orange-500 hover:bg-orange-600" size="lg" onClick={handleSave} disabled={saving}>
+      {/* Submit */}
+      <Button
+        className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/20 h-12 text-base font-semibold"
+        onClick={handleSave}
+        disabled={saving}
+      >
         {saving ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
@@ -602,12 +607,15 @@ export default function ResumePage() {
         )}
         {saving ? "제출 중..." : "제출하기"}
       </Button>
+
       {/* Validation Modal */}
       <Dialog open={showValidationModal} onOpenChange={setShowValidationModal}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+              </div>
               입력되지 않은 항목이 있습니다
             </DialogTitle>
             <DialogDescription>
@@ -621,17 +629,17 @@ export default function ResumePage() {
               return (
                 <button
                   key={label}
-                  className="flex w-full items-center gap-2 rounded-md border p-2.5 text-sm text-left transition-colors hover:bg-muted"
+                  className="flex w-full items-center gap-2.5 rounded-xl border p-3 text-sm text-left transition-colors hover:bg-muted/50"
                   onClick={() => scrollToField(fieldId)}
                 >
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500" />
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />
                   {label}
                 </button>
               );
             })}
           </div>
           <DialogClose asChild>
-            <Button variant="outline" className="w-full mt-2">닫기</Button>
+            <Button variant="outline" className="w-full mt-2 rounded-xl">닫기</Button>
           </DialogClose>
         </DialogContent>
       </Dialog>

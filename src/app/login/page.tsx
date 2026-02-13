@@ -31,6 +31,7 @@ export default function LoginPage() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotError, setForgotError] = useState("");
   const [forgotSent, setForgotSent] = useState(false);
+  const [tempPassword, setTempPassword] = useState("");
 
   // 임시 비밀번호 로그인 추적
   const [isTempLogin, setIsTempLogin] = useState(false);
@@ -90,15 +91,17 @@ export default function LoginPage() {
       return;
     }
 
+    setTempPassword(result.tempPassword ?? "");
     setForgotSent(true);
-    toast.success("임시 비밀번호가 이메일로 전송되었습니다.");
   };
 
   const handleBackToLogin = () => {
+    setPassword(tempPassword);
     setShowForgot(false);
     setForgotSent(false);
     setForgotEmail("");
     setForgotError("");
+    setTempPassword("");
     setIsTempLogin(true);
   };
 
@@ -147,14 +150,14 @@ export default function LoginPage() {
               </>
             ) : (
               <div className="space-y-4">
-                <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4 text-center">
-                  <Mail className="mx-auto mb-2 h-8 w-8 text-green-600" />
-                  <p className="font-medium text-green-700">이메일로 전송되었습니다</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {forgotEmail}
+                <div className="rounded-lg border-2 border-green-200 bg-green-50 p-5 text-center">
+                  <KeyRound className="mx-auto mb-2 h-8 w-8 text-green-600" />
+                  <p className="font-medium text-green-700">임시 비밀번호가 발급되었습니다</p>
+                  <p className="mt-3 text-3xl font-bold tracking-[0.3em] text-green-800">
+                    {tempPassword}
                   </p>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    이메일에서 임시 비밀번호를 확인 후 로그인해주세요.
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    이 비밀번호로 로그인 후 반드시 비밀번호를 변경해주세요.
                   </p>
                 </div>
                 <Button className="w-full" onClick={handleBackToLogin}>

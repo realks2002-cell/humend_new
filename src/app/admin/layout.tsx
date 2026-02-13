@@ -45,7 +45,7 @@ export default function AdminLayout({
       {/* Sidebar */}
       <aside
         className={cn(
-          "hidden shrink-0 border-r bg-muted/20 transition-all duration-200 md:block",
+          "hidden shrink-0 border-r bg-gradient-to-b from-slate-50/80 to-white transition-all duration-200 md:block",
           collapsed ? "w-16" : "w-56"
         )}
       >
@@ -58,7 +58,7 @@ export default function AdminLayout({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
             onClick={() => setCollapsed(!collapsed)}
           >
             {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
@@ -77,9 +77,9 @@ export default function AdminLayout({
                     <Link
                       href={link.href}
                       className={cn(
-                        "flex items-center justify-center rounded-lg p-2.5 transition-all",
+                        "flex items-center justify-center rounded-xl p-2.5 transition-all",
                         isActive
-                          ? "bg-primary text-primary-foreground shadow-sm"
+                          ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
                           : "text-muted-foreground hover:bg-accent hover:text-foreground"
                       )}
                     >
@@ -98,9 +98,9 @@ export default function AdminLayout({
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+                  "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 )}
               >
@@ -113,7 +113,7 @@ export default function AdminLayout({
       </aside>
 
       {/* Mobile Nav */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white/95 backdrop-blur-lg md:hidden">
         <nav className="flex justify-around py-1.5">
           {sidebarLinks.map((link) => {
             const isActive =
@@ -125,12 +125,12 @@ export default function AdminLayout({
                   <Link
                     href={link.href}
                     className={cn(
-                      "flex flex-col items-center gap-0.5 rounded-md px-2 py-1 text-xs transition-colors",
-                      isActive ? "text-primary" : "text-muted-foreground"
+                      "flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-xs transition-colors",
+                      isActive ? "text-blue-600" : "text-muted-foreground"
                     )}
                   >
                     <link.icon className={cn("h-5 w-5", isActive && "drop-shadow-sm")} />
-                    <span className="truncate text-[10px]">{link.label.replace(" 관리", "")}</span>
+                    <span className="truncate text-[10px] font-medium">{link.label.replace(" 관리", "")}</span>
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">

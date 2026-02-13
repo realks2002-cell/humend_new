@@ -105,6 +105,7 @@ export interface WorkRecord {
   status: string;
   signature_url: string | null;
   contract_pdf_url: string | null;
+  wage_type: string | null;
   signed_at: string | null;
   admin_memo: string | null;
   created_at: string;

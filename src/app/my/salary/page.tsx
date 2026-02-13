@@ -1,10 +1,10 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, AlertCircle } from "lucide-react";
+import { AlertCircle, CreditCard, Wallet } from "lucide-react";
 import { MonthSelector } from "@/components/ui/month-selector";
 import { getMyWorkRecords, getMyProfile } from "@/lib/supabase/queries";
 import { formatDate, formatCurrency, formatAccount } from "@/lib/utils/format";
@@ -16,20 +16,23 @@ interface Props {
   searchParams: Promise<{ month?: string }>;
 }
 
-const statusStyle: Record<string, "secondary" | "default" | "destructive"> = {
-  "대기": "secondary",
-  "확정": "default",
-  "지급완료": "default",
+const statusStyle: Record<string, string> = {
+  "대기": "bg-amber-500/10 text-amber-700",
+  "확정": "bg-emerald-500/10 text-emerald-700",
+  "지급완료": "bg-blue-500/10 text-blue-700",
 };
 
 export default async function SalaryPage({ searchParams }: Props) {
   const params = await searchParams;
   const now = new Date();
   const currentMonth = params.month ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const [records, profile] = await Promise.all([
+  const [allRecords, profile] = await Promise.all([
     getMyWorkRecords(currentMonth),
     getMyProfile(),
   ]);
+
+  // 서명 안된 레코드만 표시 (서명 완료된 건은 근무내역 페이지에서 확인)
+  const records = allRecords.filter((r) => !r.signature_url);
 
   const worker = {
     name: profile?.name ?? "",
@@ -40,34 +43,41 @@ export default async function SalaryPage({ searchParams }: Props) {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <Link href="/my" className="mb-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="mr-1 h-4 w-4" />
-        마이페이지
-      </Link>
-      <h1 className="text-2xl font-bold">급여지급요청</h1>
+    <div className="mx-auto max-w-3xl px-4 py-8 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">급여지급요청</h1>
+      </div>
 
-      {/* 급여/비용 청구 안내 */}
-      <Card className="mt-4 border-blue-400 bg-blue-50/30">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">급여/비용 청구</CardTitle>
-          <p className="text-xs text-muted-foreground">급여/비용 청구 전 계좌 정보를 확인바랍니다.</p>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between rounded-lg border bg-background p-3 text-sm">
-            <span className="flex items-center gap-4">
-              <span className="font-medium">{profile?.bank_name ?? "-"}</span>
-              <span className="font-medium">{profile?.account_number ? formatAccount(profile.account_number) : "-"}</span>
+      {/* Account Info Card */}
+      <Card className="relative overflow-hidden border-blue-200/80 py-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50/30 to-background" />
+        <CardContent className="relative p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 shadow-sm">
+              <CreditCard className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-sm">급여/비용 청구</h2>
+              <p className="text-xs text-muted-foreground">급여/비용 청구 전 계좌 정보를 확인바랍니다.</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border bg-white/80 px-4 py-3 text-sm">
+            <span className="flex items-center gap-3">
+              <span className="font-semibold">{profile?.bank_name ?? "-"}</span>
+              <span className="text-muted-foreground">{profile?.account_number ? formatAccount(profile.account_number) : "-"}</span>
               <span className="font-medium">{profile?.account_holder ?? profile?.name ?? "-"}</span>
             </span>
             <Link href="/my/resume">
-              <Button size="sm" className="h-7 text-xs shrink-0 ml-2 bg-blue-600 text-white hover:bg-blue-700">
+              <Button size="sm" className="h-7 text-xs shrink-0 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
                 수정
               </Button>
             </Link>
           </div>
-          <div className="flex gap-2 rounded-lg border border-orange-200 bg-orange-50/50 p-3 text-xs text-muted-foreground">
-            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-orange-500" />
+
+          <div className="flex gap-2.5 rounded-xl border border-amber-200/80 bg-amber-50/50 p-3 text-xs text-muted-foreground">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
             <ul className="space-y-0.5">
               <li>식사, 휴게시간은 무급(임금에서 제외)입니다.</li>
               <li>급여는 근무 다음주 월~수요일 19시까지 지급됩니다.</li>
@@ -77,59 +87,65 @@ export default async function SalaryPage({ searchParams }: Props) {
         </CardContent>
       </Card>
 
-      <div className="mt-4">
-        <MonthSelector currentMonth={currentMonth} basePath="/my/salary" />
-      </div>
+      <MonthSelector currentMonth={currentMonth} basePath="/my/salary" />
 
-      <h2 className="mt-6 text-lg font-semibold">근무기록</h2>
+      {/* Records */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider px-1">근무기록</h2>
 
-      {records.length === 0 ? (
-        <Card className="mt-6 border-gray-400">
-          <CardContent className="py-8 text-center text-muted-foreground">
-            해당 월의 근무 내역이 없습니다.
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="mt-3 space-y-3">
-          {records.map((r) => {
-            const p = r.payments;
-            const display = p ?? r;
-            const displayStatus = p?.status ?? r.status;
-            const signed = !!r.signature_url;
+        {records.length === 0 ? (
+          <Card className="py-0">
+            <CardContent className="py-12 text-center">
+              <Wallet className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground">해당 월의 근무 내역이 없습니다.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {records.map((r) => {
+              const p = r.payments;
+              const display = p ?? r;
+              const displayStatus = p?.status ?? r.status;
+              const signed = !!r.signature_url;
 
-            return (
-              <Card key={r.id} className={signed ? "border-green-400 bg-green-50/30" : "border-gray-400"}>
-                <CardContent className="flex items-center justify-between py-4">
-                  <div>
-                    <p className="text-sm font-medium">{r.client_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(r.work_date)} {r.start_time.slice(0, 5)}~{r.end_time.slice(0, 5)}
-                    </p>
-                    <div className="mt-1 flex items-center gap-1.5">
-                      <Badge variant={statusStyle[displayStatus] ?? "secondary"} className={`text-[10px] ${statusStyle[displayStatus] === "default" ? "bg-green-600 hover:bg-green-600" : ""}`}>
-                        {displayStatus}
-                      </Badge>
-                      {signed && (
-                        <Badge className="bg-green-600 text-[10px] text-white hover:bg-green-600">
-                          계약완료
+              return (
+                <Card
+                  key={r.id}
+                  className={`overflow-hidden transition-all py-0 ${signed ? "border-emerald-200/80" : ""}`}
+                >
+                  {signed && <div className="h-0.5 bg-gradient-to-r from-emerald-400 to-teal-400" />}
+                  <CardContent className="flex items-center justify-between p-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold truncate">{r.client_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(r.work_date)} {r.start_time.slice(0, 5)}~{r.end_time.slice(0, 5)}
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        <Badge className={`text-[10px] font-semibold border-0 ${statusStyle[displayStatus] ?? "bg-muted text-muted-foreground"}`}>
+                          {displayStatus}
                         </Badge>
+                        {signed && (
+                          <Badge className="bg-emerald-500/10 text-emerald-700 text-[10px] font-semibold border-0">
+                            계약완료
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {signed && <ContractViewModal record={r} worker={worker} />}
+                      {p ? (
+                        <PayslipModal record={r} />
+                      ) : signed ? null : (
+                        <ContractModal record={r} worker={worker} />
                       )}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {signed && <ContractViewModal record={r} worker={worker} />}
-                    {p ? (
-                      <PayslipModal record={r} />
-                    ) : signed ? null : (
-                      <ContractModal record={r} worker={worker} />
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

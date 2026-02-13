@@ -5,13 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { getAllWorkRecords } from "@/lib/supabase/queries";
 import { createAdminClient } from "@/lib/supabase/server";
 import { formatDate, formatCurrency } from "@/lib/utils/format";
+import { FileSignature, FileText } from "lucide-react";
 import { ContractViewModal } from "./contract-view-modal";
 
 export default async function AdminContractsPage() {
   const records = await getAllWorkRecords();
   const signed = records.filter((r) => r.signature_url);
 
-  // 서명 이미지 signed URL 생성
   const admin = createAdminClient();
   const signatureUrls: Record<string, string> = {};
   for (const r of signed) {
@@ -26,44 +26,55 @@ export default async function AdminContractsPage() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">계약 관리</h1>
-      <p className="mt-1 text-muted-foreground">서명 완료된 계약서를 확인합니다.</p>
-
-      <div className="mt-6">
-        <Badge variant="default">{signed.length}건 완료</Badge>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">계약 관리</h1>
+          <p className="mt-1 text-sm text-muted-foreground">서명 완료된 계약서를 확인합니다.</p>
+        </div>
+        {signed.length > 0 && (
+          <Badge className="bg-emerald-500/10 text-emerald-700 border-0 font-semibold">
+            <FileSignature className="mr-1 h-3 w-3" />
+            {signed.length}건 완료
+          </Badge>
+        )}
       </div>
 
-      <Card className="mt-4">
-        <CardContent className="pt-4">
+      <Card className="overflow-hidden py-0">
+        <CardContent className="p-0">
           {signed.length === 0 ? (
-            <p className="py-8 text-center text-muted-foreground">완료된 계약서가 없습니다.</p>
+            <div className="py-16 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                <FileText className="h-7 w-7 text-muted-foreground/50" />
+              </div>
+              <p className="font-medium">완료된 계약서가 없습니다.</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-left text-muted-foreground">
-                    <th className="pb-2 pr-4">이름</th>
-                    <th className="pb-2 pr-4">고객사</th>
-                    <th className="pb-2 pr-4 hidden sm:table-cell">근무일</th>
-                    <th className="pb-2 pr-4 text-right hidden md:table-cell">실수령액</th>
-                    <th className="pb-2">상태</th>
+                  <tr className="border-b bg-gradient-to-r from-slate-50 to-gray-50/50 text-left text-xs font-semibold text-muted-foreground">
+                    <th className="px-5 py-3">이름</th>
+                    <th className="px-5 py-3">고객사</th>
+                    <th className="px-5 py-3 hidden sm:table-cell">근무일</th>
+                    <th className="px-5 py-3 text-right hidden md:table-cell">실수령액</th>
+                    <th className="px-5 py-3">상태</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y">
                   {signed.map((r) => (
-                    <tr key={r.id} className="border-b">
-                      <td className="py-2 pr-4">
+                    <tr key={r.id} className="transition-colors hover:bg-muted/30">
+                      <td className="px-5 py-3">
                         <ContractViewModal
                           record={r}
                           signatureUrl={signatureUrls[r.id] ?? null}
                         />
                       </td>
-                      <td className="py-2 pr-4">{r.client_name}</td>
-                      <td className="py-2 pr-4 hidden sm:table-cell">{formatDate(r.work_date)}</td>
-                      <td className="py-2 pr-4 text-right hidden md:table-cell">{formatCurrency(r.net_pay)}</td>
-                      <td className="py-2">
-                        <Badge variant="default">체결완료</Badge>
+                      <td className="px-5 py-3 font-medium">{r.client_name}</td>
+                      <td className="px-5 py-3 hidden sm:table-cell text-muted-foreground">{formatDate(r.work_date)}</td>
+                      <td className="px-5 py-3 text-right hidden md:table-cell font-semibold">{formatCurrency(r.net_pay)}</td>
+                      <td className="px-5 py-3">
+                        <Badge className="bg-emerald-500/10 text-emerald-700 border-0 text-[10px] font-semibold">체결완료</Badge>
                       </td>
                     </tr>
                   ))}

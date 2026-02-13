@@ -10,24 +10,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 개발 모드에서는 인증 리다이렉트 스킵 (관리자/회원 동시 접근 허용)
-  if (process.env.NODE_ENV === "development") {
-    return NextResponse.next();
-  }
-
   const { pathname } = request.nextUrl;
 
-  // 공개 페이지는 인증 불필요 - 바로 통과
-  const publicPaths = ["/", "/about", "/jobs", "/login", "/signup", "/admin/login"];
-  const isPublic =
-    publicPaths.includes(pathname) ||
-    pathname.startsWith("/jobs/");
-
-  if (isPublic) {
-    return NextResponse.next();
-  }
-
-  // 인증이 필요한 경로만 Supabase 호출
+  // 항상 Supabase 세션 갱신 (토큰 refresh) 수행
   let supabaseResponse = NextResponse.next({ request });
 
   try {
@@ -52,7 +37,23 @@ export async function middleware(request: NextRequest) {
       }
     );
 
+    // getUser() 호출로 토큰 갱신 트리거
     const { data: { user } } = await supabase.auth.getUser();
+
+    // 개발 모드에서는 리다이렉트 스킵 (토큰 갱신은 위에서 완료)
+    if (process.env.NODE_ENV === "development") {
+      return supabaseResponse;
+    }
+
+    // 공개 페이지는 리다이렉트 불필요
+    const publicPaths = ["/", "/about", "/jobs", "/login", "/signup", "/admin/login"];
+    const isPublic =
+      publicPaths.includes(pathname) ||
+      pathname.startsWith("/jobs/");
+
+    if (isPublic) {
+      return supabaseResponse;
+    }
 
     // /my/* → 로그인 필요
     if (pathname.startsWith("/my") && !user) {

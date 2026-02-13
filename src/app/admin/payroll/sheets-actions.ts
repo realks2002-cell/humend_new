@@ -64,7 +64,7 @@ export async function exportPayrollToSheets(month: string) {
       "시작시간", "종료시간", "휴게시간", "근무시간", "초과수당", "주휴수당", "시급",
       "기본급", "총지급액", "국민연금", "건강보험", "장기요양", "고용보험", "소득세", "공제합계",
       "실수령액", "계좌(은행)", "계좌(번호)",
-      "원본_총지급액", "원본_실수령액", "확정여부", "메모"
+      "원본_총지급액", "원본_실수령액", "확정여부", "메모", "급여유형"
     ];
 
     const rows = recs.map((r) => {
@@ -114,6 +114,7 @@ export async function exportPayrollToSheets(month: string) {
         r.net_pay, // 원본_실수령액
         "N", // 확정여부 (항상 미확정으로 시작)
         (r.admin_memo ?? "") as string, // 메모
+        r.wage_type ?? "시급", // 급여유형
       ];
     });
 

@@ -77,46 +77,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="border-y bg-muted/30 px-4 py-12">
-        <div className="mx-auto grid max-w-3xl grid-cols-3 gap-4">
-          {stats.map((stat) => (
-            <div key={stat.label} className="text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-background shadow-sm">
-                <stat.icon className={`h-6 w-6 ${stat.color}`} />
-              </div>
-              <p className="text-3xl font-bold md:text-4xl">
-                <CountUp end={stat.value} suffix={stat.suffix} />
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground md:text-sm">
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Services */}
-      <section className="mx-auto max-w-5xl px-4 py-20">
-        <h2 className="mb-2 text-center text-2xl font-bold md:text-3xl">서비스 소개</h2>
-        <p className="mb-12 text-center text-muted-foreground">Humend HR이 제공하는 핵심 서비스</p>
-        <div className="grid gap-6 md:grid-cols-3">
-          {services.map((service) => (
-            <Card key={service.title} className="group transition-all hover:-translate-y-1 hover:shadow-lg">
-              <CardContent className="pt-6">
-                <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl ${service.color}`}>
-                  <service.icon className="h-6 w-6" />
-                </div>
-                <h3 className="mb-2 text-lg font-semibold">{service.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {service.description}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
       {/* Recent Jobs Preview */}
       <section className="bg-muted/20 px-4 py-20">
         <div className="mx-auto max-w-5xl">
@@ -179,6 +139,46 @@ export default async function Home() {
               ))}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Stats */}
+      <section className="border-y bg-muted/30 px-4 py-12">
+        <div className="mx-auto grid max-w-3xl grid-cols-3 gap-4">
+          {stats.map((stat) => (
+            <div key={stat.label} className="text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-background shadow-sm">
+                <stat.icon className={`h-6 w-6 ${stat.color}`} />
+              </div>
+              <p className="text-3xl font-bold md:text-4xl">
+                <CountUp end={stat.value} suffix={stat.suffix} />
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground md:text-sm">
+                {stat.label}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Services */}
+      <section className="mx-auto max-w-5xl px-4 py-20">
+        <h2 className="mb-2 text-center text-2xl font-bold md:text-3xl">서비스 소개</h2>
+        <p className="mb-12 text-center text-muted-foreground">Humend HR이 제공하는 핵심 서비스</p>
+        <div className="grid gap-6 md:grid-cols-3">
+          {services.map((service) => (
+            <Card key={service.title} className="group transition-all hover:-translate-y-1 hover:shadow-lg">
+              <CardContent className="pt-6">
+                <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl ${service.color}`}>
+                  <service.icon className="h-6 w-6" />
+                </div>
+                <h3 className="mb-2 text-lg font-semibold">{service.title}</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {service.description}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </section>
     </div>

@@ -1,11 +1,14 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
-  FileText, ClipboardList, Calendar, ArrowRight,
-  Clock, Wallet, FileSignature, User,
+  ClipboardList, Calendar, ArrowRight,
+  Clock, Wallet, User, ChevronRight,
+  TrendingUp, AlertCircle,
+  Settings, FileEdit, UserX,
 } from "lucide-react";
 import { getMyProfile, getMyApplications, getMyWorkRecords } from "@/lib/supabase/queries";
 import { formatDate, formatCurrency } from "@/lib/utils/format";
@@ -31,9 +34,9 @@ function getDdayColor(dateStr: string): string {
   today.setHours(0, 0, 0, 0);
   const date = new Date(dateStr);
   const diff = Math.floor((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (diff === 0) return "bg-green-600 text-white";
-  if (diff <= 3 && diff > 0) return "bg-orange-500 text-white";
-  return "bg-gray-600 text-white";
+  if (diff === 0) return "bg-emerald-500 text-white";
+  if (diff <= 3 && diff > 0) return "bg-amber-500 text-white";
+  return "bg-muted text-muted-foreground";
 }
 
 export default async function MyPage() {
@@ -46,7 +49,6 @@ export default async function MyPage() {
     getMyWorkRecords(currentMonth),
   ]);
 
-  // 프로필 사진 signed URL
   let profileImageUrl: string | null = null;
   if (profile?.profile_image_url) {
     const { createAdminClient } = await import("@/lib/supabase/server");
@@ -61,7 +63,6 @@ export default async function MyPage() {
   const approvedCount = applications.filter((a) => a.status === "승인").length;
   const hasResume = !!(profile?.name && profile?.bank_name);
 
-  // Profile completion calculation
   const profileFields = [
     profile?.name,
     profile?.phone,
@@ -78,173 +79,201 @@ export default async function MyPage() {
   const monthlyNet = records.reduce((s, r) => s + r.net_pay, 0);
 
   const quickLinks = [
-    { href: "/my/resume", icon: User, label: "프로필 관리", desc: "회원정보, 비밀번호, 계정 관리", color: "text-gray-600", isProfile: true },
-    { href: "/my/applications", icon: ClipboardList, label: "근무신청 조회", desc: "내 지원 현황을 확인하세요", color: "text-blue-500" },
-    { href: "/my/history", icon: Clock, label: "근무내역", desc: "월별 근무내역 조회", color: "text-orange-500" },
-    { href: "/my/salary", icon: Wallet, label: "급여신청", desc: "근무 건 계약체결 및 급여신청", color: "text-gray-600" },
-    // { href: "/my/contracts", icon: FileSignature, label: "계약서", desc: "서명한 계약서 보기", color: "text-red-500" },
+    { href: "/my/resume", icon: User, label: "프로필 관리", desc: "회원정보 등록/수정", gradient: "from-blue-500/10 to-indigo-500/10", iconBg: "bg-blue-500/10", iconColor: "text-blue-600" },
+    { href: "/my/applications", icon: ClipboardList, label: "근무신청 조회", desc: "내 지원 현황 확인", gradient: "from-violet-500/10 to-purple-500/10", iconBg: "bg-violet-500/10", iconColor: "text-violet-600" },
+    { href: "/my/history", icon: Clock, label: "근무내역", desc: "월별 근무내역 조회", gradient: "from-amber-500/10 to-orange-500/10", iconBg: "bg-amber-500/10", iconColor: "text-amber-600" },
+    { href: "/my/salary", icon: Wallet, label: "급여신청", desc: "계약체결 및 급여신청", gradient: "from-emerald-500/10 to-teal-500/10", iconBg: "bg-emerald-500/10", iconColor: "text-emerald-600" },
+  ];
+
+  const statCards = [
+    { label: "대기중", value: pendingCount, icon: ClipboardList, gradient: "from-blue-600 to-indigo-600", lightBg: "from-blue-50 to-indigo-50" },
+    { label: "승인됨", value: approvedCount, icon: Calendar, gradient: "from-emerald-600 to-teal-600", lightBg: "from-emerald-50 to-teal-50" },
+    { label: "이번 달 급여", value: null, displayValue: formatCurrency(monthlyNet), icon: TrendingUp, gradient: "from-violet-600 to-purple-600", lightBg: "from-violet-50 to-purple-50" },
   ];
 
   return (
-    <div className="mx-auto max-w-3xl animate-in fade-in duration-500 px-4 py-8">
-      {/* Profile Header */}
-      <div className="flex items-center gap-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10">
-          {profileImageUrl ? (
-            <img src={profileImageUrl} alt="프로필" className="h-full w-full object-cover" />
-          ) : (
-            <User className="h-7 w-7 text-primary" />
-          )}
-        </div>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">
-            {profile?.name ? `${profile.name}님 환영합니다.` : "환영합니다."}
-          </h1>
-          <p className="text-sm text-muted-foreground">오늘도 좋은 하루 되세요.</p>
-          {profilePercent < 100 && (
-            <div className="mt-2">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>프로필 완성도</span>
-                <span className="font-medium">{profilePercent}%</span>
-              </div>
-              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${profilePercent}%` }}
-                />
-              </div>
+    <div className="mx-auto max-w-3xl px-4 py-8 space-y-8">
+      {/* Profile Hero Section */}
+      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-slate-50 via-white to-blue-50/50 p-6">
+        <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-gradient-to-br from-blue-500/5 to-indigo-500/5" />
+        <div className="absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-gradient-to-br from-violet-500/5 to-purple-500/5" />
+
+        <div className="relative flex items-start gap-5">
+          {/* Avatar */}
+          <div className="relative">
+            <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white bg-gradient-to-br from-blue-100 to-indigo-100 shadow-md">
+              {profileImageUrl ? (
+                <img src={profileImageUrl} alt="프로필" className="h-full w-full object-cover" />
+              ) : (
+                <User className="h-8 w-8 text-blue-600" />
+              )}
             </div>
-          )}
+            {profilePercent === 100 && (
+              <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-emerald-500 shadow-sm">
+                <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+              {profile?.name ? `${profile.name}님, 환영합니다` : "환영합니다"}
+            </h1>
+            <p className="mt-0.5 text-sm text-muted-foreground">오늘도 좋은 하루 되세요.</p>
+
+            {/* Profile Completion */}
+            {profilePercent < 100 && (
+              <div className="mt-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">프로필 완성도</span>
+                  <span className="font-semibold text-blue-600">{profilePercent}%</span>
+                </div>
+                <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-700 ease-out"
+                    style={{ width: `${profilePercent}%` }}
+                  />
+                </div>
+                <Link
+                  href="/my/resume"
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  프로필 완성하기
+                  <ChevronRight className="h-3 w-3" />
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Profile Action Badges */}
+        <div className="relative mt-4 flex flex-wrap gap-2">
+          <Link href="/my/resume">
+            <Badge variant="secondary" className="cursor-pointer gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors hover:bg-blue-50 hover:text-blue-700">
+              <FileEdit className="h-3 w-3" />
+              회원정보 수정
+            </Badge>
+          </Link>
+          <Badge variant="secondary" className="cursor-pointer gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors hover:bg-slate-200">
+            <Settings className="h-3 w-3" />
+            비밀번호 수정
+          </Badge>
+          <Badge variant="secondary" className="cursor-pointer gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors hover:bg-red-50 hover:text-red-600">
+            <UserX className="h-3 w-3" />
+            회원탈퇴
+          </Badge>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="mt-6 grid grid-cols-3 gap-4">
-        <Card className="border-blue-300 bg-gradient-to-br from-blue-50/50 to-background">
-          <CardContent className="pt-4 text-center">
-            <ClipboardList className="mx-auto mb-1 h-5 w-5 text-blue-500" />
-            <p className="text-2xl font-bold">{pendingCount}</p>
-            <p className="text-xs text-muted-foreground">대기중</p>
-          </CardContent>
-        </Card>
-        <Card className="border-orange-300 bg-gradient-to-br from-orange-50/50 to-background">
-          <CardContent className="pt-4 text-center">
-            <Calendar className="mx-auto mb-1 h-5 w-5 text-orange-500" />
-            <p className="text-2xl font-bold">{approvedCount}</p>
-            <p className="text-xs text-muted-foreground">승인됨</p>
-          </CardContent>
-        </Card>
-        <Card className="border-gray-400 bg-gradient-to-br from-gray-50/50 to-background">
-          <CardContent className="pt-4 text-center">
-            <Wallet className="mx-auto mb-1 h-5 w-5 text-gray-600" />
-            <p className="text-lg font-bold">{formatCurrency(monthlyNet)}</p>
-            <p className="text-xs text-muted-foreground">이번 달</p>
-          </CardContent>
-        </Card>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        {statCards.map((stat) => (
+          <div
+            key={stat.label}
+            className="group relative overflow-hidden rounded-2xl border bg-card p-4 transition-all duration-300 hover:shadow-md"
+          >
+            <div className={`absolute inset-0 bg-gradient-to-br ${stat.lightBg} opacity-40`} />
+            <div className="relative">
+              <div className={`inline-flex rounded-xl bg-gradient-to-br ${stat.gradient} p-2 shadow-sm`}>
+                <stat.icon className="h-4 w-4 text-white" />
+              </div>
+              <p className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
+                {stat.displayValue ?? stat.value}
+              </p>
+              <p className="mt-0.5 text-xs font-medium text-muted-foreground">{stat.label}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Quick Links */}
-      <div className="mt-6 grid gap-3 md:grid-cols-2">
-        {quickLinks.map((link) => {
-          if ((link as Record<string, unknown>).isProfile) {
-            return (
-              <Card key={link.href} className="border-gray-400 transition-all hover:shadow-md">
-                <CardContent className="py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/50">
-                      <link.icon className={`h-5 w-5 ${link.color}`} />
-                    </div>
-                    <div>
-                      <p className="font-medium">{link.label}</p>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Link href="/my/resume">
-                      <Badge className="cursor-pointer bg-blue-600 px-3 py-1 text-white hover:bg-blue-700">
-                        회원정보 등록/수정
-                      </Badge>
-                    </Link>
-                    <Badge className="cursor-pointer bg-blue-600 px-3 py-1 text-white hover:bg-blue-700">
-                      비밀번호 수정
-                    </Badge>
-                    <Badge className="cursor-pointer bg-blue-600 px-3 py-1 text-white hover:bg-blue-700">
-                      회원탈퇴
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          }
-          return (
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider px-1">바로가기</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {quickLinks.map((link) => (
             <Link key={link.href} href={link.href}>
-              <Card className="group h-full border-gray-400 transition-all hover:-translate-y-0.5 hover:shadow-md">
-                <CardContent className="flex h-full items-center justify-between py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/50 transition-colors group-hover:bg-primary/10">
-                      <link.icon className={`h-5 w-5 ${link.color} transition-transform group-hover:scale-110`} />
-                    </div>
-                    <div>
-                      <p className="font-medium">{link.label}</p>
-                      <p className="text-sm text-muted-foreground">{link.desc}</p>
-                    </div>
+              <Card className="group relative overflow-hidden border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5 py-0">
+                <div className={`absolute inset-0 bg-gradient-to-br ${link.gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
+                <CardContent className="relative flex items-center gap-4 p-4">
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${link.iconBg} transition-transform duration-300 group-hover:scale-110`}>
+                    <link.icon className={`h-5 w-5 ${link.iconColor}`} />
                   </div>
-                  <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm">{link.label}</p>
+                    <p className="text-xs text-muted-foreground truncate">{link.desc}</p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-all duration-300 group-hover:translate-x-1 group-hover:text-foreground" />
                 </CardContent>
               </Card>
             </Link>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
       {/* Upcoming Jobs */}
       {upcomingJobs.length > 0 && (
-        <Card className="mt-6 border-gray-400">
-          <CardHeader>
-            <CardTitle className="text-base">다가오는 근무</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {upcomingJobs.map((app) => {
-              const s = statusMap[app.status] ?? statusMap["대기"];
-              return (
-                <div
-                  key={app.id}
-                  className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-muted/30"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={`rounded-md px-2 py-1 text-xs font-bold ${getDdayColor(app.job_postings.work_date)}`}>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">다가오는 근무</h2>
+            <Link href="/my/applications" className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors">
+              전체보기
+            </Link>
+          </div>
+          <Card className="overflow-hidden py-0">
+            <CardContent className="p-0 divide-y">
+              {upcomingJobs.map((app) => {
+                const s = statusMap[app.status] ?? statusMap["대기"];
+                return (
+                  <div
+                    key={app.id}
+                    className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-muted/30"
+                  >
+                    <span className={`shrink-0 rounded-lg px-2 py-1 text-[11px] font-bold ${getDdayColor(app.job_postings.work_date)}`}>
                       {getDday(app.job_postings.work_date)}
                     </span>
-                    <div>
-                      <p className="text-sm font-medium">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">
                         {app.job_postings.clients.company_name}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {formatDate(app.job_postings.work_date)}{" "}
-                        {app.job_postings.start_time}~{app.job_postings.end_time}
+                        {app.job_postings.start_time.slice(0, 5)}~{app.job_postings.end_time.slice(0, 5)}
                       </p>
                     </div>
+                    <Badge
+                      variant={s.variant}
+                      className={`shrink-0 text-[11px] ${s.variant === "default" ? "bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10" : ""}`}
+                    >
+                      {s.label}
+                    </Badge>
                   </div>
-                  <Badge variant={s.variant} className={s.variant === "default" ? "bg-green-600 hover:bg-green-600" : ""}>{s.label}</Badge>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* Resume CTA */}
       {!hasResume && (
-        <Card className="mt-6 border-orange-300 bg-gradient-to-r from-orange-50/50 to-background">
-          <CardContent className="py-4 text-center">
-            <User className="mx-auto mb-2 h-8 w-8 text-orange-500" />
-            <p className="font-medium">회원정보를 등록해 주세요</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+        <Card className="relative overflow-hidden border-amber-200/80 py-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-orange-50/50 to-yellow-50/30" />
+          <CardContent className="relative py-8 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/20">
+              <AlertCircle className="h-7 w-7 text-white" />
+            </div>
+            <p className="text-lg font-bold">회원정보를 등록해 주세요</p>
+            <p className="mx-auto mt-2 max-w-xs text-sm text-muted-foreground">
               회원정보 등록 후 채용공고에 지원할 수 있습니다.
             </p>
             <Link href="/my/resume">
-              <Badge className="mt-3 cursor-pointer bg-orange-500 px-4 py-1.5 text-white hover:bg-orange-600">
+              <Button className="mt-5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 transition-all duration-300">
                 회원정보 등록하기
-              </Badge>
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             </Link>
           </CardContent>
         </Card>

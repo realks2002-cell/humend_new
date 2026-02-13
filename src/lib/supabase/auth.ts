@@ -165,41 +165,7 @@ export async function resetPasswordByEmail(email: string) {
     return { error: "비밀번호 재설정에 실패했습니다." };
   }
 
-  // 이메일로 임시 비밀번호 전송
-  const { Resend } = await import("resend");
-  const resend = new Resend(process.env.RESEND_API_KEY);
-
-  try {
-    await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || "Humend HR <noreply@humend.hr>",
-      to: email,
-      subject: "[Humend HR] 임시 비밀번호 안내",
-      html: `
-        <div style="max-width:480px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:32px 24px;">
-          <h2 style="margin:0 0 8px;font-size:20px;">임시 비밀번호 안내</h2>
-          <p style="color:#666;font-size:14px;margin:0 0 24px;">
-            ${member.name ?? "회원"}님, 임시 비밀번호가 발급되었습니다.
-          </p>
-          <div style="background:#f0fdf4;border:2px solid #bbf7d0;border-radius:12px;padding:24px;text-align:center;">
-            <p style="color:#666;font-size:13px;margin:0 0 8px;">임시 비밀번호</p>
-            <p style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#15803d;margin:0;">
-              ${tempPassword}
-            </p>
-          </div>
-          <p style="color:#999;font-size:12px;margin:24px 0 0;line-height:1.6;">
-            이 비밀번호로 로그인 후 반드시 비밀번호를 변경해주세요.<br/>
-            본인이 요청하지 않았다면 이 메일을 무시하셔도 됩니다.
-          </p>
-        </div>
-      `,
-    });
-  } catch (emailError) {
-    console.error("[resetPasswordByEmail] email send error:", emailError);
-    // 이메일 전송 실패해도 비밀번호는 이미 변경됨 - 에러 반환
-    return { error: "이메일 전송에 실패했습니다. 관리자에게 문의해주세요." };
-  }
-
-  return { success: true };
+  return { success: true, tempPassword };
 }
 
 // ========== 공통 ==========
