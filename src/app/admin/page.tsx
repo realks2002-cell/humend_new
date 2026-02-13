@@ -63,7 +63,7 @@ export default async function AdminDashboard() {
                   <stat.icon className="h-4 w-4 text-white" />
                 </div>
                 <p className="mt-3 text-2xl font-bold tracking-tight">{stat.value}</p>
-                <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
+                <p className="text-xs font-semibold text-foreground">{stat.label}</p>
               </div>
             </div>
           ))}

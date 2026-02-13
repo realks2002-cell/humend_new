@@ -57,7 +57,7 @@ export default function AdminLoginPage() {
             </div>
           )}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">아이디</label>
+            <label className="mb-1.5 block text-xs font-semibold text-foreground">아이디</label>
             <Input
               type="text"
               placeholder="관리자 아이디"
@@ -68,7 +68,7 @@ export default function AdminLoginPage() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">비밀번호</label>
+            <label className="mb-1.5 block text-xs font-semibold text-foreground">비밀번호</label>
             <Input
               type="password"
               placeholder="비밀번호 입력"

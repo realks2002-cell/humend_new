@@ -32,7 +32,7 @@ export function JobFilters() {
     <div className="mb-6 rounded-lg border bg-muted/20 p-4">
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-[130px]">
-          <label className="mb-1 flex items-center gap-1 text-xs font-medium text-muted-foreground">
+          <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-foreground">
             <Calendar className="h-3 w-3" />
             시작일
           </label>
@@ -44,7 +44,7 @@ export function JobFilters() {
           />
         </div>
         <div className="min-w-[130px]">
-          <label className="mb-1 flex items-center gap-1 text-xs font-medium text-muted-foreground">
+          <label className="mb-1 flex items-center gap-1 text-xs font-semibold text-foreground">
             <Calendar className="h-3 w-3" />
             종료일
           </label>

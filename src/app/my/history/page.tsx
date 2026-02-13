@@ -87,7 +87,7 @@ export default async function HistoryPage({ searchParams }: Props) {
               <p className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">
                 {stat.value}{stat.suffix && <span className="text-sm font-medium text-muted-foreground ml-0.5">{stat.suffix}</span>}
               </p>
-              <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
+              <p className="text-xs font-semibold text-foreground">{stat.label}</p>
             </div>
           </div>
         ))}

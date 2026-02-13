@@ -258,7 +258,7 @@ export default function ResumePage() {
             )}
           </button>
         </div>
-        <span className="text-xs font-medium text-muted-foreground">사진등록</span>
+        <span className="text-xs font-semibold text-foreground">사진등록</span>
       </div>
 
       {/* Section: Basic Info */}

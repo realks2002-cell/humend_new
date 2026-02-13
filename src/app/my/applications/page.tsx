@@ -71,21 +71,21 @@ export default async function ApplicationsPage() {
             <Clock className="h-4 w-4 text-white" />
           </div>
           <p className="mt-2 text-2xl font-bold">{pending.length}</p>
-          <p className="text-xs font-medium text-muted-foreground">대기중</p>
+          <p className="text-xs font-semibold text-foreground">대기중</p>
         </div>
         <div className="rounded-2xl border bg-gradient-to-br from-emerald-50 to-teal-50/30 p-4">
           <div className="inline-flex rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 p-2 shadow-sm">
             <CheckCircle2 className="h-4 w-4 text-white" />
           </div>
           <p className="mt-2 text-2xl font-bold">{approved.length}</p>
-          <p className="text-xs font-medium text-muted-foreground">승인됨</p>
+          <p className="text-xs font-semibold text-foreground">승인됨</p>
         </div>
         <div className="rounded-2xl border bg-gradient-to-br from-red-50 to-rose-50/30 p-4">
           <div className="inline-flex rounded-xl bg-gradient-to-br from-red-500 to-rose-500 p-2 shadow-sm">
             <XCircle className="h-4 w-4 text-white" />
           </div>
           <p className="mt-2 text-2xl font-bold">{rejected.length}</p>
-          <p className="text-xs font-medium text-muted-foreground">거절</p>
+          <p className="text-xs font-semibold text-foreground">거절</p>
         </div>
       </div>
 

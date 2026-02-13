@@ -52,7 +52,7 @@ export default async function PayrollPage({ searchParams }: Props) {
                 <stat.icon className="h-4 w-4 text-white" />
               </div>
               <p className="mt-2 text-xl font-bold tracking-tight">{stat.value}</p>
-              <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
+              <p className="text-xs font-semibold text-foreground">{stat.label}</p>
             </div>
           </div>
         ))}
