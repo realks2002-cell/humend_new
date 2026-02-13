@@ -272,11 +272,11 @@ export default function ResumePage() {
         <CardContent className="space-y-4 p-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">이름</label>
+              <label className="mb-1.5 block text-xs font-semibold text-foreground">이름</label>
               <Input value={memberName} readOnly disabled className="bg-muted/50" />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">전화번호</label>
+              <label className="mb-1.5 block text-xs font-semibold text-foreground">전화번호</label>
               <Input
                 value={memberPhone.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3")}
                 readOnly disabled className="bg-muted/50"
@@ -285,7 +285,7 @@ export default function ResumePage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">생년월일</label>
+              <label className="mb-1.5 block text-xs font-semibold text-foreground">생년월일</label>
               <Input
                 id="field-birthDate"
                 type="date"
@@ -294,7 +294,7 @@ export default function ResumePage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">성별</label>
+              <label className="mb-1.5 block text-xs font-semibold text-foreground">성별</label>
               <div id="field-gender" className="flex gap-2" tabIndex={-1}>
                 <Button
                   type="button"
@@ -318,7 +318,7 @@ export default function ResumePage() {
             </div>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">이메일</label>
+            <label className="mb-1.5 block text-xs font-semibold text-foreground">이메일</label>
             <Input
               id="field-email"
               type="email"
@@ -329,7 +329,7 @@ export default function ResumePage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">거주지역</label>
+              <label className="mb-1.5 block text-xs font-semibold text-foreground">거주지역</label>
               <Input
                 id="field-region"
                 placeholder="서울 강남구"
@@ -338,7 +338,7 @@ export default function ResumePage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">키 (cm)</label>
+              <label className="mb-1.5 block text-xs font-semibold text-foreground">키 (cm)</label>
               <Input
                 id="field-height"
                 type="number"
@@ -371,7 +371,7 @@ export default function ResumePage() {
         </div>
         <CardContent className="space-y-4 p-5">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">주민등록번호</label>
+            <label className="mb-1.5 block text-xs font-semibold text-foreground">주민등록번호</label>
             <div className="flex items-center gap-2">
               <Input
                 id="field-rrnFront"
@@ -401,7 +401,7 @@ export default function ResumePage() {
           </div>
 
           <div className="border-t pt-4">
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">NICE 신용평가 본인인증</label>
+            <label className="mb-1.5 block text-xs font-semibold text-foreground">NICE 신용평가 본인인증</label>
             <p className="mb-3 text-xs text-muted-foreground">
               휴대폰 본인인증을 통해 신원을 확인합니다. (개발모드: 버튼 클릭 시 인증완료 처리)
             </p>
@@ -413,7 +413,8 @@ export default function ResumePage() {
             ) : (
               <Button
                 type="button"
-                className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600"
+                variant="ghost"
+                className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold hover:from-amber-600 hover:to-orange-600 hover:text-black disabled:opacity-70"
                 disabled={verifying || !form.rrnFront || !form.rrnBack || form.rrnFront.length !== 6 || form.rrnBack.length !== 7}
                 onClick={() => {
                   setVerifying(true);
@@ -451,7 +452,7 @@ export default function ResumePage() {
         </div>
         <CardContent className="space-y-4 p-5">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">관련 경험 유무</label>
+            <label className="mb-1.5 block text-xs font-semibold text-foreground">관련 경험 유무</label>
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -475,7 +476,7 @@ export default function ResumePage() {
           </div>
           {form.hasExperience === "yes" && (
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">경험 내용</label>
+              <label className="mb-1.5 block text-xs font-semibold text-foreground">경험 내용</label>
               <Input
                 placeholder="웨딩홀 서빙 6개월, 케이터링 보조 3개월 등"
                 value={form.experience}
@@ -496,7 +497,7 @@ export default function ResumePage() {
         </div>
         <CardContent className="space-y-4 p-5">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">은행명</label>
+            <label className="mb-1.5 block text-xs font-semibold text-foreground">은행명</label>
             <Select value={form.bankName} onValueChange={(value) => handleChange("bankName", value)}>
               <SelectTrigger id="field-bankName">
                 <SelectValue placeholder="은행을 선택하세요" />
@@ -527,7 +528,7 @@ export default function ResumePage() {
             </Select>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">예금주</label>
+            <label className="mb-1.5 block text-xs font-semibold text-foreground">예금주</label>
             <Input
               id="field-accountHolder"
               placeholder="홍길동"
@@ -536,7 +537,7 @@ export default function ResumePage() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">계좌번호</label>
+            <label className="mb-1.5 block text-xs font-semibold text-foreground">계좌번호</label>
             <Input
               id="field-accountNumber"
               placeholder="0000-0000-0000-00"
