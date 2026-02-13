@@ -67,12 +67,12 @@ export default function Header() {
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-10 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm font-normal text-black transition-colors hover:text-black"
             >
               {link.label}
             </Link>
@@ -123,7 +123,7 @@ export default function Header() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+                  className="rounded-md px-3 py-2.5 text-sm font-normal text-black transition-colors hover:bg-accent"
                 >
                   {link.label}
                 </Link>
@@ -134,14 +134,14 @@ export default function Header() {
                   <Link
                     href="/my"
                     onClick={() => setOpen(false)}
-                    className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+                    className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-normal text-black transition-colors hover:bg-accent"
                   >
                     <User className="h-4 w-4" />
                     마이페이지
                   </Link>
                   <button
                     onClick={() => { handleSignOut(); setOpen(false); }}
-                    className="flex items-center gap-2 rounded-md px-3 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-accent"
+                    className="flex items-center gap-2 rounded-md px-3 py-2.5 text-left text-sm font-normal text-red-600 transition-colors hover:bg-accent"
                   >
                     <LogOut className="h-4 w-4" />
                     로그아웃

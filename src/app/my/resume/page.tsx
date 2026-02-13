@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
-import { Camera, Save, Loader2, ShieldCheck, AlertTriangle, User, CreditCard, Briefcase, FileCheck } from "lucide-react";
+import { Camera, Save, Loader2, ShieldCheck, AlertTriangle, User, CreditCard, Briefcase, FileCheck, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import imageCompression from "browser-image-compression";
 import { saveResume, getResume } from "./actions";
@@ -43,6 +43,7 @@ export default function ResumePage() {
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [showValidationModal, setShowValidationModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -94,26 +95,39 @@ export default function ResumePage() {
     setMessage("");
 
     try {
-      const compressed = await imageCompression(file, {
-        maxSizeMB: 0.5,
-        maxWidthOrHeight: 1024,
-        useWebWorker: true,
-        initialQuality: 0.85,
-      });
+      let uploadFile: File | Blob = file;
+      try {
+        uploadFile = await imageCompression(file, {
+          maxSizeMB: 0.5,
+          maxWidthOrHeight: 1024,
+          useWebWorker: true,
+          initialQuality: 0.85,
+        });
+      } catch {
+        // 압축 실패 시 원본 파일 사용
+        uploadFile = file;
+      }
 
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setMessage("로그인이 필요합니다.");
+        setUploading(false);
+        return;
+      }
 
-      const ext = compressed.name.split(".").pop() || "jpg";
+      const ext = file.name.split(".").pop() || "jpg";
       const filePath = `${user.id}/profile.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("profile-photos")
-        .upload(filePath, compressed, { upsert: true });
+        .upload(filePath, uploadFile, {
+          upsert: true,
+          contentType: file.type || "image/jpeg",
+        });
 
       if (uploadError) {
-        setMessage("사진 업로드에 실패했습니다.");
+        setMessage(`사진 업로드에 실패했습니다: ${uploadError.message}`);
         setUploading(false);
         return;
       }
@@ -131,13 +145,14 @@ export default function ResumePage() {
         setProfileImageUrl(signedData.signedUrl);
       }
       setMessage("프로필 사진이 업로드되었습니다.");
-    } catch {
-      setMessage("사진 처리에 실패했습니다.");
+    } catch (err) {
+      setMessage(`사진 처리에 실패했습니다: ${err instanceof Error ? err.message : "알 수 없는 오류"}`);
     }
     setUploading(false);
   };
 
   const fieldMap: { key: string; label: string; id: string }[] = [
+    { key: "profilePhoto", label: "프로필 사진", id: "field-profilePhoto" },
     { key: "birthDate", label: "생년월일", id: "field-birthDate" },
     { key: "gender", label: "성별", id: "field-gender" },
     { key: "region", label: "거주지역", id: "field-region" },
@@ -145,6 +160,7 @@ export default function ResumePage() {
     { key: "email", label: "이메일", id: "field-email" },
     { key: "rrnFront", label: "주민등록번호 앞자리", id: "field-rrnFront" },
     { key: "rrnBack", label: "주민등록번호 뒷자리", id: "field-rrnBack" },
+    { key: "hasExperience", label: "관련 경험 유무", id: "field-hasExperience" },
     { key: "bankName", label: "은행명", id: "field-bankName" },
     { key: "accountHolder", label: "예금주", id: "field-accountHolder" },
     { key: "accountNumber", label: "계좌번호", id: "field-accountNumber" },
@@ -166,10 +182,22 @@ export default function ResumePage() {
 
     const errors: { label: string; id: string }[] = [];
     for (const f of fieldMap) {
+      if (f.key === "profilePhoto") {
+        if (!profileImageUrl) {
+          errors.push({ label: f.label, id: f.id });
+        }
+        continue;
+      }
       const value = form[f.key as keyof typeof form];
       if (!value || !value.trim()) {
         errors.push({ label: f.label, id: f.id });
       }
+    }
+    if (!identityVerified) {
+      errors.push({ label: "NICE 본인인증", id: "field-identity" });
+    }
+    if (form.hasExperience === "yes" && !form.experience.trim()) {
+      errors.push({ label: "경험 내용", id: "field-experience" });
     }
     if (!privacyAgreed) {
       errors.push({ label: "개인정보 수집 동의", id: "field-privacy" });
@@ -193,8 +221,7 @@ export default function ResumePage() {
       if (result.error) {
         setMessage(`저장에 실패했습니다: ${result.error}`);
       } else {
-        setMessage("회원정보가 저장되었습니다.");
-        router.refresh();
+        setShowSuccessModal(true);
       }
     } catch (err) {
       setMessage(`저장 중 오류가 발생했습니다: ${err instanceof Error ? err.message : "알 수 없는 오류"}`);
@@ -228,7 +255,7 @@ export default function ResumePage() {
       )}
 
       {/* Profile Photo */}
-      <div className="flex flex-col items-center gap-3">
+      <div id="field-profilePhoto" className="flex flex-col items-center gap-3" tabIndex={-1}>
         <div className="relative">
           <div className="flex h-28 w-24 items-center justify-center overflow-hidden rounded-2xl border-2 border-white bg-gradient-to-br from-slate-100 to-slate-200 shadow-md">
             {profileImageUrl ? (
@@ -400,7 +427,7 @@ export default function ResumePage() {
             </div>
           </div>
 
-          <div className="border-t pt-4">
+          <div id="field-identity" className="border-t pt-4" tabIndex={-1}>
             <label className="mb-1.5 block text-xs font-semibold text-foreground">NICE 신용평가 본인인증</label>
             <p className="mb-3 text-xs text-muted-foreground">
               휴대폰 본인인증을 통해 신원을 확인합니다. (개발모드: 버튼 클릭 시 인증완료 처리)
@@ -415,7 +442,7 @@ export default function ResumePage() {
                 type="button"
                 variant="ghost"
                 className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold hover:from-amber-600 hover:to-orange-600 hover:text-black disabled:opacity-70"
-                disabled={verifying || !form.rrnFront || !form.rrnBack || form.rrnFront.length !== 6 || form.rrnBack.length !== 7}
+                disabled={verifying}
                 onClick={() => {
                   setVerifying(true);
                   setTimeout(() => {
@@ -453,7 +480,7 @@ export default function ResumePage() {
         <CardContent className="space-y-4 p-5">
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-foreground">관련 경험 유무</label>
-            <div className="flex gap-2">
+            <div id="field-hasExperience" className="flex gap-2" tabIndex={-1}>
               <Button
                 type="button"
                 variant={form.hasExperience === "yes" ? "default" : "outline"}
@@ -478,6 +505,7 @@ export default function ResumePage() {
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-foreground">경험 내용</label>
               <Input
+                id="field-experience"
                 placeholder="웨딩홀 서빙 6개월, 케이터링 보조 3개월 등"
                 value={form.experience}
                 onChange={(e) => handleChange("experience", e.target.value)}
@@ -609,6 +637,32 @@ export default function ResumePage() {
         )}
         {saving ? "제출 중..." : "제출하기"}
       </Button>
+
+      {/* Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={() => {}}>
+        <DialogContent className="max-w-sm" onPointerDownOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              </div>
+              제출 완료
+            </DialogTitle>
+            <DialogDescription>
+              회원정보가 성공적으로 제출되었습니다.
+            </DialogDescription>
+          </DialogHeader>
+          <Button
+            className="w-full mt-2 rounded-xl"
+            onClick={() => {
+              setShowSuccessModal(false);
+              router.push("/my");
+            }}
+          >
+            확인
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {/* Validation Modal */}
       <Dialog open={showValidationModal} onOpenChange={setShowValidationModal}>
