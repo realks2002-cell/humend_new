@@ -67,7 +67,7 @@ export function RichEditor({ value, onChange, placeholder = "내용을 입력하
     if (!file || !editor) return;
 
     try {
-      const dataUrl = await compressImage(file, 800, 0.8);
+      const dataUrl = await compressImage(file, 800, 0.82);
       editor.chain().focus().setImage({ src: dataUrl }).run();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { X, ImagePlus, Loader2 } from "lucide-react";
 
-function compressToDataURL(file: File, maxWidth = 1200, quality = 0.6): Promise<string> {
+function compressToDataURL(file: File, maxWidth = 1200, quality = 0.82): Promise<string> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();

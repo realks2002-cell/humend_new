@@ -12,9 +12,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Loader2, CheckCircle } from "lucide-react";
+import { Loader2, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { applyToJob } from "@/app/jobs/actions";
+
+const MEMBER_NOT_FOUND_ERROR = "회원정보를 먼저 등록해주세요.";
 
 interface ApplyButtonProps {
   postingId: string;
@@ -40,6 +42,8 @@ export function ApplyButton({
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ success?: boolean; error?: string } | null>(null);
 
+  const isMemberNotFound = result?.error === MEMBER_NOT_FOUND_ERROR;
+
   const handleApply = async () => {
     setLoading(true);
     const res = await applyToJob(postingId);
@@ -53,7 +57,7 @@ export function ApplyButton({
         setResult(null);
         router.refresh();
       }, 1500);
-    } else if (res.error) {
+    } else if (res.error && res.error !== MEMBER_NOT_FOUND_ERROR) {
       toast.error("지원 실패", { description: res.error });
     }
   };
@@ -72,6 +76,36 @@ export function ApplyButton({
             <p className="mt-2 text-sm text-muted-foreground">
               관리자 승인 후 근무가 확정됩니다.
             </p>
+          </div>
+        ) : isMemberNotFound ? (
+          <div className="py-4 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-50">
+              <UserX className="h-7 w-7 text-amber-500" />
+            </div>
+            <p className="text-lg font-semibold">지원할 수 없습니다</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              회원정보가 등록되어 있지 않아 지원이 불가합니다.<br />
+              회원정보를 먼저 등록해주세요.
+            </p>
+            <div className="mt-6 flex flex-col gap-2">
+              <Button
+                className="w-full"
+                onClick={() => {
+                  setOpen(false);
+                  setResult(null);
+                  router.push("/my/resume");
+                }}
+              >
+                회원정보 등록하기
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => { setOpen(false); setResult(null); }}
+              >
+                닫기
+              </Button>
+            </div>
           </div>
         ) : (
           <>

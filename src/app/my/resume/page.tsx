@@ -95,9 +95,10 @@ export default function ResumePage() {
 
     try {
       const compressed = await imageCompression(file, {
-        maxSizeMB: 1.5,
+        maxSizeMB: 0.5,
         maxWidthOrHeight: 1024,
         useWebWorker: true,
+        initialQuality: 0.85,
       });
 
       const supabase = createClient();

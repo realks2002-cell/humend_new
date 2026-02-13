@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, Loader2, User, Phone, Lock } from "lucide-react";
+import { CheckCircle, Loader2, User, Phone, Lock, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { memberSignup } from "@/lib/supabase/auth";
 
@@ -26,6 +26,8 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const rawPhone = phone.replace(/\D/g, "");
 
@@ -37,8 +39,8 @@ export default function SignupPage() {
       return;
     }
 
-    if (password.length !== 6 || !/^\d{6}$/.test(password)) {
-      setError("비밀번호는 숫자 6자리여야 합니다.");
+    if (password.length < 6) {
+      setError("비밀번호는 6자리 이상이어야 합니다.");
       return;
     }
 
@@ -117,7 +119,7 @@ export default function SignupPage() {
             <Input
               id="name"
               type="text"
-              placeholder="이름 (홍길동)"
+              placeholder="홍길동"
               className="pl-10"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -128,7 +130,7 @@ export default function SignupPage() {
             <Input
               id="phone"
               type="tel"
-              placeholder="전화번호 (010-1234-5678)"
+              placeholder="010-1234-5678"
               className="pl-10"
               value={phone}
               onChange={(e) => setPhone(formatPhoneDisplay(e.target.value))}
@@ -138,29 +140,41 @@ export default function SignupPage() {
             <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="password"
-              type="password"
-              placeholder="비밀번호 (숫자 6자리)"
-              className="pl-10"
-              maxLength={6}
-              inputMode="numeric"
+              type={showPassword ? "text" : "password"}
+              placeholder="영문+숫자 6자리 이상"
+              className="pl-10 pr-10"
               value={password}
-              onChange={(e) => setPassword(e.target.value.replace(/\D/g, ""))}
+              onChange={(e) => setPassword(e.target.value)}
             />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              onClick={() => setShowPassword((v) => !v)}
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
           <div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="confirm"
-                type="password"
+                type={showConfirm ? "text" : "password"}
                 placeholder="비밀번호 확인"
-                className="pl-10"
-                maxLength={6}
-                inputMode="numeric"
+                className="pl-10 pr-10"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSignup()}
               />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowConfirm((v) => !v)}
+                tabIndex={-1}
+              >
+                {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
             {confirmPassword && password !== confirmPassword && (
               <p className="mt-1 text-xs text-destructive">비밀번호가 일치하지 않습니다</p>

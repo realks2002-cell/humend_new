@@ -8,8 +8,9 @@ import {
   ClipboardList, Calendar, ArrowRight,
   Clock, Wallet, User, ChevronRight,
   TrendingUp, AlertCircle,
-  Settings, FileEdit, UserX,
+  Settings,
 } from "lucide-react";
+import { DeleteAccountButton } from "./delete-account-button";
 import { getMyProfile, getMyApplications, getMyWorkRecords } from "@/lib/supabase/queries";
 import { formatDate, formatCurrency } from "@/lib/utils/format";
 
@@ -86,8 +87,8 @@ export default async function MyPage() {
   ];
 
   const statCards = [
-    { label: "대기중", value: pendingCount, icon: ClipboardList, gradient: "from-blue-600 to-indigo-600", lightBg: "from-blue-50 to-indigo-50" },
-    { label: "승인됨", value: approvedCount, icon: Calendar, gradient: "from-emerald-600 to-teal-600", lightBg: "from-emerald-50 to-teal-50" },
+    { label: "근무지원 승인 대기중", value: pendingCount, icon: ClipboardList, gradient: "from-blue-600 to-indigo-600", lightBg: "from-blue-50 to-indigo-50" },
+    { label: "근무지원 승인됨", value: approvedCount, icon: Calendar, gradient: "from-emerald-600 to-teal-600", lightBg: "from-emerald-50 to-teal-50" },
     { label: "이번 달 급여", value: null, displayValue: formatCurrency(monthlyNet), icon: TrendingUp, gradient: "from-violet-600 to-purple-600", lightBg: "from-violet-50 to-purple-50" },
   ];
 
@@ -151,43 +152,30 @@ export default async function MyPage() {
 
         {/* Profile Action Badges */}
         <div className="relative mt-4 flex flex-wrap gap-2">
-          <Link href="/my/resume">
-            <Badge variant="secondary" className="cursor-pointer gap-1.5 rounded-none px-3 py-1.5 text-xs font-medium transition-colors hover:bg-blue-50 hover:text-blue-700">
-              <FileEdit className="h-3 w-3" />
-              회원정보 수정
-            </Badge>
-          </Link>
           <Badge variant="secondary" className="cursor-pointer gap-1.5 rounded-none px-3 py-1.5 text-xs font-medium transition-colors hover:bg-slate-200">
             <Settings className="h-3 w-3" />
             비밀번호 수정
           </Badge>
-          <Badge variant="secondary" className="cursor-pointer gap-1.5 rounded-none px-3 py-1.5 text-xs font-medium transition-colors hover:bg-red-50 hover:text-red-600">
-            <UserX className="h-3 w-3" />
-            회원탈퇴
-          </Badge>
+          <DeleteAccountButton />
         </div>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-3 gap-3 sm:gap-4">
-        {statCards.map((stat) => (
-          <div
-            key={stat.label}
-            className="group relative overflow-hidden rounded-2xl border bg-card p-4 transition-all duration-300 hover:shadow-md"
-          >
-            <div className={`absolute inset-0 bg-gradient-to-br ${stat.lightBg} opacity-40`} />
-            <div className="relative">
-              <div className={`inline-flex rounded-xl bg-gradient-to-br ${stat.gradient} p-2 shadow-sm`}>
-                <stat.icon className="h-4 w-4 text-white" />
+      <Card className="overflow-hidden py-0">
+        <CardContent className="flex items-center divide-x p-0">
+          {statCards.map((stat) => (
+            <div key={stat.label} className="flex flex-1 items-center gap-2.5 px-4 py-3">
+              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${stat.gradient}`}>
+                <stat.icon className="h-3.5 w-3.5 text-white" />
               </div>
-              <p className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
-                {stat.displayValue ?? stat.value}
-              </p>
-              <p className="mt-0.5 text-xs font-medium text-muted-foreground">{stat.label}</p>
+              <div>
+                <p className="text-base font-bold leading-tight">{stat.displayValue ?? stat.value}</p>
+                <p className="text-[11px] font-medium text-foreground/80">{stat.label}</p>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </CardContent>
+      </Card>
 
       {/* Quick Links */}
       <div className="space-y-3">
