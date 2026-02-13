@@ -61,7 +61,7 @@ export function ApplyButton({
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setResult(null); }}>
       <DialogTrigger asChild>
-        <Button size={size} className={className}>
+        <Button size={size} variant="outline" className={`rounded-none border-gray-400 ${className ?? ""}`}>
           지원하기
         </Button>
       </DialogTrigger>

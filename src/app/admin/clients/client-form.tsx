@@ -31,6 +31,11 @@ interface ClientData {
   description: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  total_headcount?: number | null;
+  work_type?: string | null;
+  gender_requirement?: string | null;
+  application_method?: string | null;
+  work_category?: string | null;
   client_photos?: { id: string; image_url: string; sort_order: number }[];
 }
 
@@ -187,6 +192,56 @@ function ClientFormDialog({
               required
               defaultValue={client?.hourly_wage}
               placeholder="12000"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="total_headcount">모집인원</Label>
+              <Input
+                id="total_headcount"
+                name="total_headcount"
+                type="number"
+                defaultValue={client?.total_headcount ?? ""}
+                placeholder="30"
+              />
+            </div>
+            <div>
+              <Label htmlFor="work_type">근무타입</Label>
+              <Input
+                id="work_type"
+                name="work_type"
+                defaultValue={client?.work_type ?? ""}
+                placeholder="종일근무"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="gender_requirement">성별</Label>
+              <Input
+                id="gender_requirement"
+                name="gender_requirement"
+                defaultValue={client?.gender_requirement ?? ""}
+                placeholder="성별무관"
+              />
+            </div>
+            <div>
+              <Label htmlFor="work_category">업무형태</Label>
+              <Input
+                id="work_category"
+                name="work_category"
+                defaultValue={client?.work_category ?? ""}
+                placeholder="주방"
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="application_method">지원방법</Label>
+            <Input
+              id="application_method"
+              name="application_method"
+              defaultValue={client?.application_method ?? ""}
+              placeholder="온라인 지원, 전화 지원, 문자 지원"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">

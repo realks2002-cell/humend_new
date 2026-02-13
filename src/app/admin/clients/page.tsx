@@ -4,11 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Building2 } from "lucide-react";
 import { CreateClientButton } from "./client-form";
 import { DraggableClientList } from "./client-list";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 async function getAllClientsWithPhotos() {
-  const supabase = await createClient();
-  const { data } = await supabase
+  const admin = createAdminClient();
+  const { data } = await admin
     .from("clients")
     .select("*, client_photos(*)")
     .order("sort_order", { ascending: true })

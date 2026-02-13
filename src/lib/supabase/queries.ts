@@ -15,6 +15,11 @@ export interface Client {
   work_guidelines: string | null;
   latitude: number | null;
   longitude: number | null;
+  total_headcount: number | null;
+  work_type: string | null;
+  gender_requirement: string | null;
+  application_method: string | null;
+  work_category: string | null;
   status: string;
 }
 
@@ -166,8 +171,8 @@ export async function getClientsWithJobs() {
 }
 
 export async function getClientDetail(clientId: string) {
-  const supabase = await createClient();
-  const { data } = await supabase
+  const admin = createAdminClient();
+  const { data } = await admin
     .from("clients")
     .select(`*, job_postings(*), client_photos(*)`)
     .eq("id", clientId)

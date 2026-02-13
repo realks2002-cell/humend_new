@@ -14,8 +14,6 @@ import {
   ImagePlus,
   Loader2,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import imageCompression from "browser-image-compression";
 
 interface RichEditorProps {
   value: string;
@@ -44,37 +42,36 @@ export function RichEditor({ value, onChange, placeholder = "내용을 입력하
     },
   });
 
+  const compressImage = (file: File, maxWidth: number, quality: number): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleImageInsert = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editor) return;
 
     try {
-      const compressed = await imageCompression(file, {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 800,
-        useWebWorker: true,
-      });
-
-      const supabase = createClient();
-      const ext = compressed.name.split(".").pop() || "jpg";
-      const filePath = `editor/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-
-      const { error } = await supabase.storage
-        .from("client-images")
-        .upload(filePath, compressed);
-
-      if (error) {
-        console.error("Editor image upload error:", error.message);
-        return;
-      }
-
-      const { data: urlData } = supabase.storage
-        .from("client-images")
-        .getPublicUrl(filePath);
-
-      editor.chain().focus().setImage({ src: urlData.publicUrl }).run();
-    } catch (err) {
-      console.error("Editor image failed:", err);
+      const dataUrl = await compressImage(file, 800, 0.8);
+      editor.chain().focus().setImage({ src: dataUrl }).run();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Editor image failed:", msg);
     }
 
     if (fileInputRef.current) fileInputRef.current.value = "";

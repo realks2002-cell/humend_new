@@ -10,20 +10,27 @@ export async function createClientAction(formData: FormData) {
   const latStr = formData.get("latitude") as string | null;
   const lngStr = formData.get("longitude") as string | null;
 
+  const insertData = {
+    company_name: formData.get("company_name") as string,
+    location: formData.get("location") as string,
+    hourly_wage: Number(formData.get("hourly_wage")) || 0,
+    contact_person: (formData.get("contact_person") as string) || null,
+    contact_phone: (formData.get("contact_phone") as string) || null,
+    dress_code: (formData.get("dress_code") as string) || null,
+    work_guidelines: (formData.get("work_guidelines") as string) || null,
+    description: (formData.get("description") as string) || null,
+    latitude: latStr ? parseFloat(latStr) : null,
+    longitude: lngStr ? parseFloat(lngStr) : null,
+    total_headcount: formData.get("total_headcount") ? Number(formData.get("total_headcount")) : null,
+    work_type: (formData.get("work_type") as string) || null,
+    gender_requirement: (formData.get("gender_requirement") as string) || null,
+    application_method: (formData.get("application_method") as string) || null,
+    work_category: (formData.get("work_category") as string) || null,
+  };
+
   const { data, error } = await supabase
     .from("clients")
-    .insert({
-      company_name: formData.get("company_name") as string,
-      location: formData.get("location") as string,
-      hourly_wage: Number(formData.get("hourly_wage")) || 0,
-      contact_person: (formData.get("contact_person") as string) || null,
-      contact_phone: (formData.get("contact_phone") as string) || null,
-      dress_code: (formData.get("dress_code") as string) || null,
-      work_guidelines: (formData.get("work_guidelines") as string) || null,
-      description: (formData.get("description") as string) || null,
-      latitude: latStr ? parseFloat(latStr) : null,
-      longitude: lngStr ? parseFloat(lngStr) : null,
-    })
+    .insert(insertData)
     .select("id")
     .single();
 
@@ -46,6 +53,7 @@ export async function createClientAction(formData: FormData) {
   }
 
   revalidatePath("/admin/clients");
+  revalidatePath("/jobs", "layout");
   revalidatePath("/");
   return { success: true };
 }
@@ -86,25 +94,32 @@ async function uploadBase64Images(jsonStr: string | null): Promise<string[]> {
 }
 
 export async function updateClientAction(clientId: string, formData: FormData) {
-  const supabase = await createClient();
+  const admin = createAdminClient();
 
   const latStr = formData.get("latitude") as string | null;
   const lngStr = formData.get("longitude") as string | null;
 
-  const { error } = await supabase
+  const updateData = {
+    company_name: formData.get("company_name") as string,
+    location: formData.get("location") as string,
+    hourly_wage: Number(formData.get("hourly_wage")) || 0,
+    contact_person: (formData.get("contact_person") as string) || null,
+    contact_phone: (formData.get("contact_phone") as string) || null,
+    dress_code: (formData.get("dress_code") as string) || null,
+    work_guidelines: (formData.get("work_guidelines") as string) || null,
+    description: (formData.get("description") as string) || null,
+    latitude: latStr ? parseFloat(latStr) : null,
+    longitude: lngStr ? parseFloat(lngStr) : null,
+    total_headcount: formData.get("total_headcount") ? Number(formData.get("total_headcount")) : null,
+    work_type: (formData.get("work_type") as string) || null,
+    gender_requirement: (formData.get("gender_requirement") as string) || null,
+    application_method: (formData.get("application_method") as string) || null,
+    work_category: (formData.get("work_category") as string) || null,
+  };
+
+  const { error } = await admin
     .from("clients")
-    .update({
-      company_name: formData.get("company_name") as string,
-      location: formData.get("location") as string,
-      hourly_wage: Number(formData.get("hourly_wage")) || 0,
-      contact_person: (formData.get("contact_person") as string) || null,
-      contact_phone: (formData.get("contact_phone") as string) || null,
-      dress_code: (formData.get("dress_code") as string) || null,
-      work_guidelines: (formData.get("work_guidelines") as string) || null,
-      description: (formData.get("description") as string) || null,
-      latitude: latStr ? parseFloat(latStr) : null,
-      longitude: lngStr ? parseFloat(lngStr) : null,
-    })
+    .update(updateData)
     .eq("id", clientId);
 
   if (error) return { error: "고객사 수정에 실패했습니다." };
@@ -124,6 +139,7 @@ export async function updateClientAction(clientId: string, formData: FormData) {
   await adminForUpdate.from("clients").update({ main_image_url: allUrls[0] ?? null }).eq("id", clientId);
 
   revalidatePath("/admin/clients");
+  revalidatePath("/jobs", "layout");
   revalidatePath("/");
   return { success: true };
 }

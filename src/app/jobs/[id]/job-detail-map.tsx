@@ -3,8 +3,8 @@
 import { KakaoMap } from "@/components/ui/kakao-map";
 
 interface JobDetailMapProps {
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   address: string;
 }
 

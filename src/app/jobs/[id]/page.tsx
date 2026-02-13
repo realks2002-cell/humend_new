@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { getClientDetail } from "@/lib/supabase/queries";
 import { formatDate, formatWage } from "@/lib/utils/format";
-import { MapPin, Clock, Shirt, BookOpen, Phone, User, Briefcase } from "lucide-react";
+import { MapPin, Clock, Shirt, BookOpen, Phone, User, Briefcase, Users, UserCheck, Send, ClipboardList } from "lucide-react";
 import { ApplyButton } from "@/components/jobs/ApplyButton";
 import { JobDetailMap } from "./job-detail-map";
 
@@ -39,7 +39,7 @@ export default async function JobDetailPage({
           {displayImages.map((url, i) => (
             <div
               key={url}
-              className={`relative overflow-hidden rounded-lg bg-muted ${
+              className={`relative overflow-hidden bg-muted ${
                 displayImages.length === 1 ? "aspect-[16/9]" : "aspect-[4/3]"
               }`}
             >
@@ -55,7 +55,7 @@ export default async function JobDetailPage({
           ))}
         </div>
       ) : (
-        <div className="relative aspect-[16/9] overflow-hidden rounded-lg bg-muted">
+        <div className="relative aspect-[16/9] overflow-hidden bg-muted">
           <div className="flex h-full items-center justify-center">
             <Briefcase className="h-16 w-16 text-muted-foreground/20" />
           </div>
@@ -72,6 +72,71 @@ export default async function JobDetailPage({
         <p className="mt-2 text-xl font-semibold text-primary">
           시급 {formatWage(data.hourly_wage)}
         </p>
+
+      </div>
+
+      {/* 추가 정보 카드 */}
+      <div className="mt-4 grid grid-cols-4 gap-3">
+        <Card>
+          <CardContent className="flex flex-col items-center gap-1 py-4">
+            <Users className="h-5 w-5 text-primary" />
+            <p className="text-xs text-muted-foreground">모집인원</p>
+            <p className="text-sm font-semibold">{data.total_headcount ?? "-"}명</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex flex-col items-center gap-1 py-4">
+            <Clock className="h-5 w-5 text-primary" />
+            <p className="text-xs text-muted-foreground">근무타입</p>
+            <p className="text-sm font-semibold">{data.work_type ?? "-"}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex flex-col items-center gap-1 py-4">
+            <UserCheck className="h-5 w-5 text-primary" />
+            <p className="text-xs text-muted-foreground">성별</p>
+            <p className="text-sm font-semibold">{data.gender_requirement ?? "-"}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex flex-col items-center gap-1 py-4">
+            <Briefcase className="h-5 w-5 text-primary" />
+            <p className="text-xs text-muted-foreground">업무형태</p>
+            <p className="text-sm font-semibold">{data.work_category ?? "-"}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 모집 일정 */}
+      <div className="mt-6">
+        <h2 className="mb-4 text-lg font-semibold">모집 일정</h2>
+        {data.job_postings.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            현재 모집 중인 일정이 없습니다.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {data.job_postings.map((job) => (
+              <Card key={job.id}>
+                <CardContent className="flex flex-col items-center gap-2 py-4 text-center">
+                  <span className="text-sm font-semibold text-foreground">{formatDate(job.work_date)}</span>
+                  <span className="flex items-center gap-1 text-sm text-foreground">
+                    <Clock className="h-3.5 w-3.5" />
+                    {job.start_time.slice(0, 5)} ~ {job.end_time.slice(0, 5)}
+                  </span>
+                  <span className="text-sm text-foreground">{job.headcount}명</span>
+                  <ApplyButton
+                    postingId={job.id}
+                    clientName={data.company_name}
+                    workDate={formatDate(job.work_date)}
+                    startTime={job.start_time}
+                    endTime={job.end_time}
+                  />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 설명 */}
@@ -80,21 +145,6 @@ export default async function JobDetailPage({
           <Separator className="my-6" />
           <div>
             <p className="text-sm text-muted-foreground">{data.description}</p>
-          </div>
-        </>
-      )}
-
-      {/* 카카오맵 */}
-      {data.latitude && data.longitude && (
-        <>
-          <Separator className="my-6" />
-          <div>
-            <h2 className="mb-3 text-lg font-semibold">위치</h2>
-            <JobDetailMap
-              latitude={data.latitude}
-              longitude={data.longitude}
-              address={data.location}
-            />
           </div>
         </>
       )}
@@ -143,42 +193,15 @@ export default async function JobDetailPage({
         )}
       </div>
 
+      {/* 카카오맵 */}
       <Separator className="my-6" />
-
-      {/* 날짜 슬롯 */}
       <div>
-        <h2 className="mb-4 text-lg font-semibold">모집 일정</h2>
-        {data.job_postings.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            현재 모집 중인 일정이 없습니다.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {data.job_postings.map((job) => (
-              <Card key={job.id}>
-                <CardContent className="flex items-center justify-between py-4">
-                  <div className="flex items-center gap-3">
-                    <Badge variant="default">{formatDate(job.work_date)}</Badge>
-                    <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Clock className="h-3.5 w-3.5" />
-                      {job.start_time.slice(0, 5)} ~ {job.end_time.slice(0, 5)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-muted-foreground">{job.headcount}명</span>
-                    <ApplyButton
-                      postingId={job.id}
-                      clientName={data.company_name}
-                      workDate={formatDate(job.work_date)}
-                      startTime={job.start_time}
-                      endTime={job.end_time}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        <h2 className="mb-3 text-lg font-semibold">위치</h2>
+        <JobDetailMap
+          latitude={data.latitude ?? undefined}
+          longitude={data.longitude ?? undefined}
+          address={data.location}
+        />
       </div>
     </div>
   );

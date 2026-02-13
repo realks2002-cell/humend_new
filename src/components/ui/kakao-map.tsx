@@ -129,6 +129,21 @@ export function KakaoMap({
           });
           infoWindow.open(map, marker);
         }
+      } else if (address) {
+        const geocoder = new kakao.maps.services.Geocoder();
+        geocoder.addressSearch(address, (result, status) => {
+          if (status === kakao.maps.services.Status.OK && result.length > 0) {
+            const { x, y } = result[0];
+            const pos = new kakao.maps.LatLng(parseFloat(y), parseFloat(x));
+            map.setCenter(pos);
+            const marker = new kakao.maps.Marker({ position: pos, map });
+            markerInstance.current = marker;
+            const infoWindow = new kakao.maps.InfoWindow({
+              content: `<div style="padding:4px 8px;font-size:12px;white-space:nowrap;">${address}</div>`,
+            });
+            infoWindow.open(map, marker);
+          }
+        });
       }
     } catch (err) {
       console.error("KakaoMap init error:", err);
