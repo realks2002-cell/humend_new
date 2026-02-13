@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +38,7 @@ const services = [
 ];
 
 export default async function Home() {
-  const clientsWithJobs = (await getClientsWithJobs()).slice(0, 3);
+  const clientsWithJobs = await getClientsWithJobs();
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -105,12 +106,24 @@ export default async function Home() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid gap-6 grid-cols-2 md:grid-cols-4">
               {clientsWithJobs.map((client) => (
                 <Link key={client.id} href={`/jobs/${client.id}`}>
                   <Card className="group overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg">
-                    <div className="flex aspect-[16/10] items-center justify-center bg-gradient-to-br from-primary/5 to-primary/15">
-                      <Briefcase className="h-10 w-10 text-primary/30 transition-transform group-hover:scale-110" />
+                    <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/5 to-primary/15">
+                      {client.main_image_url ? (
+                        <Image
+                          src={client.main_image_url}
+                          alt={client.company_name}
+                          fill
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <Briefcase className="h-10 w-10 text-primary/30 transition-transform group-hover:scale-110" />
+                        </div>
+                      )}
                     </div>
                     <CardContent className="pt-4">
                       <h3 className="font-semibold group-hover:text-primary">{client.company_name}</h3>
