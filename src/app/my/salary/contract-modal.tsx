@@ -140,7 +140,7 @@ export function ContractModal({ record, worker }: { record: WorkRecord; worker: 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" className="rounded-none bg-orange-500 text-white hover:bg-orange-600">
+        <Button size="sm" className="rounded-none bg-red-400 text-white hover:bg-red-500">
           급여 신청하기
           <ArrowRight className="ml-1 h-3.5 w-3.5" />
         </Button>

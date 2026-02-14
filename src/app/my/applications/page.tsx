@@ -60,32 +60,32 @@ export default async function ApplicationsPage() {
     <div className="mx-auto max-w-3xl px-4 py-8 space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">근무신청 조회</h1>
+        <h1 className="text-base sm:text-lg font-bold tracking-tight">근무신청 조회</h1>
         <p className="mt-1 text-sm text-muted-foreground">내 지원 현황을 확인하세요.</p>
       </div>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-2xl border bg-gradient-to-br from-amber-50 to-orange-50/30 p-4">
-          <div className="inline-flex rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 p-2 shadow-sm">
-            <Clock className="h-4 w-4 text-white" />
+        <div className="rounded-2xl border bg-gradient-to-br from-amber-50 to-orange-50/30 px-3 py-2.5">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-slate-700" />
+            <p className="text-xs font-semibold text-foreground">대기중</p>
           </div>
-          <p className="mt-2 text-2xl font-bold">{pending.length}</p>
-          <p className="text-xs font-semibold text-foreground">대기중</p>
+          <p className="mt-1 ml-[30px] text-base sm:text-lg font-bold">{pending.length}</p>
         </div>
-        <div className="rounded-2xl border bg-gradient-to-br from-emerald-50 to-teal-50/30 p-4">
-          <div className="inline-flex rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 p-2 shadow-sm">
-            <CheckCircle2 className="h-4 w-4 text-white" />
+        <div className="rounded-2xl border bg-gradient-to-br from-emerald-50 to-teal-50/30 px-3 py-2.5">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-slate-700" />
+            <p className="text-xs font-semibold text-foreground">승인됨</p>
           </div>
-          <p className="mt-2 text-2xl font-bold">{approved.length}</p>
-          <p className="text-xs font-semibold text-foreground">승인됨</p>
+          <p className="mt-1 ml-[30px] text-base sm:text-lg font-bold">{approved.length}</p>
         </div>
-        <div className="rounded-2xl border bg-gradient-to-br from-red-50 to-rose-50/30 p-4">
-          <div className="inline-flex rounded-xl bg-gradient-to-br from-red-500 to-rose-500 p-2 shadow-sm">
-            <XCircle className="h-4 w-4 text-white" />
+        <div className="rounded-2xl border bg-gradient-to-br from-red-50 to-rose-50/30 px-3 py-2.5">
+          <div className="flex items-center gap-2">
+            <XCircle className="h-4 w-4 text-slate-700" />
+            <p className="text-xs font-semibold text-foreground">거절</p>
           </div>
-          <p className="mt-2 text-2xl font-bold">{rejected.length}</p>
-          <p className="text-xs font-semibold text-foreground">거절</p>
+          <p className="mt-1 ml-[30px] text-base sm:text-lg font-bold">{rejected.length}</p>
         </div>
       </div>
 

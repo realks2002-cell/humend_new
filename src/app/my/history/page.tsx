@@ -78,16 +78,16 @@ export default async function HistoryPage({ searchParams }: Props) {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {statCards.map((stat) => (
-          <div key={stat.label} className="relative overflow-hidden rounded-2xl border bg-card p-4">
+          <div key={stat.label} className="relative overflow-hidden rounded-2xl border bg-card px-3 py-2.5">
             <div className={`absolute inset-0 bg-gradient-to-br ${stat.lightBg} opacity-40`} />
             <div className="relative">
-              <div className={`inline-flex rounded-xl bg-gradient-to-br ${stat.gradient} p-2 shadow-sm`}>
-                <stat.icon className="h-4 w-4 text-white" />
+              <div className="flex items-center gap-2">
+                <stat.icon className="h-4 w-4 text-slate-700" />
+                <p className="text-xs font-semibold text-foreground">{stat.label}</p>
               </div>
-              <p className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">
+              <p className="mt-1 ml-[30px] text-base font-bold tracking-tight sm:text-lg">
                 {stat.value}{stat.suffix && <span className="text-sm font-medium text-muted-foreground ml-0.5">{stat.suffix}</span>}
               </p>
-              <p className="text-xs font-semibold text-foreground">{stat.label}</p>
             </div>
           </div>
         ))}

@@ -51,6 +51,7 @@ interface KakaoMapProps {
   address?: string;
   editable?: boolean;
   onLocationChange?: (lat: number, lng: number) => void;
+  height?: string;
 }
 
 const KAKAO_SDK_URL = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&libraries=services&autoload=false`;
@@ -93,6 +94,7 @@ export function KakaoMap({
   address,
   editable = false,
   onLocationChange,
+  height = "200px",
 }: KakaoMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<KakaoMap | null>(null);
@@ -193,7 +195,7 @@ export function KakaoMap({
 
   if (!process.env.NEXT_PUBLIC_KAKAO_MAP_KEY) {
     return (
-      <div className="flex h-[200px] items-center justify-center rounded-md border bg-muted text-sm text-muted-foreground">
+      <div style={{ height }} className="flex items-center justify-center rounded-md border bg-muted text-sm text-muted-foreground">
         카카오맵 API 키가 설정되지 않았습니다
       </div>
     );
@@ -232,7 +234,8 @@ export function KakaoMap({
       <div className="relative">
         <div
           ref={mapRef}
-          className="h-[200px] w-full rounded-md border"
+          style={{ height }}
+          className="w-full rounded-md border"
         />
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center rounded-md bg-muted">

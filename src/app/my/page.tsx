@@ -80,29 +80,26 @@ export default async function MyPage() {
   const monthlyNet = records.reduce((s, r) => s + r.net_pay, 0);
 
   const quickLinks = [
-    { href: "/my/resume", icon: User, label: "프로필 관리", desc: "회원정보 등록/수정", gradient: "from-blue-500/10 to-indigo-500/10", iconBg: "bg-blue-500/10", iconColor: "text-blue-600" },
-    { href: "/my/applications", icon: ClipboardList, label: "근무신청 조회", desc: "내 지원 현황 확인", gradient: "from-violet-500/10 to-purple-500/10", iconBg: "bg-violet-500/10", iconColor: "text-violet-600" },
-    { href: "/my/history", icon: Clock, label: "근무내역", desc: "월별 근무내역 조회", gradient: "from-amber-500/10 to-orange-500/10", iconBg: "bg-amber-500/10", iconColor: "text-amber-600" },
-    { href: "/my/salary", icon: Wallet, label: "급여신청", desc: "계약체결 및 급여신청", gradient: "from-emerald-500/10 to-teal-500/10", iconBg: "bg-emerald-500/10", iconColor: "text-emerald-600" },
+    { href: "/my/resume", icon: User, label: "프로필 관리", desc: "회원정보 등록/수정", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
+    { href: "/my/applications", icon: ClipboardList, label: "근무신청 조회", desc: "내 지원 현황 확인", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
+    { href: "/my/history", icon: Clock, label: "근무내역", desc: "월별 근무내역 조회", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
+    { href: "/my/salary", icon: Wallet, label: "급여신청", desc: "계약체결 및 급여신청", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
   ];
 
   const statCards = [
-    { label: "근무지원 승인 대기중", value: pendingCount, icon: ClipboardList, gradient: "from-blue-600 to-indigo-600", lightBg: "from-blue-50 to-indigo-50" },
-    { label: "근무지원 승인됨", value: approvedCount, icon: Calendar, gradient: "from-emerald-600 to-teal-600", lightBg: "from-emerald-50 to-teal-50" },
-    { label: "이번 달 급여", value: null, displayValue: formatCurrency(monthlyNet), icon: TrendingUp, gradient: "from-violet-600 to-purple-600", lightBg: "from-violet-50 to-purple-50" },
+    { label: "근무지원 승인 대기중", value: pendingCount, icon: ClipboardList, gradient: "from-slate-600 to-gray-600", lightBg: "from-slate-50 to-gray-50" },
+    { label: "근무지원 승인됨", value: approvedCount, icon: Calendar, gradient: "from-slate-600 to-gray-600", lightBg: "from-slate-50 to-gray-50" },
+    { label: "이번 달 급여", value: null, displayValue: formatCurrency(monthlyNet), icon: TrendingUp, gradient: "from-slate-600 to-gray-600", lightBg: "from-slate-50 to-gray-50" },
   ];
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 space-y-8">
       {/* Profile Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-slate-50 via-white to-blue-50/50 p-6">
-        <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-gradient-to-br from-blue-500/5 to-indigo-500/5" />
-        <div className="absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-gradient-to-br from-violet-500/5 to-purple-500/5" />
-
-        <div className="relative flex items-start gap-5">
+      <div className="relative overflow-hidden rounded-[13px] border border-slate-300 bg-slate-50 p-6">
+        <div className="flex items-start gap-5">
           {/* Avatar */}
           <div className="relative">
-            <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white bg-gradient-to-br from-blue-100 to-indigo-100 shadow-md">
+            <div className="flex h-[94px] w-[94px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white bg-gradient-to-br from-blue-100 to-indigo-100">
               {profileImageUrl ? (
                 <img src={profileImageUrl} alt="프로필" className="h-full w-full object-cover" />
               ) : (
@@ -120,33 +117,11 @@ export default async function MyPage() {
 
           {/* Info */}
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+            <h1 className="mt-[10px] text-xl font-bold tracking-tight sm:text-2xl">
               {profile?.name ? `${profile.name}님, 환영합니다` : "환영합니다"}
             </h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">오늘도 좋은 하루 되세요.</p>
+            <p className="mt-[10px] text-sm text-muted-foreground">오늘도 좋은 하루 되세요.</p>
 
-            {/* Profile Completion */}
-            {profilePercent < 100 && (
-              <div className="mt-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">프로필 완성도</span>
-                  <span className="font-semibold text-blue-600">{profilePercent}%</span>
-                </div>
-                <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-700 ease-out"
-                    style={{ width: `${profilePercent}%` }}
-                  />
-                </div>
-                <Link
-                  href="/my/resume"
-                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                >
-                  프로필 완성하기
-                  <ChevronRight className="h-3 w-3" />
-                </Link>
-              </div>
-            )}
           </div>
         </div>
 
@@ -161,7 +136,7 @@ export default async function MyPage() {
       </div>
 
       {/* Stat Cards */}
-      <Card className="overflow-hidden py-0">
+      <Card className="overflow-hidden border-slate-300 shadow-none py-0">
         <CardContent className="flex items-center divide-x p-0">
           {statCards.map((stat) => (
             <div key={stat.label} className="flex flex-1 items-center gap-2.5 px-4 py-3">
@@ -183,7 +158,7 @@ export default async function MyPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           {quickLinks.map((link) => (
             <Link key={link.href} href={link.href}>
-              <Card className="group relative overflow-hidden border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5 py-0">
+              <Card className="group relative overflow-hidden border border-slate-300 shadow-none transition-all duration-300 hover:-translate-y-0.5 py-0">
                 <div className={`absolute inset-0 bg-gradient-to-br ${link.gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
                 <CardContent className="relative flex items-center gap-4 p-4">
                   <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${link.iconBg} transition-transform duration-300 group-hover:scale-110`}>
@@ -210,7 +185,7 @@ export default async function MyPage() {
               전체보기
             </Link>
           </div>
-          <Card className="overflow-hidden py-0">
+          <Card className="overflow-hidden border-slate-300 shadow-none py-0">
             <CardContent className="p-0 divide-y">
               {upcomingJobs.map((app) => {
                 const s = statusMap[app.status] ?? statusMap["대기"];
@@ -247,18 +222,15 @@ export default async function MyPage() {
 
       {/* Resume CTA */}
       {!hasResume && (
-        <Card className="relative overflow-hidden border-amber-200/80 py-0">
+        <Card className="relative overflow-hidden border-slate-300 shadow-none py-0">
           <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-orange-50/50 to-yellow-50/30" />
           <CardContent className="relative py-8 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/20">
-              <AlertCircle className="h-7 w-7 text-white" />
-            </div>
             <p className="text-lg font-bold">회원정보를 등록해 주세요</p>
             <p className="mx-auto mt-2 max-w-xs text-sm text-muted-foreground">
               회원정보 등록 후 채용공고에 지원할 수 있습니다.
             </p>
             <Link href="/my/resume">
-              <Button className="mt-5 rounded-none bg-gradient-to-r from-amber-500 to-orange-500 px-6 shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 transition-all duration-300">
+              <Button className="mt-5 rounded-none bg-red-400 px-6 hover:bg-red-500 transition-all duration-300">
                 회원정보 등록하기
                 <ArrowRight className="h-4 w-4" />
               </Button>

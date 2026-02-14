@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Briefcase, GripVertical } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapPin, Briefcase, GripVertical, Trash2 } from "lucide-react";
 import { formatWage } from "@/lib/utils/format";
 import { EditClientButton } from "./client-form";
-import { updateClientSortOrder } from "./actions";
+import { updateClientSortOrder, deleteClientAction } from "./actions";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -42,7 +43,7 @@ interface ClientItem {
   [key: string]: unknown;
 }
 
-function SortableCard({ client }: { client: ClientItem }) {
+function SortableCard({ client, onDelete }: { client: ClientItem; onDelete: (id: string) => void }) {
   const {
     attributes,
     listeners,
@@ -96,7 +97,17 @@ function SortableCard({ client }: { client: ClientItem }) {
                 {client.location}
               </p>
             </div>
-            <EditClientButton client={client} />
+            <div className="flex items-center gap-1">
+              <EditClientButton client={client} />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                onClick={() => onDelete(client.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           <div className="mt-3 flex items-center gap-2">
             <Badge variant="outline">
@@ -127,6 +138,17 @@ export function DraggableClientList({ clients: initialClients }: { clients: Clie
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("이 고객사를 삭제하시겠습니까?")) return;
+    const result = await deleteClientAction(id);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      setClients((prev) => prev.filter((c) => c.id !== id));
+      toast.success("고객사가 삭제되었습니다.");
+    }
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -150,7 +172,7 @@ export function DraggableClientList({ clients: initialClients }: { clients: Clie
       <SortableContext items={clients.map((c) => c.id)} strategy={rectSortingStrategy}>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {clients.map((client) => (
-            <SortableCard key={client.id} client={client} />
+            <SortableCard key={client.id} client={client} onDelete={handleDelete} />
           ))}
         </div>
       </SortableContext>

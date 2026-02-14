@@ -14,6 +14,7 @@ export function JobDetailMap({ latitude, longitude, address }: JobDetailMapProps
       latitude={latitude}
       longitude={longitude}
       address={address}
+      height="300px"
     />
   );
 }

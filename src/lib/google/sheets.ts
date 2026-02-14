@@ -3,7 +3,20 @@ import fs from "fs";
 import path from "path";
 
 function getAuth() {
-  // 1) JSON 키 파일이 있으면 직접 사용
+  // 1) 환경변수 우선 (Vercel 등 서버리스 환경)
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const rawKey = process.env.GOOGLE_PRIVATE_KEY;
+
+  if (email && rawKey) {
+    const key = rawKey.replace(/\\n/g, "\n");
+    return new google.auth.JWT({
+      email,
+      key,
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
+  }
+
+  // 2) JSON 키 파일 fallback (로컬 개발)
   const keyFilePath = path.join(process.cwd(), "humend-293c16164287.json");
   if (fs.existsSync(keyFilePath)) {
     const creds = JSON.parse(fs.readFileSync(keyFilePath, "utf8"));
@@ -14,19 +27,7 @@ function getAuth() {
     });
   }
 
-  // 2) 환경변수 fallback
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-
-  if (!email || !key) {
-    throw new Error("Google Service Account 설정이 없습니다. JSON 키 파일 또는 환경변수를 확인하세요.");
-  }
-
-  return new google.auth.JWT({
-    email,
-    key,
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
+  throw new Error("Google Service Account 설정이 없습니다. 환경변수 또는 JSON 키 파일을 확인하세요.");
 }
 
 function getSheets() {
