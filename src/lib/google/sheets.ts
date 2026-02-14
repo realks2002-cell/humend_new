@@ -3,19 +3,13 @@ import fs from "fs";
 import path from "path";
 
 function getAuth() {
-  // 1) 환경변수 우선 (Vercel 등 서버리스 환경)
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const rawKey = process.env.GOOGLE_PRIVATE_KEY;
-
-  if (email && rawKey) {
-    // Vercel 환경변수 포맷 대응: 따옴표 제거 + 줄바꿈 정규화
-    const key = rawKey
-      .replace(/^["']|["']$/g, "")   // 앞뒤 따옴표 제거
-      .replace(/\\\\n/g, "\n")        // \\n (이중 이스케이프)
-      .replace(/\\n/g, "\n");         // \n (단일 이스케이프)
+  // 1) Base64 인코딩된 JSON 키 (Vercel 등 서버리스 환경에서 가장 안정적)
+  const base64Key = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64;
+  if (base64Key) {
+    const creds = JSON.parse(Buffer.from(base64Key, "base64").toString("utf8"));
     return new google.auth.JWT({
-      email,
-      key,
+      email: creds.client_email,
+      key: creds.private_key,
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
   }
@@ -31,7 +25,7 @@ function getAuth() {
     });
   }
 
-  throw new Error("Google Service Account 설정이 없습니다. 환경변수 또는 JSON 키 파일을 확인하세요.");
+  throw new Error("Google Service Account 설정이 없습니다. GOOGLE_SERVICE_ACCOUNT_KEY_BASE64 환경변수 또는 JSON 키 파일을 확인하세요.");
 }
 
 function getSheets() {
