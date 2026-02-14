@@ -37,14 +37,6 @@ function createAdminClient() {
 
 export async function exportPayrollToSheets(month: string) {
   try {
-    // 디버그: 환경변수 확인
-    const debugInfo = {
-      GOOGLE_SERVICE_ACCOUNT_EMAIL: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ? "✅" : "❌",
-      GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY ? `✅ (${process.env.GOOGLE_PRIVATE_KEY.length}자)` : "❌",
-      GOOGLE_SPREADSHEET_ID: process.env.GOOGLE_SPREADSHEET_ID ?? "❌ 없음",
-    };
-    console.log("📋 Google Sheets 환경변수:", debugInfo);
-
     const supabase = createAdminClient();
 
     const start = `${month}-01`;
@@ -135,12 +127,7 @@ export async function exportPayrollToSheets(month: string) {
     const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
     return { success: true, count: rows.length, sheetUrl };
   } catch (e) {
-    const err = e as Error;
-    console.error("❌ Export 실패:", err.message, err.stack);
-    const sid = process.env.GOOGLE_SPREADSHEET_ID;
-    return {
-      error: `${err.message} [EMAIL=${process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ? "O" : "X"}, KEY=${process.env.GOOGLE_PRIVATE_KEY ? "O" : "X"}, SID=${sid ? sid.substring(0, 8) + "..." : "없음"}]`
-    };
+    return { error: (e as Error).message };
   }
 }
 
