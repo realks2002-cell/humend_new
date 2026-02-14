@@ -63,7 +63,7 @@ export function ContractViewModal({ record, worker, signatureUrl }: { record: Wo
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-7 px-2 text-xs rounded-none bg-emerald-600 text-white hover:bg-emerald-700">
+        <Button size="sm" className="h-7 px-2 text-[13px] rounded-none bg-emerald-600 text-white hover:bg-emerald-700">
           <FileText className="mr-1 h-3 w-3" />
           근로계약서
         </Button>

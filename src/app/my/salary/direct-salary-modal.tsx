@@ -192,7 +192,7 @@ export function DirectSalaryModal({ clients, worker }: { clients: Client[]; work
               <label className="text-sm font-medium text-gray-700">근무일</label>
               <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                 <PopoverTrigger asChild>
-                  <button className="flex h-10 w-full items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-sm hover:bg-gray-50">
+                  <button className="flex h-10 w-full items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-[15px] hover:bg-gray-50">
                     <CalendarIcon className="h-4 w-4 text-gray-500" />
                     {workDate || "날짜를 선택해 주세요"}
                   </button>

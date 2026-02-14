@@ -97,7 +97,7 @@ export default async function AdminDashboard() {
             <h3 className="text-sm font-semibold">미처리 지원 목록</h3>
             {pendingApps.length > 0 && (
               <Link href="/admin/applications">
-                <Button variant="ghost" size="sm" className="h-7 text-xs">
+                <Button variant="ghost" size="sm" className="h-7 text-[13px]">
                   전체보기 <ArrowRight className="ml-1 h-3 w-3" />
                 </Button>
               </Link>

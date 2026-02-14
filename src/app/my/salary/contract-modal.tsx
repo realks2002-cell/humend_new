@@ -203,7 +203,7 @@ export function ContractModal({ record, worker }: { record: WorkRecord; worker: 
                   <div className="flex-1 px-3 py-1.5 flex items-center">
                     <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                       <PopoverTrigger asChild>
-                        <button className="inline-flex h-8 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-sm hover:bg-gray-50">
+                        <button className="inline-flex h-8 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-[15px] hover:bg-gray-50">
                           <CalendarIcon className="h-3.5 w-3.5 text-gray-500" />
                           {workDate || "날짜 선택"}
                         </button>

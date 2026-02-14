@@ -74,7 +74,7 @@ export default async function SalaryPage({ searchParams }: Props) {
               <span className="font-medium">{profile?.account_holder ?? profile?.name ?? "-"}</span>
             </span>
             <Link href="/my/resume">
-              <Button size="sm" className="h-7 text-xs shrink-0 rounded-none bg-blue-600 text-white hover:bg-blue-700">
+              <Button size="sm" className="h-7 text-[13px] shrink-0 rounded-none bg-blue-600 text-white hover:bg-blue-700">
                 수정
               </Button>
             </Link>

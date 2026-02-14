@@ -148,7 +148,7 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls }: Paymen
           {/* CSV Export */}
           <Popover open={startOpen} onOpenChange={setStartOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="text-xs font-normal">
+              <Button variant="outline" size="sm" className="text-[13px] font-normal">
                 <CalendarIcon className="mr-1 h-3 w-3" />
                 {startDate ? toDisplay(startDate) : "시작일"}
               </Button>
@@ -164,7 +164,7 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls }: Paymen
           <span className="text-xs text-muted-foreground">~</span>
           <Popover open={endOpen} onOpenChange={setEndOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="text-xs font-normal">
+              <Button variant="outline" size="sm" className="text-[13px] font-normal">
                 <CalendarIcon className="mr-1 h-3 w-3" />
                 {endDate ? toDisplay(endDate) : "종료일"}
               </Button>

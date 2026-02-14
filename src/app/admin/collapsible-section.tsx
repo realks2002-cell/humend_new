@@ -21,7 +21,7 @@ export function CollapsibleSection({
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground"
+          className="h-7 gap-1 text-[13px] text-muted-foreground hover:text-foreground"
           onClick={() => setOpen(!open)}
         >
           {open ? (
