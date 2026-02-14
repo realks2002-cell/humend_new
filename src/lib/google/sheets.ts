@@ -8,7 +8,11 @@ function getAuth() {
   const rawKey = process.env.GOOGLE_PRIVATE_KEY;
 
   if (email && rawKey) {
-    const key = rawKey.replace(/\\n/g, "\n");
+    // Vercel 환경변수 포맷 대응: 따옴표 제거 + 줄바꿈 정규화
+    const key = rawKey
+      .replace(/^["']|["']$/g, "")   // 앞뒤 따옴표 제거
+      .replace(/\\\\n/g, "\n")        // \\n (이중 이스케이프)
+      .replace(/\\n/g, "\n");         // \n (단일 이스케이프)
     return new google.auth.JWT({
       email,
       key,
