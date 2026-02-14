@@ -2,22 +2,22 @@ export const dynamic = "force-dynamic";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { MonthSelector } from "@/components/ui/month-selector";
-import { getAllWorkRecords, getAllMembers } from "@/lib/supabase/queries";
+import { getAllMembers } from "@/lib/supabase/queries";
 import { createAdminClient } from "@/lib/supabase/server";
-import { PayrollTable } from "./payroll-table";
-import { SheetsSync } from "./sheets-sync";
+import { getPaymentsByMonth } from "./actions";
+import { PaymentsTable } from "./payments-table";
 
 interface Props {
-  searchParams: Promise<{ month?: string; status?: string }>;
+  searchParams: Promise<{ month?: string }>;
 }
 
-export default async function PayrollPage({ searchParams }: Props) {
+export default async function PaymentsPage({ searchParams }: Props) {
   const params = await searchParams;
   const now = new Date();
   const currentMonth = params.month ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-  const [records, members] = await Promise.all([
-    getAllWorkRecords({ month: currentMonth, status: params.status, signedOnly: true }),
+  const [payments, members] = await Promise.all([
+    getPaymentsByMonth(currentMonth),
     getAllMembers(),
   ]);
 
@@ -41,17 +41,16 @@ export default async function PayrollPage({ searchParams }: Props) {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">급여 관리</h1>
+          <h1 className="text-2xl font-bold tracking-tight">급여지급 내역</h1>
           <div className="mt-3">
-            <MonthSelector currentMonth={currentMonth} basePath="/admin/payroll" />
+            <MonthSelector currentMonth={currentMonth} basePath="/admin/payments" />
           </div>
         </div>
-        <SheetsSync month={currentMonth} />
       </div>
 
       <Card className="overflow-hidden py-0">
         <CardContent className="p-0 pt-4">
-          <PayrollTable records={records} month={currentMonth} membersMap={membersMap} profileImageUrls={profileImageUrls} />
+          <PaymentsTable payments={payments} membersMap={membersMap} profileImageUrls={profileImageUrls} />
         </CardContent>
       </Card>
     </div>

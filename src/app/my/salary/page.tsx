@@ -6,11 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CreditCard, Wallet } from "lucide-react";
 import { MonthSelector } from "@/components/ui/month-selector";
-import { getMyWorkRecords, getMyProfile } from "@/lib/supabase/queries";
+import { getMyWorkRecords, getMyProfile, getAllClients } from "@/lib/supabase/queries";
 import { formatDate, formatCurrency, formatAccount } from "@/lib/utils/format";
 import { ContractModal } from "./contract-modal";
 import { ContractViewModal } from "./contract-view-modal";
 import { PayslipModal } from "./payslip-modal";
+import { DirectSalaryModal } from "./direct-salary-modal";
 
 interface Props {
   searchParams: Promise<{ month?: string }>;
@@ -26,9 +27,10 @@ export default async function SalaryPage({ searchParams }: Props) {
   const params = await searchParams;
   const now = new Date();
   const currentMonth = params.month ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const [allRecords, profile] = await Promise.all([
+  const [allRecords, profile, clients] = await Promise.all([
     getMyWorkRecords(currentMonth),
     getMyProfile(),
+    getAllClients(),
   ]);
 
   // 서명 안된 레코드 (급여 신청 전)
@@ -90,6 +92,9 @@ export default async function SalaryPage({ searchParams }: Props) {
       </Card>
 
       <MonthSelector currentMonth={currentMonth} basePath="/my/salary" />
+
+      {/* 별도 근무 급여신청 */}
+      <DirectSalaryModal clients={clients} worker={worker} />
 
       {/* Records (급여신청하기) */}
       <div className="space-y-3">

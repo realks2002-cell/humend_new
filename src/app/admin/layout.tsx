@@ -18,6 +18,7 @@ import {
   ClipboardList,
   Wallet,
   FileSignature,
+  Banknote,
   PanelLeftClose,
   PanelLeft,
 } from "lucide-react";
@@ -29,6 +30,7 @@ const sidebarLinks = [
   { href: "/admin/jobs", label: "공고 관리", icon: Megaphone },
   { href: "/admin/applications", label: "지원 관리", icon: ClipboardList },
   { href: "/admin/payroll", label: "급여 관리", icon: Wallet },
+  { href: "/admin/payments", label: "급여지급 내역", icon: Banknote },
   { href: "/admin/contracts", label: "계약 관리", icon: FileSignature },
 ];
 

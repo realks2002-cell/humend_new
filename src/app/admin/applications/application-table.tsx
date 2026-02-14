@@ -77,7 +77,7 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                     {member ? (
                       <button
                         type="button"
-                        className="font-medium text-primary underline-offset-2 hover:underline"
+                        className="font-medium text-blue-600 hover:underline"
                         onClick={() => setSelectedMember(member)}
                       >
                         {app.members?.name ?? "-"}

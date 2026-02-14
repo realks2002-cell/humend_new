@@ -87,7 +87,7 @@ export interface Member {
 export interface WorkRecord {
   id: string;
   member_id: string;
-  posting_id: string;
+  posting_id: string | null;
   application_id: string | null;
   client_name: string;
   work_date: string;
@@ -253,8 +253,8 @@ export async function updateMyProfile(updates: Partial<Member>) {
 // ========== 관리자 쿼리 ==========
 
 export async function getAllMembers() {
-  const supabase = await createClient();
-  const { data } = await supabase
+  const admin = createAdminClient();
+  const { data } = await admin
     .from("members")
     .select("*")
     .order("created_at", { ascending: false });
@@ -263,8 +263,8 @@ export async function getAllMembers() {
 }
 
 export async function getAllClients() {
-  const supabase = await createClient();
-  const { data } = await supabase
+  const admin = createAdminClient();
+  const { data } = await admin
     .from("clients")
     .select("*")
     .order("created_at", { ascending: false });
@@ -273,8 +273,8 @@ export async function getAllClients() {
 }
 
 export async function getAllApplications() {
-  const supabase = await createClient();
-  const { data } = await supabase
+  const admin = createAdminClient();
+  const { data } = await admin
     .from("applications")
     .select(`*, job_postings(*, clients(company_name, location, hourly_wage)), members(name, phone)`)
     .order("applied_at", { ascending: false });
@@ -283,8 +283,8 @@ export async function getAllApplications() {
 }
 
 export async function getApplicationCounts() {
-  const supabase = await createClient();
-  const { count: pending } = await supabase
+  const admin = createAdminClient();
+  const { count: pending } = await admin
     .from("applications")
     .select("*", { count: "exact", head: true })
     .eq("status", "대기");
@@ -293,8 +293,8 @@ export async function getApplicationCounts() {
 }
 
 export async function getAllClientsWithJobs() {
-  const supabase = await createClient();
-  const { data } = await supabase
+  const admin = createAdminClient();
+  const { data } = await admin
     .from("clients")
     .select(`*, job_postings(*)`)
     .order("created_at", { ascending: false });
