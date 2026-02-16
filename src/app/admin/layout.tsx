@@ -21,6 +21,7 @@ import {
   Banknote,
   PanelLeftClose,
   PanelLeft,
+  Settings,
 } from "lucide-react";
 
 const sidebarLinks = [
@@ -32,6 +33,7 @@ const sidebarLinks = [
   { href: "/admin/payroll", label: "급여 관리", icon: Wallet },
   { href: "/admin/payments", label: "급여지급 내역", icon: Banknote },
   { href: "/admin/contracts", label: "계약 관리", icon: FileSignature },
+  { href: "/admin/settings", label: "관리자 설정", icon: Settings },
 ];
 
 export default function AdminLayout({
@@ -68,49 +70,49 @@ export default function AdminLayout({
         </div>
         <nav className="space-y-1 px-2">
           {sidebarLinks.map((link) => {
-            const isActive =
-              pathname === link.href ||
-              (link.href !== "/admin" && pathname.startsWith(link.href));
+              const isActive =
+                pathname === link.href ||
+                (link.href !== "/admin" && pathname.startsWith(link.href));
 
-            if (collapsed) {
+              if (collapsed) {
+                return (
+                  <Tooltip key={link.href}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={link.href}
+                        className={cn(
+                          "flex items-center justify-center rounded-xl p-2.5 transition-all",
+                          isActive
+                            ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
+                            : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                        )}
+                      >
+                        <link.icon className="h-4 w-4" />
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="text-xs">
+                      {link.label}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
+
               return (
-                <Tooltip key={link.href}>
-                  <TooltipTrigger asChild>
-                    <Link
-                      href={link.href}
-                      className={cn(
-                        "flex items-center justify-center rounded-xl p-2.5 transition-all",
-                        isActive
-                          ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
-                          : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                      )}
-                    >
-                      <link.icon className="h-4 w-4" />
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="text-xs">
-                    {link.label}
-                  </TooltipContent>
-                </Tooltip>
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                    isActive
+                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  )}
+                >
+                  <link.icon className="h-4 w-4" />
+                  {link.label}
+                </Link>
               );
-            }
-
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
-                  isActive
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                )}
-              >
-                <link.icon className="h-4 w-4" />
-                {link.label}
-              </Link>
-            );
-          })}
+            })}
         </nav>
       </aside>
 

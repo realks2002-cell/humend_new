@@ -2,6 +2,8 @@ import { put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+export const runtime = "nodejs";
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -34,6 +36,7 @@ export async function POST(req: NextRequest) {
     const blob = await put(fileName, file, {
       access: "public",
       addRandomSuffix: false,
+      allowOverwrite: true,
     });
 
     // DB에 URL 저장

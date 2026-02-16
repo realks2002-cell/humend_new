@@ -120,7 +120,11 @@ export default function ResumePage() {
       setProfileImageUrl(url);
       setMessage("프로필 사진이 업로드되었습니다.");
     } catch (err) {
-      setMessage(`업로드 실패: ${err instanceof Error ? err.message : "알 수 없는 오류"}`);
+      if (err instanceof TypeError && err.message === "Failed to fetch") {
+        setMessage("서버 연결 실패: 개발 서버를 재시작해주세요.");
+      } else {
+        setMessage(`업로드 실패: ${err instanceof Error ? err.message : "알 수 없는 오류"}`);
+      }
     }
     setUploading(false);
   };
@@ -198,7 +202,13 @@ export default function ResumePage() {
         setShowSuccessModal(true);
       }
     } catch (err) {
-      setMessage(`저장 중 오류가 발생했습니다: ${err instanceof Error ? err.message : "알 수 없는 오류"}`);
+      const msg = err instanceof Error ? err.message : "알 수 없는 오류";
+      if (msg.includes("Server Action") || msg.includes("not found")) {
+        setMessage("세션이 만료되었습니다. 페이지를 새로고침 해주세요.");
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        setMessage(`저장 중 오류가 발생했습니다: ${msg}`);
+      }
     } finally {
       setSaving(false);
     }

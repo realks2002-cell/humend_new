@@ -5,28 +5,29 @@ import { X, ImagePlus, Loader2 } from "lucide-react";
 
 function compressToDataURL(file: File, maxWidth = 1200, quality = 0.82): Promise<string> {
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const canvas = document.createElement("canvas");
-      let w = img.width;
-      let h = img.height;
-      if (w > maxWidth) {
-        h = Math.round((h * maxWidth) / w);
-        w = maxWidth;
-      }
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL("image/jpeg", quality));
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let w = img.width;
+        let h = img.height;
+        if (w > maxWidth) {
+          h = Math.round((h * maxWidth) / w);
+          w = maxWidth;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
     };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("이미지 로드 실패"));
-    };
-    img.src = url;
+    reader.onerror = () => reject(new Error("파일 읽기 실패"));
+    reader.readAsDataURL(file);
   });
 }
 

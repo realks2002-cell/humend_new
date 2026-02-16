@@ -3,6 +3,7 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { saveClientPhotos } from "@/lib/supabase/queries";
+import { put } from "@vercel/blob";
 
 export async function createClientAction(formData: FormData) {
   const supabase = await createClient();
@@ -68,7 +69,6 @@ async function uploadBase64Images(jsonStr: string | null): Promise<string[]> {
   }
   if (dataUrls.length === 0) return [];
 
-  const admin = createAdminClient();
   const urls: string[] = [];
 
   for (const dataUrl of dataUrls) {
@@ -76,18 +76,15 @@ async function uploadBase64Images(jsonStr: string | null): Promise<string[]> {
     if (!match) continue;
 
     const ext = match[1] === "jpeg" ? "jpg" : match[1];
-    const base64 = match[2];
-    const buffer = Buffer.from(base64, "base64");
-    const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const buffer = Buffer.from(match[2], "base64");
+    const filePath = `client-images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-    const { error } = await admin.storage
-      .from("client-images")
-      .upload(filePath, buffer, { contentType: `image/${match[1]}` });
-
-    if (!error) {
-      const { data: urlData } = admin.storage.from("client-images").getPublicUrl(filePath);
-      urls.push(urlData.publicUrl);
-    }
+    const blob = await put(filePath, buffer, {
+      access: "public",
+      contentType: `image/${match[1]}`,
+      addRandomSuffix: false,
+    });
+    urls.push(blob.url);
   }
 
   return urls;

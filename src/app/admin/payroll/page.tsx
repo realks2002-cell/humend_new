@@ -17,7 +17,7 @@ export default async function PayrollPage({ searchParams }: Props) {
   const currentMonth = params.month ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
   const [records, members] = await Promise.all([
-    getAllWorkRecords({ month: currentMonth, status: params.status, signedOnly: true }),
+    getAllWorkRecords({ month: currentMonth, status: params.status, signedOnly: true, pendingOnly: true }),
     getAllMembers(),
   ]);
 

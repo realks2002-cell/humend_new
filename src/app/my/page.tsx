@@ -120,14 +120,14 @@ export default async function MyPage() {
             <h1 className="mt-[10px] text-xl font-bold tracking-tight sm:text-2xl">
               {profile?.name ? `${profile.name}님, 환영합니다` : "환영합니다"}
             </h1>
-            <p className="mt-[10px] text-sm text-muted-foreground">오늘도 좋은 하루 되세요.</p>
+            <p className="mt-[10px] text-[15px] text-muted-foreground">오늘도 좋은 하루 되세요.</p>
 
           </div>
         </div>
 
         {/* Profile Action Badges */}
         <div className="relative mt-4 flex flex-wrap gap-2">
-          <Badge variant="secondary" className="cursor-pointer gap-1.5 rounded-none px-3 py-1.5 text-xs font-medium transition-colors hover:bg-slate-200">
+          <Badge variant="secondary" className="cursor-pointer gap-1.5 rounded-none px-3 py-1.5 text-[13px] font-medium transition-colors hover:bg-slate-200">
             <Settings className="h-3 w-3" />
             비밀번호 수정
           </Badge>
@@ -144,8 +144,8 @@ export default async function MyPage() {
                 <stat.icon className="h-3.5 w-3.5 text-white" />
               </div>
               <div>
-                <p className="text-base font-bold leading-tight">{stat.displayValue ?? stat.value}</p>
-                <p className="text-[11px] font-medium text-foreground/80">{stat.label}</p>
+                <p className="text-[17px] font-bold leading-tight">{stat.displayValue ?? stat.value}</p>
+                <p className="text-[12px] font-medium text-foreground/80">{stat.label}</p>
               </div>
             </div>
           ))}
@@ -154,7 +154,7 @@ export default async function MyPage() {
 
       {/* Quick Links */}
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider px-1">바로가기</h2>
+        <h2 className="text-[15px] font-semibold text-muted-foreground uppercase tracking-wider px-1">바로가기</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           {quickLinks.map((link) => (
             <Link key={link.href} href={link.href}>
@@ -165,8 +165,8 @@ export default async function MyPage() {
                     <link.icon className={`h-5 w-5 ${link.iconColor}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm">{link.label}</p>
-                    <p className="text-xs text-muted-foreground truncate">{link.desc}</p>
+                    <p className="font-semibold text-[15px]">{link.label}</p>
+                    <p className="text-[13px] text-muted-foreground truncate">{link.desc}</p>
                   </div>
                   <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-all duration-300 group-hover:translate-x-1 group-hover:text-foreground" />
                 </CardContent>
@@ -180,10 +180,11 @@ export default async function MyPage() {
       {upcomingJobs.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">다가오는 근무</h2>
-            <Link href="/my/applications" className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors">
+            <h2 className="text-[15px] font-semibold text-muted-foreground uppercase tracking-wider">다가오는 근무</h2>
+            <Link href="/my/applications" className="text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors">
               전체보기
             </Link>
+
           </div>
           <Card className="overflow-hidden border-slate-300 shadow-none py-0">
             <CardContent className="p-0 divide-y">
@@ -194,21 +195,21 @@ export default async function MyPage() {
                     key={app.id}
                     className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-muted/30"
                   >
-                    <span className={`shrink-0 rounded-lg px-2 py-1 text-[11px] font-bold ${getDdayColor(app.job_postings.work_date)}`}>
+                    <span className={`shrink-0 rounded-lg px-2 py-1 text-[12px] font-bold ${getDdayColor(app.job_postings.work_date)}`}>
                       {getDday(app.job_postings.work_date)}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate">
+                      <p className="text-[15px] font-semibold truncate">
                         {app.job_postings.clients.company_name}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-[13px] text-muted-foreground">
                         {formatDate(app.job_postings.work_date)}{" "}
                         {app.job_postings.start_time.slice(0, 5)}~{app.job_postings.end_time.slice(0, 5)}
                       </p>
                     </div>
                     <Badge
                       variant={s.variant}
-                      className={`shrink-0 text-[11px] ${s.variant === "default" ? "bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10" : ""}`}
+                      className={`shrink-0 text-[12px] ${s.variant === "default" ? "bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10" : ""}`}
                     >
                       {s.label}
                     </Badge>
@@ -225,8 +226,8 @@ export default async function MyPage() {
         <Card className="relative overflow-hidden border-slate-300 shadow-none py-0">
           <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-orange-50/50 to-yellow-50/30" />
           <CardContent className="relative py-8 text-center">
-            <p className="text-lg font-bold">회원정보를 등록해 주세요</p>
-            <p className="mx-auto mt-2 max-w-xs text-sm text-muted-foreground">
+            <p className="text-[19px] font-bold">회원정보를 등록해 주세요</p>
+            <p className="mx-auto mt-2 max-w-xs text-[15px] text-muted-foreground">
               회원정보 등록 후 채용공고에 지원할 수 있습니다.
             </p>
             <Link href="/my/resume">

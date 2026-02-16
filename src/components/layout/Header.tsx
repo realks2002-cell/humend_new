@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 
 const navLinks = [
   { href: "/", label: "홈" },
-  { href: "/jobs", label: "채용공고" },
+  { href: "/jobs", label: "알바공고" },
   { href: "/about", label: "사업소개" },
 ];
 

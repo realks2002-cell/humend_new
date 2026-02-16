@@ -40,11 +40,6 @@ export async function middleware(request: NextRequest) {
     // getUser() 호출로 토큰 갱신 트리거
     const { data: { user } } = await supabase.auth.getUser();
 
-    // 개발 모드에서는 리다이렉트 스킵 (토큰 갱신은 위에서 완료)
-    if (process.env.NODE_ENV === "development") {
-      return supabaseResponse;
-    }
-
     // 공개 페이지는 리다이렉트 불필요
     const publicPaths = ["/", "/about", "/jobs", "/login", "/signup", "/admin/login"];
     const isPublic =

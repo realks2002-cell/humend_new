@@ -42,24 +42,19 @@ export function RichEditor({ value, onChange, placeholder = "내용을 입력하
     },
   });
 
-  const compressImage = (file: File, maxWidth: number, quality: number): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const img = new window.Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let { width, height } = img;
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      };
-      img.onerror = reject;
-      img.src = URL.createObjectURL(file);
-    });
+  const compressImage = async (file: File, maxWidth: number, quality: number): Promise<string> => {
+    const bitmap = await createImageBitmap(file);
+    const canvas = document.createElement("canvas");
+    let { width, height } = bitmap;
+    if (width > maxWidth) {
+      height = (height * maxWidth) / width;
+      width = maxWidth;
+    }
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+    return canvas.toDataURL("image/jpeg", quality);
   };
 
   const handleImageInsert = async (e: React.ChangeEvent<HTMLInputElement>) => {

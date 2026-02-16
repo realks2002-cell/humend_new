@@ -8,6 +8,7 @@ import { getClientsWithJobs } from "@/lib/supabase/queries";
 import { formatDate, formatWage } from "@/lib/utils/format";
 import { Users, Building2, Handshake, ArrowRight, Zap, MapPin, Shield, Briefcase, Search } from "lucide-react";
 import { CountUp } from "@/components/ui/count-up";
+import HeroSection from "@/components/home/HeroSection";
 
 const stats = [
   { label: "등록 회원", value: 1200, suffix: "+", icon: Users, color: "text-blue-500" },
@@ -42,47 +43,14 @@ export default async function Home() {
   return (
     <div className="animate-in fade-in duration-500">
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10 px-4 py-24 text-center md:py-32">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(0,0,0,0.02)_0%,transparent_50%)]" />
-        <div className="relative">
-          <Badge variant="secondary" className="mb-4 px-4 py-1.5 text-sm">
-            지금 가입하면 바로 지원 가능
-          </Badge>
-          <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
-            당신의 일자리,
-            <br />
-            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              Humend HR
-            </span>
-            이 연결합니다
-          </h1>
-          <p className="mx-auto mt-6 max-w-md text-lg text-muted-foreground md:text-xl">
-            웨딩홀, 케이터링, 컨벤션 등 다양한 현장에서
-            <br />
-            원하는 날짜에 일하세요.
-          </p>
-          <div className="mt-10 flex justify-center gap-4">
-            <Link href="/jobs">
-              <Button size="lg" className="h-12 px-8 text-base">
-                채용공고 보기
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button variant="outline" size="lg" className="h-12 px-8 text-base">
-                회원가입
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+      <HeroSection />
 
       {/* Recent Jobs Preview */}
       <section className="bg-muted/20 px-4 py-20">
         <div className="mx-auto max-w-5xl">
           <div className="mb-10 flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold md:text-3xl">최근 채용공고</h2>
+              <h2 className="text-2xl font-bold md:text-3xl">최근 알바공고</h2>
               <p className="mt-1 text-muted-foreground">지금 바로 지원할 수 있는 공고</p>
             </div>
             <Link href="/jobs">

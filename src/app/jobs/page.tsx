@@ -40,7 +40,7 @@ export default async function JobsPage({ searchParams }: Props) {
   return (
     <div className="mx-auto max-w-5xl animate-in fade-in duration-500 px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold md:text-3xl">채용공고</h1>
+        <h1 className="text-2xl font-bold md:text-3xl">알바공고</h1>
         <p className="mt-1 text-muted-foreground">
           원하는 날짜에 지원하고, 바로 일하세요.
         </p>
@@ -54,7 +54,7 @@ export default async function JobsPage({ searchParams }: Props) {
           <CardContent>
             <Search className="mx-auto mb-4 h-16 w-16 text-muted-foreground/30" />
             <p className="text-lg font-medium text-muted-foreground">
-              {hasFilters ? "조건에 맞는 공고가 없습니다" : "현재 등록된 채용공고가 없습니다"}
+              {hasFilters ? "조건에 맞는 공고가 없습니다" : "현재 등록된 알바공고가 없습니다"}
             </p>
             <p className="mt-2 text-sm text-muted-foreground/70">
               {hasFilters ? "필터 조건을 변경해 보세요." : "새로운 공고가 등록되면 여기에 표시됩니다."}
