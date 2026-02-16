@@ -50,15 +50,7 @@ export default async function MyPage() {
     getMyWorkRecords(currentMonth),
   ]);
 
-  let profileImageUrl: string | null = null;
-  if (profile?.profile_image_url) {
-    const { createAdminClient } = await import("@/lib/supabase/server");
-    const admin = createAdminClient();
-    const { data: signedData } = await admin.storage
-      .from("profile-photos")
-      .createSignedUrl(profile.profile_image_url, 3600);
-    profileImageUrl = signedData?.signedUrl ?? null;
-  }
+  const profileImageUrl = profile?.profile_image_url ?? null;
 
   const pendingCount = applications.filter((a) => a.status === "대기").length;
   const approvedCount = applications.filter((a) => a.status === "승인").length;
