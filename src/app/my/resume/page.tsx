@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Camera, Save, Loader2, ShieldCheck, AlertTriangle, User, CreditCard, Briefcase, FileCheck, CheckCircle2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import imageCompression from "browser-image-compression";
 import { saveResume, getResume } from "./actions";
 
@@ -51,13 +50,8 @@ export default function ResumePage() {
 
       if (data) {
         if (data.profile_image_url) {
-          const supabase = createClient();
-          const { data: signedData } = await supabase.storage
-            .from("profile-photos")
-            .createSignedUrl(data.profile_image_url, 3600);
-          if (signedData?.signedUrl) {
-            setProfileImageUrl(signedData.signedUrl);
-          }
+          // Vercel Blob URL은 signed URL 필요 없음
+          setProfileImageUrl(data.profile_image_url);
         }
         setMemberPhone(data.phone ?? "");
         setMemberName(data.name ?? "");
@@ -108,45 +102,25 @@ export default function ResumePage() {
         uploadFile = file;
       }
 
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setMessage("로그인이 필요합니다.");
-        setUploading(false);
-        return;
+      // Vercel Blob API 호출
+      const formData = new FormData();
+      formData.append("photo", uploadFile, file.name);
+
+      const response = await fetch("/api/upload-profile", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "업로드 실패");
       }
 
-      const ext = file.name.split(".").pop() || "jpg";
-      const filePath = `${user.id}/profile.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("profile-photos")
-        .upload(filePath, uploadFile, {
-          upsert: true,
-          contentType: file.type || "image/jpeg",
-        });
-
-      if (uploadError) {
-        setMessage(`사진 업로드에 실패했습니다: ${uploadError.message}`);
-        setUploading(false);
-        return;
-      }
-
-      await supabase
-        .from("members")
-        .update({ profile_image_url: filePath })
-        .eq("id", user.id);
-
-      const { data: signedData } = await supabase.storage
-        .from("profile-photos")
-        .createSignedUrl(filePath, 3600);
-
-      if (signedData?.signedUrl) {
-        setProfileImageUrl(signedData.signedUrl);
-      }
+      const { url } = await response.json();
+      setProfileImageUrl(url);
       setMessage("프로필 사진이 업로드되었습니다.");
     } catch (err) {
-      setMessage(`사진 처리에 실패했습니다: ${err instanceof Error ? err.message : "알 수 없는 오류"}`);
+      setMessage(`업로드 실패: ${err instanceof Error ? err.message : "알 수 없는 오류"}`);
     }
     setUploading(false);
   };
