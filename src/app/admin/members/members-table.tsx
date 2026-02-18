@@ -12,27 +12,34 @@ export function MembersTable({ members, profileImageUrls }: { members: Member[];
   return (
     <>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed">
+          <colgroup>
+            <col className="w-[80px]" />
+            <col className="w-[120px]" />
+            <col className="w-[100px] hidden md:table-column" />
+            <col className="w-[80px]" />
+            <col className="w-[100px] hidden md:table-column" />
+          </colgroup>
           <thead>
-            <tr className="border-b bg-muted/50 text-left">
-              <th className="px-4 py-3 font-medium">이름</th>
-              <th className="px-4 py-3 font-medium">전화번호</th>
-              <th className="hidden px-4 py-3 font-medium md:table-cell">지역</th>
-              <th className="px-4 py-3 font-medium">상태</th>
-              <th className="hidden px-4 py-3 font-medium md:table-cell">가입일</th>
+            <tr className="border-b bg-muted/50 text-center">
+              <th className="px-2 py-3 font-medium">이름</th>
+              <th className="px-2 py-3 font-medium">전화번호</th>
+              <th className="hidden px-2 py-3 font-medium md:table-cell">지역</th>
+              <th className="px-2 py-3 font-medium">상태</th>
+              <th className="hidden px-2 py-3 font-medium md:table-cell">가입일</th>
             </tr>
           </thead>
           <tbody>
             {members.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={5} className="px-2 py-8 text-center text-muted-foreground">
                   등록된 회원이 없습니다.
                 </td>
               </tr>
             ) : (
               members.map((m) => (
                 <tr key={m.id} className="border-b last:border-0">
-                  <td className="px-4 py-3">
+                  <td className="px-2 py-3 text-center">
                     <button
                       type="button"
                       className="font-medium text-blue-600 hover:underline"
@@ -41,16 +48,16 @@ export function MembersTable({ members, profileImageUrls }: { members: Member[];
                       {m.name ?? "-"}
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{formatPhone(m.phone)}</td>
-                  <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
+                  <td className="px-2 py-3 text-center text-muted-foreground">{formatPhone(m.phone)}</td>
+                  <td className="hidden px-2 py-3 text-center text-muted-foreground md:table-cell">
                     {m.region ?? "-"}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-2 py-3 text-center">
                     <Badge variant={m.status === "active" ? "default" : "secondary"}>
                       {m.status === "active" ? "활성" : "비활성"}
                     </Badge>
                   </td>
-                  <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
+                  <td className="hidden px-2 py-3 text-center text-muted-foreground md:table-cell">
                     {m.created_at ? new Date(m.created_at).toLocaleDateString("ko-KR") : "-"}
                   </td>
                 </tr>

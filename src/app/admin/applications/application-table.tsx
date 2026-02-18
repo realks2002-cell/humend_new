@@ -50,17 +50,27 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
   return (
     <>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed">
+          <colgroup>
+            <col className="w-[90px]" />
+            <col className="w-[90px]" />
+            <col className="w-[70px]" />
+            <col className="w-[120px] hidden md:table-column" />
+            <col className="w-[90px]" />
+            <col className="w-[80px] hidden md:table-column" />
+            <col className="w-[70px]" />
+            {showActions && <col className="w-[80px]" />}
+          </colgroup>
           <thead>
-            <tr className="border-b bg-muted/50 text-left">
-              <th className="px-4 py-3 font-medium">근무일</th>
-              <th className="px-4 py-3 font-medium">근무시간</th>
-              <th className="px-4 py-3 font-medium">이름</th>
-              <th className="hidden px-4 py-3 font-medium md:table-cell">전화번호</th>
-              <th className="px-4 py-3 font-medium">근무지</th>
-              <th className="hidden px-4 py-3 font-medium md:table-cell">시급</th>
-              <th className="px-4 py-3 font-medium">상태</th>
-              {showActions && <th className="px-4 py-3 font-medium">처리</th>}
+            <tr className="border-b bg-muted/50 text-center">
+              <th className="px-2 py-3 font-medium">근무일</th>
+              <th className="px-2 py-3 font-medium">근무시간</th>
+              <th className="px-2 py-3 font-medium">이름</th>
+              <th className="hidden px-2 py-3 font-medium md:table-cell">전화번호</th>
+              <th className="px-2 py-3 font-medium">근무지</th>
+              <th className="hidden px-2 py-3 font-medium md:table-cell">시급</th>
+              <th className="px-2 py-3 font-medium">상태</th>
+              {showActions && <th className="px-2 py-3 font-medium">처리</th>}
             </tr>
           </thead>
           <tbody>
@@ -69,11 +79,11 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
               const member = membersMap[app.member_id];
               return (
                 <tr key={app.id} className="border-b last:border-0">
-                  <td className="px-4 py-3 whitespace-nowrap">{formatDate(app.job_postings.work_date)}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="px-2 py-3 text-center whitespace-nowrap">{formatDate(app.job_postings.work_date)}</td>
+                  <td className="px-2 py-3 text-center whitespace-nowrap">
                     {app.job_postings.start_time?.slice(0, 5)}~{app.job_postings.end_time?.slice(0, 5)}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-2 py-3 text-center">
                     {member ? (
                       <button
                         type="button"
@@ -86,20 +96,20 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                       <span className="font-medium">{app.members?.name ?? "-"}</span>
                     )}
                   </td>
-                  <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
+                  <td className="hidden px-2 py-3 text-center text-muted-foreground md:table-cell">
                     {app.members ? formatPhone(app.members.phone) : "-"}
                   </td>
-                  <td className="px-4 py-3">{app.job_postings.clients.company_name}</td>
-                  <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
+                  <td className="px-2 py-3 text-center">{app.job_postings.clients.company_name}</td>
+                  <td className="hidden px-2 py-3 text-center text-muted-foreground md:table-cell">
                     {formatWage(app.job_postings.clients.hourly_wage)}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-2 py-3 text-center">
                     <Badge variant={config.variant} className="text-xs">
                       {config.label}
                     </Badge>
                   </td>
                   {showActions && (
-                    <td className="px-4 py-3">
+                    <td className="px-2 py-3 text-center">
                       {app.status === "대기" && <ApplicationActions applicationId={app.id} />}
                     </td>
                   )}

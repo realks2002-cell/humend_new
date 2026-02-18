@@ -180,32 +180,39 @@ export default function AdminSettingsPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm table-fixed">
+                <colgroup>
+                  <col className="w-[100px]" />
+                  <col className="w-[80px]" />
+                  <col className="w-[80px]" />
+                  <col className="w-[100px] hidden md:table-column" />
+                  <col className="w-[60px]" />
+                </colgroup>
                 <thead>
-                  <tr className="border-b bg-muted/50 text-left">
-                    <th className="px-4 py-3 font-medium">아이디</th>
-                    <th className="px-4 py-3 font-medium">이름</th>
-                    <th className="px-4 py-3 font-medium">역할</th>
-                    <th className="hidden px-4 py-3 font-medium md:table-cell">생성일</th>
-                    <th className="w-[60px] px-4 py-3"></th>
+                  <tr className="border-b bg-muted/50 text-center">
+                    <th className="px-2 py-3 font-medium">아이디</th>
+                    <th className="px-2 py-3 font-medium">이름</th>
+                    <th className="px-2 py-3 font-medium">역할</th>
+                    <th className="hidden px-2 py-3 font-medium md:table-cell">생성일</th>
+                    <th className="px-2 py-3"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {admins.map((admin) => (
                     <tr key={admin.id} className="border-b last:border-0 hover:bg-muted/30">
-                      <td className="px-4 py-3 font-medium">
+                      <td className="px-2 py-3 text-center font-medium">
                         {extractAdminId(admin.email)}
                       </td>
-                      <td className="px-4 py-3">{admin.name}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-2 py-3 text-center">{admin.name}</td>
+                      <td className="px-2 py-3 text-center">
                         <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
                           {admin.role}
                         </span>
                       </td>
-                      <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
+                      <td className="hidden px-2 py-3 text-center text-muted-foreground md:table-cell">
                         {new Date(admin.created_at).toLocaleDateString("ko-KR")}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-2 py-3 text-center">
                         <Button
                           variant="ghost"
                           size="icon"
