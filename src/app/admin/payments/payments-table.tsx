@@ -191,16 +191,25 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls }: Paymen
 
       {/* Table */}
       <div className="overflow-x-auto px-4 pb-4">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed">
+          <colgroup>
+            <col className="w-[120px]" />
+            <col className="w-[100px]" />
+            <col className="w-[100px] hidden sm:table-column" />
+            <col className="w-[80px] hidden md:table-column" />
+            <col className="w-[100px] hidden sm:table-column" />
+            <col className="w-[100px]" />
+            <col className="w-[80px] hidden sm:table-column" />
+          </colgroup>
           <thead>
-            <tr className="border-b text-left text-muted-foreground">
-              <th className="pb-2 pr-4">이름</th>
-              <th className="pb-2 pr-4">근무지</th>
-              <th className="pb-2 pr-4 hidden sm:table-cell">근무일</th>
-              <th className="pb-2 pr-4 hidden md:table-cell">근무시간</th>
-              <th className="pb-2 pr-4 hidden sm:table-cell text-right">총지급액</th>
-              <th className="pb-2 pr-4 text-right">실수령액</th>
-              <th className="pb-2 pr-4 hidden sm:table-cell">상태</th>
+            <tr className="border-b text-center text-muted-foreground">
+              <th className="pb-2 px-2">이름</th>
+              <th className="pb-2 px-2">근무지</th>
+              <th className="pb-2 px-2 hidden sm:table-cell">근무일</th>
+              <th className="pb-2 px-2 hidden md:table-cell">근무시간</th>
+              <th className="pb-2 px-2 hidden sm:table-cell">총지급액</th>
+              <th className="pb-2 px-2">실수령액</th>
+              <th className="pb-2 px-2 hidden sm:table-cell">상태</th>
             </tr>
           </thead>
           <tbody>
@@ -221,11 +230,11 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls }: Paymen
                   : rawPhone;
                 return (
                   <tr key={p.id} className="border-b hover:bg-muted/50">
-                    <td className="py-2 pr-4">
+                    <td className="py-2 px-2 text-center">
                       {member ? (
                         <button
                           type="button"
-                          className="font-medium text-blue-600 hover:underline text-left"
+                          className="font-medium text-blue-600 hover:underline"
                           onClick={() => setSelectedMember(member)}
                         >
                           {wr?.members?.name ?? "-"}
@@ -237,14 +246,14 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls }: Paymen
                         <div className="text-xs text-muted-foreground">{phone}</div>
                       )}
                     </td>
-                    <td className="py-2 pr-4">{wr?.client_name ?? "-"}</td>
-                    <td className="py-2 pr-4 hidden sm:table-cell">
+                    <td className="py-2 px-2 text-center">{wr?.client_name ?? "-"}</td>
+                    <td className="py-2 px-2 hidden sm:table-cell text-center">
                       {wr?.work_date ? formatDate(wr.work_date) : "-"}
                     </td>
-                    <td className="py-2 pr-4 hidden md:table-cell">{p.work_hours + p.overtime_hours}h</td>
-                    <td className="py-2 pr-4 hidden sm:table-cell text-right">{formatCurrency(p.gross_pay)}</td>
-                    <td className="py-2 pr-4 text-right font-medium">{formatCurrency(p.net_pay)}</td>
-                    <td className="py-2 pr-4 hidden sm:table-cell">
+                    <td className="py-2 px-2 hidden md:table-cell text-center">{p.work_hours + p.overtime_hours}h</td>
+                    <td className="py-2 px-2 hidden sm:table-cell text-center">{formatCurrency(p.gross_pay)}</td>
+                    <td className="py-2 px-2 text-center font-medium">{formatCurrency(p.net_pay)}</td>
+                    <td className="py-2 px-2 hidden sm:table-cell text-center">
                       <Badge
                         variant={p.status === "지급완료" ? "default" : "secondary"}
                         className={p.status === "지급완료" ? "bg-emerald-600 hover:bg-emerald-600" : ""}
