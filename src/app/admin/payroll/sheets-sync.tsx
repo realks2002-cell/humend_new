@@ -29,12 +29,17 @@ export function SheetsSync({ month }: { month: string }) {
     setLoading("import");
     const result = await importPayrollFromSheets(month);
     if (result.success) {
+      const parts: string[] = [];
+      if (result.updated) parts.push(`${result.updated}건 수정`);
+      if (result.created) parts.push(`${result.created}건 신규 생성`);
+      const summary = parts.length > 0 ? parts.join(", ") : "변경 없음";
+
       if (result.errors) {
-        toast.warning(`${result.updated}건 가져오기 완료 (일부 오류)`, {
+        toast.warning(`${summary} (일부 오류)`, {
           description: result.errors,
         });
       } else {
-        toast.success(`${result.updated}건 가져오기 완료`);
+        toast.success(summary);
       }
       window.location.reload(); // 데이터 새로고침
     } else {

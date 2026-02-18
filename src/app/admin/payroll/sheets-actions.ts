@@ -18,6 +18,16 @@ function timeToDecimal(timeStr: string): string {
   return decimal.toFixed(1); // 소수점 1자리로 고정
 }
 
+// 소수점 시간을 DB time 형식으로 변환 (예: "9" -> "09:00", "12.5" -> "12:30")
+function decimalToTime(value: string): string {
+  if (!value) return "09:00";
+  const num = parseFloat(value);
+  if (isNaN(num)) return "09:00";
+  const hours = Math.floor(num);
+  const minutes = Math.round((num - hours) * 60);
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
 // RLS 우회용 admin 클라이언트
 function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -156,6 +166,7 @@ export async function importPayrollFromSheets(month: string) {
     console.log("🗄️ DB work_records:", dbRecords.length, "건");
 
     let updated = 0;
+    let created = 0;
     const errors: Array<{ name: string; error: string }> = [];
     const usedIds = new Set<string>(); // 중복 매칭 방지
 
@@ -185,15 +196,6 @@ export async function importPayrollFromSheets(month: string) {
           && (!sheetPhone || dbPhone === sheetPhone);
       });
 
-      if (!matched) {
-        console.log("⚠️ 매칭 실패:", { 이름: sheetName2, 근무일: sheetDate, 고객사: sheetClient });
-        errors.push({ name: sheetName2, error: "매칭되는 근무기록 없음" });
-        continue;
-      }
-
-      const workRecordId = matched.id as string;
-      usedIds.add(workRecordId); // 중복 매칭 방지
-
       const paymentData = {
         hourly_wage: Number(row["시급"]) || 0,
         work_hours: Number(row["근무시간"]) || 0,
@@ -211,6 +213,90 @@ export async function importPayrollFromSheets(month: string) {
         admin_memo: row["메모"] || null,
         status: row["상태"] || "확정",
       };
+
+      if (!matched) {
+        // 매칭 실패: members에서 이름+전화번호로 조회
+        console.log("⚠️ 매칭 실패, 회원 조회 시도:", { 이름: sheetName2, 전화번호: sheetPhone, 고객사: sheetClient });
+
+        if (!sheetPhone) {
+          errors.push({ name: sheetName2, error: "전화번호가 없어 회원 조회 불가" });
+          continue;
+        }
+
+        const { data: memberRows } = await supabase
+          .from("members")
+          .select("id, name, phone")
+          .eq("name", sheetName2)
+          .like("phone", `%${sheetPhone.slice(-4)}`);
+
+        const member = (memberRows ?? []).find((m: Record<string, unknown>) => {
+          const dbPhone = (m.phone as string)?.replace(/\D/g, "");
+          return dbPhone === sheetPhone;
+        });
+
+        if (!member) {
+          errors.push({ name: sheetName2, error: "등록되지 않은 회원입니다" });
+          continue;
+        }
+
+        // work_record 생성
+        const workRecordData = {
+          member_id: member.id,
+          client_name: sheetClient || "",
+          work_date: sheetDate,
+          start_time: decimalToTime(row["시작시간"]),
+          end_time: decimalToTime(row["종료시간"]),
+          break_hours: Number(row["휴게시간"]) || 0,
+          work_hours: paymentData.work_hours,
+          overtime_hours: 0,
+          hourly_wage: paymentData.hourly_wage,
+          base_pay: paymentData.base_pay,
+          overtime_pay: paymentData.overtime_pay,
+          weekly_holiday_pay: paymentData.weekly_holiday_pay,
+          gross_pay: paymentData.gross_pay,
+          national_pension: paymentData.national_pension,
+          health_insurance: paymentData.health_insurance,
+          long_term_care: paymentData.long_term_care,
+          employment_insurance: paymentData.employment_insurance,
+          total_deduction: paymentData.total_deduction,
+          net_pay: paymentData.net_pay,
+          status: "대기",
+          admin_memo: "구글시트 수동 등록",
+          wage_type: row["급여유형"] || "시급",
+          posting_id: null,
+          application_id: null,
+          signature_url: null,
+        };
+
+        const { data: newWr, error: wrError } = await supabase
+          .from("work_records")
+          .insert(workRecordData)
+          .select("id")
+          .single();
+
+        if (wrError || !newWr) {
+          console.error("❌ work_record 생성 에러:", { 이름: sheetName2, error: wrError?.message });
+          errors.push({ name: sheetName2, error: wrError?.message || "근무기록 생성 실패" });
+          continue;
+        }
+
+        const { error: payError } = await supabase
+          .from("payments")
+          .insert({ work_record_id: newWr.id, ...paymentData });
+
+        if (payError) {
+          console.error("❌ payment 생성 에러:", { 이름: sheetName2, error: payError.message });
+          errors.push({ name: sheetName2, error: payError.message });
+        } else {
+          console.log("✅ 신규 생성:", { 이름: sheetName2, workRecordId: newWr.id });
+          created++;
+        }
+        continue;
+      }
+
+      const workRecordId = matched.id as string;
+      usedIds.add(workRecordId); // 중복 매칭 방지
+
       // 소득세는 구글시트 export에서만 계산 (DB 컬럼 추가 후 활성화)
       // income_tax: Number(row["소득세"]) || 0,
 
@@ -233,7 +319,7 @@ export async function importPayrollFromSheets(month: string) {
       }
     }
 
-    console.log("📊 Import 완료:", { updated, errorCount: errors.length });
+    console.log("📊 Import 완료:", { updated, created, errorCount: errors.length });
 
     revalidatePath("/admin/payroll");
 
@@ -241,11 +327,12 @@ export async function importPayrollFromSheets(month: string) {
       return {
         success: true,
         updated,
+        created,
         errors: errors.map(e => `${e.name}: ${e.error}`).join(", ")
       };
     }
 
-    return { success: true, updated };
+    return { success: true, updated, created };
   } catch (e) {
     console.error("❌ Import 실패:", e);
     return { error: (e as Error).message };

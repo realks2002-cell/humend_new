@@ -41,7 +41,21 @@
       "Bash(grep:*)",
       "Bash(ls:*)",
       "Bash(node scripts/create-admin.js:*)",
-      "Bash(node scripts/create-admin-simple.js:*)"
+      "Bash(node scripts/create-admin-simple.js:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_fill_form",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_snapshot",
+      "Bash(python3:*)",
+      "mcp__playwright__browser_file_upload",
+      "mcp__playwright__browser_run_code",
+      "Bash(npm:*)",
+      "Bash(sips:*)",
+      "Bash(cat:*)",
+      "Bash(git credential-osxkeychain:*)",
+      "Bash(git config:*)",
+      "Bash(git fetch:*)"
     ]
   }
 }
