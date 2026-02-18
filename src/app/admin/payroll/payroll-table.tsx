@@ -6,15 +6,17 @@ import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils/format";
 import { type WorkRecord, type Member } from "@/lib/supabase/queries";
 import { MemberDetailModal } from "../members/member-detail-modal";
+import { ContractViewModal } from "../contracts/contract-view-modal";
 
 interface PayrollTableProps {
   records: WorkRecord[];
   month: string;
   membersMap: Record<string, Member>;
   profileImageUrls: Record<string, string>;
+  signatureUrls: Record<string, string>;
 }
 
-export function PayrollTable({ records, month, membersMap, profileImageUrls }: PayrollTableProps) {
+export function PayrollTable({ records, month, membersMap, profileImageUrls, signatureUrls }: PayrollTableProps) {
   const [search, setSearch] = useState("");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
@@ -67,13 +69,15 @@ export function PayrollTable({ records, month, membersMap, profileImageUrls }: P
               <th className="pb-2 pr-4 hidden sm:table-cell text-right">시급</th>
               <th className="pb-2 pr-4 hidden md:table-cell">근무시간</th>
               <th className="pb-2 pr-4 hidden sm:table-cell">상태</th>
+              <th className="pb-2 pr-4 hidden sm:table-cell">계약서</th>
+              <th className="pb-2 pr-4 hidden sm:table-cell">계약서 보기</th>
               <th className="pb-2 pr-4 text-right">총지급액</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                <td colSpan={9} className="py-8 text-center text-muted-foreground">
                   급여 내역이 없습니다.
                 </td>
               </tr>
@@ -120,6 +124,21 @@ export function PayrollTable({ records, month, membersMap, profileImageUrls }: P
                       <Badge variant={status === "확정" ? "default" : "secondary"} className={status === "확정" ? "bg-emerald-600 hover:bg-emerald-600" : ""}>
                         {status}
                       </Badge>
+                    </td>
+                    <td className="py-2 pr-4 hidden sm:table-cell">
+                      <Badge variant={r.signature_url ? "default" : "secondary"} className={r.signature_url ? "bg-emerald-600 hover:bg-emerald-600" : ""}>
+                        {r.signature_url ? "체결완료" : "미체결"}
+                      </Badge>
+                    </td>
+                    <td className="py-2 pr-4 hidden sm:table-cell">
+                      {r.signature_url ? (
+                        <ContractViewModal
+                          record={r}
+                          signatureUrl={signatureUrls[r.id] ?? null}
+                        />
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </td>
                     <td className="py-2 pr-4 text-right font-medium">
                       {formatCurrency(display.grossPay)}
