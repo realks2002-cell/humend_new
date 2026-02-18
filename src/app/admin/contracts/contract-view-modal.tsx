@@ -43,7 +43,7 @@ function TableRow({ label, value, label2, value2 }: { label: string; value: stri
   );
 }
 
-export function ContractViewModal({ record, signatureUrl }: { record: WorkRecord; signatureUrl: string | null }) {
+export function ContractViewModal({ record, signatureUrl, trigger }: { record: WorkRecord; signatureUrl: string | null; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
 
   const m = record.members as (Record<string, unknown> & MemberExtra) | null;
@@ -66,9 +66,11 @@ export function ContractViewModal({ record, signatureUrl }: { record: WorkRecord
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button className="text-left font-medium text-primary hover:underline">
-          {name}
-        </button>
+        {trigger ?? (
+          <button className="text-left font-medium text-primary hover:underline">
+            {name}
+          </button>
+        )}
       </DialogTrigger>
       <DialogContent showCloseButton={false} className="!max-w-4xl max-h-[90vh] overflow-y-auto p-0 gap-0">
         <button

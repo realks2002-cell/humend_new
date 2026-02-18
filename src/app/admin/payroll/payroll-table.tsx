@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils/format";
 import { type WorkRecord, type Member } from "@/lib/supabase/queries";
@@ -69,9 +70,9 @@ export function PayrollTable({ records, month, membersMap, profileImageUrls, sig
               <th className="pb-2 pr-4 hidden sm:table-cell text-right">시급</th>
               <th className="pb-2 pr-4 hidden md:table-cell">근무시간</th>
               <th className="pb-2 pr-4 hidden sm:table-cell">상태</th>
+              <th className="pb-2 pr-4 text-right">총지급액</th>
               <th className="pb-2 pr-4 hidden sm:table-cell">계약서</th>
               <th className="pb-2 pr-4 hidden sm:table-cell">계약서 보기</th>
-              <th className="pb-2 pr-4 text-right">총지급액</th>
             </tr>
           </thead>
           <tbody>
@@ -125,6 +126,9 @@ export function PayrollTable({ records, month, membersMap, profileImageUrls, sig
                         {status}
                       </Badge>
                     </td>
+                    <td className="py-2 pr-4 text-right font-medium">
+                      {formatCurrency(display.grossPay)}
+                    </td>
                     <td className="py-2 pr-4 hidden sm:table-cell">
                       <Badge variant={r.signature_url ? "default" : "secondary"} className={r.signature_url ? "bg-emerald-600 hover:bg-emerald-600" : ""}>
                         {r.signature_url ? "체결완료" : "미체결"}
@@ -135,13 +139,11 @@ export function PayrollTable({ records, month, membersMap, profileImageUrls, sig
                         <ContractViewModal
                           record={r}
                           signatureUrl={signatureUrls[r.id] ?? null}
+                          trigger={<Button variant="outline" size="sm">보기</Button>}
                         />
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
-                    </td>
-                    <td className="py-2 pr-4 text-right font-medium">
-                      {formatCurrency(display.grossPay)}
                     </td>
                   </tr>
                 );
