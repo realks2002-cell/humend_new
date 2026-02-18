@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -62,8 +63,15 @@ export default function Header() {
       )}
     >
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/" className="text-lg font-bold tracking-tight">
-          Humend HR
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/logo.png"
+            alt="딱칵알바"
+            width={252}
+            height={144}
+            className="h-9 w-auto"
+            priority
+          />
         </Link>
 
         {/* Desktop Nav */}
@@ -112,7 +120,13 @@ export default function Header() {
           </SheetTrigger>
           <SheetContent side="right" className="w-64">
             <div className="flex items-center justify-between pb-4">
-              <span className="text-lg font-bold">Humend HR</span>
+              <Image
+                src="/logo.png"
+                alt="딱칵알바"
+                width={252}
+                height={144}
+                className="h-8 w-auto"
+              />
               <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
                 <X className="h-5 w-5" />
               </Button>
