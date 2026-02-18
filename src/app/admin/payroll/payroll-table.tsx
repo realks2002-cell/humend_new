@@ -61,18 +61,29 @@ export function PayrollTable({ records, month, membersMap, profileImageUrls, sig
       </div>
 
       <div className="overflow-x-auto px-4 pb-4">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed">
+          <colgroup>
+            <col className="w-[120px]" />
+            <col className="w-[100px]" />
+            <col className="w-[80px] hidden sm:table-column" />
+            <col className="w-[80px] hidden sm:table-column" />
+            <col className="w-[80px] hidden md:table-column" />
+            <col className="w-[70px] hidden sm:table-column" />
+            <col className="w-[100px]" />
+            <col className="w-[80px] hidden sm:table-column" />
+            <col className="w-[90px] hidden sm:table-column" />
+          </colgroup>
           <thead>
-            <tr className="border-b text-left text-muted-foreground">
-              <th className="pb-2 pr-4">이름</th>
-              <th className="pb-2 pr-4">근무지</th>
-              <th className="pb-2 pr-4 hidden sm:table-cell">급여타입</th>
-              <th className="pb-2 pr-4 hidden sm:table-cell text-right">시급</th>
-              <th className="pb-2 pr-4 hidden md:table-cell">근무시간</th>
-              <th className="pb-2 pr-4 hidden sm:table-cell">상태</th>
-              <th className="pb-2 pr-4 text-right">총지급액</th>
-              <th className="pb-2 pr-4 hidden sm:table-cell">계약서</th>
-              <th className="pb-2 pr-4 hidden sm:table-cell">계약서 보기</th>
+            <tr className="border-b text-center text-muted-foreground">
+              <th className="pb-2 px-2">이름</th>
+              <th className="pb-2 px-2">근무지</th>
+              <th className="pb-2 px-2 hidden sm:table-cell">급여타입</th>
+              <th className="pb-2 px-2 hidden sm:table-cell">시급</th>
+              <th className="pb-2 px-2 hidden md:table-cell">근무시간</th>
+              <th className="pb-2 px-2 hidden sm:table-cell">상태</th>
+              <th className="pb-2 px-2">총지급액</th>
+              <th className="pb-2 px-2 hidden sm:table-cell">계약서</th>
+              <th className="pb-2 px-2 hidden sm:table-cell">계약서 보기</th>
             </tr>
           </thead>
           <tbody>
@@ -95,11 +106,11 @@ export function PayrollTable({ records, month, membersMap, profileImageUrls, sig
                     : rawPhone;
                 return (
                   <tr key={r.id} className="border-b hover:bg-muted/50">
-                    <td className="py-2 pr-4">
+                    <td className="py-2 px-2 text-center">
                       {member ? (
                         <button
                           type="button"
-                          className="text-left hover:underline"
+                          className="hover:underline"
                           onClick={() => setSelectedMember(member)}
                         >
                           <div className="font-medium text-blue-600">
@@ -113,28 +124,28 @@ export function PayrollTable({ records, month, membersMap, profileImageUrls, sig
                         <div className="text-xs text-muted-foreground">{phone}</div>
                       )}
                     </td>
-                    <td className="py-2 pr-4">{r.client_name}</td>
-                    <td className="py-2 pr-4 hidden sm:table-cell">
+                    <td className="py-2 px-2 text-center">{r.client_name}</td>
+                    <td className="py-2 px-2 hidden sm:table-cell text-center">
                       <Badge variant={r.wage_type === "일급" ? "default" : "secondary"}>
                         {r.wage_type ?? "시급"}
                       </Badge>
                     </td>
-                    <td className="py-2 pr-4 hidden sm:table-cell text-right">{formatCurrency(r.hourly_wage)}</td>
-                    <td className="py-2 pr-4 hidden md:table-cell">{r.work_hours + r.overtime_hours}h</td>
-                    <td className="py-2 pr-4 hidden sm:table-cell">
+                    <td className="py-2 px-2 hidden sm:table-cell text-center">{formatCurrency(r.hourly_wage)}</td>
+                    <td className="py-2 px-2 hidden md:table-cell text-center">{r.work_hours + r.overtime_hours}h</td>
+                    <td className="py-2 px-2 hidden sm:table-cell text-center">
                       <Badge variant={status === "확정" ? "default" : "secondary"} className={status === "확정" ? "bg-emerald-600 hover:bg-emerald-600" : ""}>
                         {status}
                       </Badge>
                     </td>
-                    <td className="py-2 pr-4 text-right font-medium">
+                    <td className="py-2 px-2 text-center font-medium">
                       {formatCurrency(display.grossPay)}
                     </td>
-                    <td className="py-2 pr-4 hidden sm:table-cell">
+                    <td className="py-2 px-2 hidden sm:table-cell text-center">
                       <Badge variant={r.signature_url ? "default" : "secondary"} className={r.signature_url ? "bg-emerald-600 hover:bg-emerald-600" : ""}>
                         {r.signature_url ? "체결완료" : "미체결"}
                       </Badge>
                     </td>
-                    <td className="py-2 pr-4 hidden sm:table-cell">
+                    <td className="py-2 px-2 hidden sm:table-cell text-center">
                       {r.signature_url ? (
                         <ContractViewModal
                           record={r}
