@@ -53,8 +53,9 @@ export default async function AdminContractsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm table-fixed">
                 <colgroup>
-                  <col className="w-[120px]" />
-                  <col className="w-[120px]" />
+                  <col className="w-[80px]" />
+                  <col className="w-[120px] hidden sm:table-column" />
+                  <col className="w-[100px]" />
                   <col className="w-[100px] hidden sm:table-column" />
                   <col className="w-[100px] hidden md:table-column" />
                   <col className="w-[80px]" />
@@ -62,6 +63,7 @@ export default async function AdminContractsPage() {
                 <thead>
                   <tr className="border-b bg-gradient-to-r from-slate-50 to-gray-50/50 text-center text-xs font-semibold text-muted-foreground">
                     <th className="px-2 py-3">이름</th>
+                    <th className="px-2 py-3 hidden sm:table-cell">전화번호</th>
                     <th className="px-2 py-3">고객사</th>
                     <th className="px-2 py-3 hidden sm:table-cell">근무일</th>
                     <th className="px-2 py-3 hidden md:table-cell">실수령액</th>
@@ -69,22 +71,31 @@ export default async function AdminContractsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {signed.map((r) => (
-                    <tr key={r.id} className="transition-colors hover:bg-muted/30">
-                      <td className="px-2 py-3 text-center">
-                        <ContractViewModal
-                          record={r}
-                          signatureUrl={signatureUrls[r.id] ?? null}
-                        />
-                      </td>
-                      <td className="px-2 py-3 text-center font-medium">{r.client_name}</td>
-                      <td className="px-2 py-3 hidden sm:table-cell text-center text-muted-foreground">{formatDate(r.work_date)}</td>
-                      <td className="px-2 py-3 hidden md:table-cell text-center font-semibold">{formatCurrency(r.net_pay)}</td>
-                      <td className="px-2 py-3 text-center">
-                        <Badge className="bg-emerald-500/10 text-emerald-700 border-0 text-[10px] font-semibold">체결완료</Badge>
-                      </td>
-                    </tr>
-                  ))}
+                  {signed.map((r) => {
+                    const rawPhone = ((r.members?.phone as string) ?? "").replace(/\D/g, "");
+                    const phone = rawPhone.length === 11
+                      ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 7)}-${rawPhone.slice(7)}`
+                      : rawPhone.length === 10
+                        ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 6)}-${rawPhone.slice(6)}`
+                        : rawPhone;
+                    return (
+                      <tr key={r.id} className="transition-colors hover:bg-muted/30">
+                        <td className="px-2 py-3 text-center">
+                          <ContractViewModal
+                            record={r}
+                            signatureUrl={signatureUrls[r.id] ?? null}
+                          />
+                        </td>
+                        <td className="px-2 py-3 hidden sm:table-cell text-center text-muted-foreground">{phone || "-"}</td>
+                        <td className="px-2 py-3 text-center font-medium">{r.client_name}</td>
+                        <td className="px-2 py-3 hidden sm:table-cell text-center text-muted-foreground">{formatDate(r.work_date)}</td>
+                        <td className="px-2 py-3 hidden md:table-cell text-center font-semibold">{formatCurrency(r.net_pay)}</td>
+                        <td className="px-2 py-3 text-center">
+                          <Badge className="bg-emerald-500/10 text-emerald-700 border-0 text-[10px] font-semibold">체결완료</Badge>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
