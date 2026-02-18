@@ -168,6 +168,7 @@ export async function importPayrollFromSheets(month: string) {
     let updated = 0;
     let created = 0;
     const errors: Array<{ name: string; error: string }> = [];
+    let skipped = 0;
     const usedIds = new Set<string>(); // 중복 매칭 방지
 
     for (const row of rows) {
@@ -178,6 +179,13 @@ export async function importPayrollFromSheets(month: string) {
 
       if (!sheetName2 || !sheetDate) {
         console.log("⚠️ 이름/근무일 없는 행 스킵");
+        continue;
+      }
+
+      const sheetStatus = row["상태"]?.trim();
+      if (sheetStatus !== "지급") {
+        console.log("⏭️ 상태가 '지급'이 아닌 행 스킵:", { 이름: sheetName2, 상태: sheetStatus || "(비어있음)" });
+        skipped++;
         continue;
       }
 
@@ -319,7 +327,7 @@ export async function importPayrollFromSheets(month: string) {
       }
     }
 
-    console.log("📊 Import 완료:", { updated, created, errorCount: errors.length });
+    console.log("📊 Import 완료:", { updated, created, skipped, errorCount: errors.length });
 
     revalidatePath("/admin/payroll");
 
@@ -328,11 +336,12 @@ export async function importPayrollFromSheets(month: string) {
         success: true,
         updated,
         created,
+        skipped,
         errors: errors.map(e => `${e.name}: ${e.error}`).join(", ")
       };
     }
 
-    return { success: true, updated, created };
+    return { success: true, updated, created, skipped };
   } catch (e) {
     console.error("❌ Import 실패:", e);
     return { error: (e as Error).message };

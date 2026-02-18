@@ -32,6 +32,7 @@ export function SheetsSync({ month }: { month: string }) {
       const parts: string[] = [];
       if (result.updated) parts.push(`${result.updated}건 수정`);
       if (result.created) parts.push(`${result.created}건 신규 생성`);
+      if (result.skipped) parts.push(`${result.skipped}건 스킵(미지급)`);
       const summary = parts.length > 0 ? parts.join(", ") : "변경 없음";
 
       if (result.errors) {
