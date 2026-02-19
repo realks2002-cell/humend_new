@@ -142,7 +142,7 @@ export default async function Home() {
       {/* Services */}
       <section className="mx-auto max-w-5xl px-4 py-20">
         <h2 className="mb-2 text-center text-2xl font-bold md:text-3xl">서비스 소개</h2>
-        <p className="mb-12 text-center text-muted-foreground">Humend HR이 제공하는 핵심 서비스</p>
+        <p className="mb-12 text-center text-muted-foreground">Humend가 제공하는 핵심 서비스</p>
         <div className="grid gap-6 md:grid-cols-3">
           {services.map((service) => (
             <Card key={service.title} className="group transition-all hover:-translate-y-1 hover:shadow-lg">

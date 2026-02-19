@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="flex flex-col gap-6 md:flex-row md:justify-between">
           <div>
-            <p className="text-sm font-bold">Humend HR</p>
+            <p className="text-sm font-bold">Humend</p>
             <p className="mt-1 text-xs text-muted-foreground">
               인력 매칭 플랫폼
             </p>
@@ -22,7 +22,7 @@ export default function Footer() {
         </div>
         <div className="mt-6 border-t pt-4">
           <p className="text-xs text-muted-foreground">
-            &copy; 2026 Humend HR. All rights reserved.
+            &copy; 2026 Humend. All rights reserved.
           </p>
         </div>
       </div>
