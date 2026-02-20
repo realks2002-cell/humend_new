@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { calculateWorkHours, calculateFullSalary } from "@/lib/utils/salary";
 import { revalidatePath } from "next/cache";
+import { notifyApplicationApproved, notifyApplicationRejected } from "@/lib/push/notify";
 
 export async function approveApplication(applicationId: string) {
   const supabase = createAdminClient();
@@ -18,6 +19,13 @@ export async function approveApplication(applicationId: string) {
 
   await createWorkRecordFromApproval(applicationId);
 
+  // 승인 푸시 알림 (실패해도 승인 처리에 영향 없음)
+  getApprovalInfo(applicationId)
+    .then((info) => {
+      if (info) notifyApplicationApproved(info.memberId, info.companyName, info.workDate);
+    })
+    .catch(console.error);
+
   revalidatePath("/admin/applications");
   revalidatePath("/admin/payroll");
   return { error: null };
@@ -30,6 +38,13 @@ export async function rejectApplication(applicationId: string) {
     .from("applications")
     .update({ status: "거절", reviewed_at: new Date().toISOString() })
     .eq("id", applicationId);
+
+  // 거절 푸시 알림 (실패해도 거절 처리에 영향 없음)
+  getApprovalInfo(applicationId)
+    .then((info) => {
+      if (info) notifyApplicationRejected(info.memberId, info.companyName, info.workDate);
+    })
+    .catch(console.error);
 
   revalidatePath("/admin/applications");
   return { error: error?.message ?? null };
@@ -119,4 +134,27 @@ async function createWorkRecordFromApproval(applicationId: string) {
     signed_at: null,
     admin_memo: null,
   });
+}
+
+/** 푸시 알림용: 지원 정보 조회 */
+async function getApprovalInfo(applicationId: string) {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("applications")
+    .select(`member_id, job_postings(work_date, clients(company_name))`)
+    .eq("id", applicationId)
+    .single();
+
+  if (!data?.job_postings) return null;
+
+  const posting = data.job_postings as unknown as {
+    work_date: string;
+    clients: { company_name: string };
+  };
+
+  return {
+    memberId: data.member_id as string,
+    companyName: posting.clients.company_name,
+    workDate: posting.work_date,
+  };
 }

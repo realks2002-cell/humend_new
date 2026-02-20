@@ -4,12 +4,38 @@ import { bulkCreatePayments } from "@/lib/supabase/queries";
 import { createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { Member } from "@/lib/supabase/queries";
+import { notifyPaymentConfirmed } from "@/lib/push/notify";
 
 export async function bulkConfirm(workRecordIds: string[]) {
   // work_records 값을 복사하여 payments 생성 (이미 있으면 skip)
   const result = await bulkCreatePayments(workRecordIds);
+
+  // 급여 확정 푸시 알림 (실패해도 확정 처리에 영향 없음)
+  sendPaymentNotifications(workRecordIds).catch(console.error);
+
   revalidatePath("/admin/payroll");
   return result;
+}
+
+async function sendPaymentNotifications(workRecordIds: string[]) {
+  const admin = createAdminClient();
+  const { data: records } = await admin
+    .from("work_records")
+    .select("member_id, net_pay")
+    .in("id", workRecordIds);
+
+  if (!records) return;
+
+  // member_id별 합산
+  const memberPayMap = new Map<string, number>();
+  for (const r of records) {
+    const prev = memberPayMap.get(r.member_id) ?? 0;
+    memberPayMap.set(r.member_id, prev + (r.net_pay ?? 0));
+  }
+
+  for (const [memberId, netPay] of memberPayMap) {
+    notifyPaymentConfirmed(memberId, netPay).catch(console.error);
+  }
 }
 
 export async function getMemberDetail(memberId: string): Promise<{ member: Member | null; profileImageUrl: string | null }> {

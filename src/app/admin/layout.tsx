@@ -19,6 +19,7 @@ import {
   Wallet,
   FileSignature,
   Banknote,
+  Bell,
   PanelLeftClose,
   PanelLeft,
   Settings,
@@ -33,6 +34,7 @@ const sidebarLinks = [
   { href: "/admin/payroll", label: "급여 관리", icon: Wallet },
   { href: "/admin/payments", label: "급여지급 내역", icon: Banknote },
   { href: "/admin/contracts", label: "계약 관리", icon: FileSignature },
+  { href: "/admin/notifications", label: "알림 관리", icon: Bell },
   { href: "/admin/settings", label: "관리자 설정", icon: Settings },
 ];
 

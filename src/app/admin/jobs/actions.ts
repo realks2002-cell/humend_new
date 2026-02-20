@@ -2,6 +2,7 @@
 
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { notifyNewJobPosting } from "@/lib/push/notify";
 
 async function getAdminSupabase() {
   const supabase = await createClient();
@@ -50,6 +51,15 @@ export async function createJobPosting(formData: FormData) {
     console.error("createJobPosting error:", error);
     return { error: `공고 등록에 실패했습니다: ${error.message}` };
   }
+
+  // 새 공고 푸시 알림 (실패해도 공고 등록에 영향 없음)
+  (async () => {
+    try {
+      const { data: client } = await db.from("clients").select("company_name").eq("id", clientId).single();
+      if (client) await notifyNewJobPosting(client.company_name, workDate);
+    } catch (e) { console.error("[push] newJobPosting error:", e); }
+  })();
+
   revalidatePath("/admin/jobs");
   revalidatePath("/jobs");
   return { success: true };
