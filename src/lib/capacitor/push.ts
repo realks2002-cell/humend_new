@@ -36,18 +36,20 @@ export function setupPushListeners() {
   );
 }
 
-/** 서버에 FCM 토큰 전송 */
+/** 서버에 FCM 토큰 전송. 성공 시 true, 인증 실패 시 401, 그 외 실패 시 false 반환 */
 export async function sendTokenToServer(
   token: string,
   platform: string
-): Promise<boolean> {
+): Promise<true | 401 | false> {
   try {
     const res = await fetch("/api/push/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, platform }),
     });
-    return res.ok;
+    if (res.ok) return true;
+    if (res.status === 401) return 401;
+    return false;
   } catch (e) {
     console.error("[Push] 토큰 전송 실패:", e);
     return false;
