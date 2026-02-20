@@ -10,6 +10,7 @@ import { formatDate, formatWage } from "@/lib/utils/format";
 import { MapPin, Clock, Shirt, BookOpen, Phone, User, Briefcase, Users, UserCheck, Send, ClipboardList } from "lucide-react";
 import { ApplyButton } from "@/components/jobs/ApplyButton";
 import { JobDetailMap } from "./job-detail-map";
+import { GuideIframe } from "./guide-iframe";
 
 export default async function JobDetailPage({
   params,
@@ -32,7 +33,7 @@ export default async function JobDetailPage({
   const displayImages = allImages.slice(0, 3);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-[57.6rem] px-4 py-8">
       {/* 이미지 갤러리 */}
       {displayImages.length > 0 ? (
         <div className={`grid gap-2 ${displayImages.length === 1 ? "" : displayImages.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
@@ -76,33 +77,33 @@ export default async function JobDetailPage({
       </div>
 
       {/* 추가 정보 카드 */}
-      <div className="mt-4 grid grid-cols-4 gap-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
         <Card>
-          <CardContent className="flex flex-col items-center gap-1 py-4">
+          <CardContent className="flex items-center gap-3 py-3 md:flex-col md:items-center md:gap-1 md:py-4">
             <Users className="h-5 w-5 text-primary" />
-            <p className="text-xs text-muted-foreground">모집인원</p>
-            <p className="text-sm font-semibold">{data.total_headcount ?? "-"}명</p>
+            <p className="text-sm text-muted-foreground">모집인원</p>
+            <p className="ml-auto text-sm font-semibold md:ml-0">{data.total_headcount ?? "-"}명</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex flex-col items-center gap-1 py-4">
+          <CardContent className="flex items-center gap-3 py-3 md:flex-col md:items-center md:gap-1 md:py-4">
             <Clock className="h-5 w-5 text-primary" />
-            <p className="text-xs text-muted-foreground">근무타입</p>
-            <p className="text-sm font-semibold">{data.work_type ?? "-"}</p>
+            <p className="text-sm text-muted-foreground">근무타입</p>
+            <p className="ml-auto text-sm font-semibold md:ml-0">{data.work_type ?? "-"}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex flex-col items-center gap-1 py-4">
+          <CardContent className="flex items-center gap-3 py-3 md:flex-col md:items-center md:gap-1 md:py-4">
             <UserCheck className="h-5 w-5 text-primary" />
-            <p className="text-xs text-muted-foreground">성별</p>
-            <p className="text-sm font-semibold">{data.gender_requirement ?? "-"}</p>
+            <p className="text-sm text-muted-foreground">성별</p>
+            <p className="ml-auto text-sm font-semibold md:ml-0">{data.gender_requirement ?? "-"}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex flex-col items-center gap-1 py-4">
+          <CardContent className="flex items-center gap-3 py-3 md:flex-col md:items-center md:gap-1 md:py-4">
             <Briefcase className="h-5 w-5 text-primary" />
-            <p className="text-xs text-muted-foreground">업무형태</p>
-            <p className="text-sm font-semibold">{data.work_category ?? "-"}</p>
+            <p className="text-sm text-muted-foreground">업무형태</p>
+            <p className="ml-auto text-sm font-semibold md:ml-0">{data.work_category ?? "-"}</p>
           </CardContent>
         </Card>
       </div>
@@ -143,9 +144,10 @@ export default async function JobDetailPage({
       {data.description && (
         <>
           <Separator className="my-6" />
-          <div>
-            <p className="text-sm text-muted-foreground">{data.description}</p>
-          </div>
+          <div
+            className="prose prose-sm max-w-none text-muted-foreground"
+            dangerouslySetInnerHTML={{ __html: data.description }}
+          />
         </>
       )}
 
@@ -165,12 +167,16 @@ export default async function JobDetailPage({
         {data.work_guidelines && (
           <div className="flex items-start gap-3">
             <BookOpen className="mt-0.5 h-5 w-5 text-muted-foreground" />
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-medium">근무 가이드</p>
-              <div
-                className="prose prose-sm max-w-none text-muted-foreground"
-                dangerouslySetInnerHTML={{ __html: data.work_guidelines }}
-              />
+              {data.work_guidelines.includes('<style>') ? (
+                <GuideIframe html={data.work_guidelines} />
+              ) : (
+                <div
+                  className="prose prose-sm max-w-none text-muted-foreground"
+                  dangerouslySetInnerHTML={{ __html: data.work_guidelines }}
+                />
+              )}
             </div>
           </div>
         )}

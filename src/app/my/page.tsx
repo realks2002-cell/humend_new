@@ -129,13 +129,15 @@ export default async function MyPage() {
 
       {/* Stat Cards */}
       <Card className="overflow-hidden border-slate-300 shadow-none py-0">
-        <CardContent className="flex items-center divide-x p-0">
+        <CardContent className="flex flex-col divide-y p-0 md:flex-row md:items-center md:divide-x md:divide-y-0">
           {statCards.map((stat) => (
             <div key={stat.label} className="flex flex-1 items-center gap-2.5 px-4 py-3">
               <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${stat.gradient}`}>
                 <stat.icon className="h-3.5 w-3.5 text-white" />
               </div>
-              <div>
+              <p className="text-[12px] font-medium text-foreground/80 md:hidden">{stat.label}</p>
+              <p className="ml-auto text-[17px] font-bold leading-tight md:hidden">{stat.displayValue ?? stat.value}</p>
+              <div className="hidden md:block">
                 <p className="text-[17px] font-bold leading-tight">{stat.displayValue ?? stat.value}</p>
                 <p className="text-[12px] font-medium text-foreground/80">{stat.label}</p>
               </div>

@@ -42,6 +42,14 @@ yarn-error.log*
 !components.json
 !.claude/settings.local.json
 
+# android (capacitor)
+/android/app/build/
+/android/.gradle/
+/android/local.properties
+*.jks
+*.keystore
+release-signing.properties
+
 # vercel
 .vercel
 

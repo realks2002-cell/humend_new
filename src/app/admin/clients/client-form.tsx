@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -18,6 +17,8 @@ import { createClientAction, updateClientAction } from "./actions";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { RichEditor } from "@/components/ui/rich-editor";
 import { KakaoMap } from "@/components/ui/kakao-map";
+import { PREPARATION_GUIDE_HTML } from "./preparation-guide-html";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ClientData {
   id: string;
@@ -64,6 +65,10 @@ function ClientFormDialog({
   );
   const [pendingDataUrls, setPendingDataUrls] = useState<string[]>([]);
   const [workGuidelines, setWorkGuidelines] = useState(client?.work_guidelines ?? "");
+  const [useDefaultGuide, setUseDefaultGuide] = useState(
+    client?.work_guidelines === PREPARATION_GUIDE_HTML
+  );
+  const [description, setDescription] = useState(client?.description ?? "");
   const [latitude, setLatitude] = useState<number | null>(client?.latitude ?? null);
   const [longitude, setLongitude] = useState<number | null>(client?.longitude ?? null);
 
@@ -74,6 +79,7 @@ function ClientFormDialog({
 
     const formData = new FormData(e.currentTarget);
     formData.set("work_guidelines", workGuidelines);
+    formData.set("description", description);
     formData.set("photo_urls", JSON.stringify(photoUrls));
     if (pendingDataUrls.length > 0) {
       formData.set("new_photo_data", JSON.stringify(pendingDataUrls));
@@ -106,6 +112,8 @@ function ClientFormDialog({
           client?.client_photos?.sort((a, b) => a.sort_order - b.sort_order).map((p) => p.image_url) ?? []
         );
         setWorkGuidelines(client?.work_guidelines ?? "");
+        setDescription(client?.description ?? "");
+        setUseDefaultGuide(client?.work_guidelines === PREPARATION_GUIDE_HTML);
         setLatitude(client?.latitude ?? null);
         setLongitude(client?.longitude ?? null);
       }
@@ -126,7 +134,7 @@ function ClientFormDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" ? "고객사 등록" : "고객사 수정"}
@@ -274,27 +282,56 @@ function ClientFormDialog({
             />
           </div>
 
-          {/* 근무 가이드 - 리치 에디터 */}
+          {/* 근무 가이드 - 체크박스 + 리치 에디터 */}
           <div>
             <Label>근무 가이드</Label>
-            <div className="mt-1.5">
-              <RichEditor
-                value={workGuidelines}
-                onChange={setWorkGuidelines}
-                placeholder="행사 시작 30분 전 도착..."
+            <div className="mt-1.5 flex items-center gap-2 mb-2">
+              <Checkbox
+                checked={useDefaultGuide}
+                onCheckedChange={(checked) => {
+                  const on = checked === true;
+                  setUseDefaultGuide(on);
+                  setWorkGuidelines(on ? PREPARATION_GUIDE_HTML : "");
+                }}
               />
+              <span
+                className="text-sm font-medium cursor-pointer select-none"
+                onClick={() => {
+                  const on = !useDefaultGuide;
+                  setUseDefaultGuide(on);
+                  setWorkGuidelines(on ? PREPARATION_GUIDE_HTML : "");
+                }}
+              >
+                기본 준비물 안내 사용
+              </span>
+            </div>
+            <div className="mt-1.5">
+              {useDefaultGuide ? (
+                <iframe
+                  srcDoc={`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet"></head><body>${PREPARATION_GUIDE_HTML}</body></html>`}
+                  sandbox="allow-scripts"
+                  className="w-full h-[400px] rounded-md border"
+                  title="기본 준비물 안내 미리보기"
+                />
+              ) : (
+                <RichEditor
+                  value={workGuidelines}
+                  onChange={setWorkGuidelines}
+                  placeholder="행사 시작 30분 전 도착..."
+                />
+              )}
             </div>
           </div>
 
           <div>
-            <Label htmlFor="description">설명</Label>
-            <Textarea
-              id="description"
-              name="description"
-              defaultValue={client?.description ?? ""}
-              placeholder="고객사에 대한 추가 설명"
-              rows={2}
-            />
+            <Label>설명</Label>
+            <div className="mt-1.5">
+              <RichEditor
+                value={description}
+                onChange={setDescription}
+                placeholder="고객사에 대한 추가 설명"
+              />
+            </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

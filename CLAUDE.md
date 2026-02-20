@@ -7,7 +7,7 @@ Humend HR은 **인력파견 플랫폼**입니다. 회원(파견 근로자)과 �
 - **회원**: 일자리 검색, 지원, 이력서 관리, 근무내역/급여 확인, 계약서 전자서명
 - **관리자**: 고객사/채용공고/지원자/근무내역/급여/계약 관리
 
-배포: Vercel (https://humend.co.kr)
+배포: Vercel (https://humendhr.com)
 
 ## Tech Stack
 

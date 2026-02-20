@@ -108,20 +108,6 @@ export async function notifyApplicationRejected(
   });
 }
 
-/** 근무내역 등록 알림 */
-export async function notifyWorkRecordCreated(
-  memberId: string,
-  companyName: string,
-  workDate: string
-) {
-  await notifyMember({
-    memberId,
-    title: "근무내역이 등록되었습니다",
-    body: `${companyName} ${workDate} 근무내역을 확인하세요.`,
-    url: "/my/history",
-  });
-}
-
 /** 급여 확정 알림 */
 export async function notifyPaymentConfirmed(
   memberId: string,
