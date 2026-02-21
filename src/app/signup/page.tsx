@@ -10,7 +10,6 @@ import { CheckCircle, Loader2, User, Phone, Lock, Eye, EyeOff } from "lucide-rea
 import { toast } from "sonner";
 import { memberSignup } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/client";
-import { isNative } from "@/lib/capacitor/native";
 
 function formatPhoneDisplay(value: string): string {
   const nums = value.replace(/\D/g, "").slice(0, 11);
@@ -37,32 +36,13 @@ export default function SignupPage() {
   const handleGoogleSignup = async () => {
     setGoogleLoading(true);
     const supabase = createClient();
-    const redirectTo = isNative()
-      ? "com.humend.hr://auth/callback"
-      : `${window.location.origin}/auth/callback`;
-
-    if (isNative()) {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo, skipBrowserRedirect: true },
-      });
-      if (error || !data.url) {
-        toast.error("구글 연결 실패", { description: error?.message });
-        setGoogleLoading(false);
-        return;
-      }
-      const { Browser } = await import("@capacitor/browser");
-      await Browser.open({ url: data.url });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) {
+      toast.error("구글 연결 실패", { description: error.message });
       setGoogleLoading(false);
-    } else {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo },
-      });
-      if (error) {
-        toast.error("구글 연결 실패", { description: error.message });
-        setGoogleLoading(false);
-      }
     }
   };
 
