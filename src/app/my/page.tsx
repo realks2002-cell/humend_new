@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import {
   ClipboardList, Calendar, ArrowRight,
   Clock, Wallet, User, ChevronRight,
-  TrendingUp, AlertCircle,
+  AlertCircle,
   Settings,
 } from "lucide-react";
 import { DeleteAccountButton } from "./delete-account-button";
-import { getMyProfile, getMyApplications, getMyWorkRecords } from "@/lib/supabase/queries";
-import { formatDate, formatCurrency } from "@/lib/utils/format";
+import { getMyProfile, getMyApplications } from "@/lib/supabase/queries";
+import { formatDate } from "@/lib/utils/format";
 
 const statusMap: Record<string, { label: string; variant: "secondary" | "default" | "destructive" }> = {
   "대기": { label: "대기중", variant: "secondary" },
@@ -41,13 +41,9 @@ function getDdayColor(dateStr: string): string {
 }
 
 export default async function MyPage() {
-  const now = new Date();
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-
-  const [profile, applications, records] = await Promise.all([
+  const [profile, applications] = await Promise.all([
     getMyProfile(),
     getMyApplications(),
-    getMyWorkRecords(currentMonth),
   ]);
 
   const profileImageUrl = profile?.profile_image_url ?? null;
@@ -69,7 +65,6 @@ export default async function MyPage() {
   const filledCount = profileFields.filter(Boolean).length;
   const profilePercent = Math.round((filledCount / profileFields.length) * 100);
   const upcomingJobs = applications.filter((a) => a.status === "승인").slice(0, 3);
-  const monthlyNet = records.reduce((s, r) => s + r.net_pay, 0);
 
   const quickLinks = [
     { href: "/my/resume", icon: User, label: "프로필 관리", desc: "회원정보 등록/수정", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
@@ -79,9 +74,8 @@ export default async function MyPage() {
   ];
 
   const statCards = [
-    { label: "근무지원 승인 대기중", value: pendingCount, icon: ClipboardList, gradient: "from-slate-600 to-gray-600", lightBg: "from-slate-50 to-gray-50" },
-    { label: "근무지원 승인됨", value: approvedCount, icon: Calendar, gradient: "from-slate-600 to-gray-600", lightBg: "from-slate-50 to-gray-50" },
-    { label: "이번 달 급여", value: null, displayValue: formatCurrency(monthlyNet), icon: TrendingUp, gradient: "from-slate-600 to-gray-600", lightBg: "from-slate-50 to-gray-50" },
+    { label: "근무지원 승인 대기중", value: pendingCount, icon: ClipboardList, gradient: "from-slate-600 to-gray-600" },
+    { label: "근무지원 승인됨", value: approvedCount, icon: Calendar, gradient: "from-slate-600 to-gray-600" },
   ];
 
   return (
@@ -136,9 +130,9 @@ export default async function MyPage() {
                 <stat.icon className="h-3.5 w-3.5 text-white" />
               </div>
               <p className="text-[12px] font-medium text-foreground/80 md:hidden">{stat.label}</p>
-              <p className="ml-auto text-[17px] font-bold leading-tight md:hidden">{stat.displayValue ?? stat.value}</p>
+              <p className="ml-auto text-[17px] font-bold leading-tight md:hidden">{stat.value}</p>
               <div className="hidden md:block">
-                <p className="text-[17px] font-bold leading-tight">{stat.displayValue ?? stat.value}</p>
+                <p className="text-[17px] font-bold leading-tight">{stat.value}</p>
                 <p className="text-[12px] font-medium text-foreground/80">{stat.label}</p>
               </div>
             </div>
