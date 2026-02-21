@@ -54,11 +54,29 @@ export async function GET(request: NextRequest) {
     .eq("id", user.id)
     .maybeSingle();
 
+  const source = searchParams.get("source");
+
+  // 앱(WebView)에서 시스템 브라우저로 OAuth 한 경우 → 딥링크로 세션 전달
+  if (source === "app") {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const dest = member ? "/my" : "/signup/complete";
+      const params = new URLSearchParams({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        redirect: dest,
+      });
+      return NextResponse.redirect(
+        `com.humend.hr://auth/callback?${params.toString()}`
+      );
+    }
+  }
+
+  // 웹 브라우저: 일반 리다이렉트
   if (member) {
     // 기존 회원 → 마이페이지로
     const redirectUrl = new URL("/my", origin);
     const response = NextResponse.redirect(redirectUrl);
-    // 쿠키 복사
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       response.cookies.set(cookie.name, cookie.value);
     });

@@ -36,13 +36,35 @@ export default function SignupPage() {
   const handleGoogleSignup = async () => {
     setGoogleLoading(true);
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-    if (error) {
-      toast.error("구글 연결 실패", { description: error.message });
+
+    const ua = navigator.userAgent;
+    const inWebView =
+      /; wv\)/.test(ua) ||
+      (/iPhone|iPad|iPod/.test(ua) && !/Safari/.test(ua));
+
+    const callbackUrl = `${window.location.origin}/auth/callback${inWebView ? "?source=app" : ""}`;
+
+    if (inWebView) {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: callbackUrl, skipBrowserRedirect: true },
+      });
+      if (error || !data.url) {
+        toast.error("구글 연결 실패", { description: error?.message });
+        setGoogleLoading(false);
+        return;
+      }
+      window.open(data.url, "_blank");
       setGoogleLoading(false);
+    } else {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: callbackUrl },
+      });
+      if (error) {
+        toast.error("구글 연결 실패", { description: error.message });
+        setGoogleLoading(false);
+      }
     }
   };
 

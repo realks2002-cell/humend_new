@@ -50,13 +50,38 @@ function LoginContent() {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-    if (error) {
-      toast.error("구글 로그인 실패", { description: error.message });
+
+    // WebView 감지 (User-Agent 기반, isNative() 대신 사용)
+    const ua = navigator.userAgent;
+    const inWebView =
+      /; wv\)/.test(ua) ||
+      (/iPhone|iPad|iPod/.test(ua) && !/Safari/.test(ua));
+
+    const callbackUrl = `${window.location.origin}/auth/callback${inWebView ? "?source=app" : ""}`;
+
+    if (inWebView) {
+      // WebView: 시스템 브라우저로 열기 (Google이 WebView OAuth 차단하므로)
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: callbackUrl, skipBrowserRedirect: true },
+      });
+      if (error || !data.url) {
+        toast.error("구글 로그인 실패", { description: error?.message });
+        setGoogleLoading(false);
+        return;
+      }
+      window.open(data.url, "_blank");
       setGoogleLoading(false);
+    } else {
+      // 웹 브라우저: 일반 리다이렉트
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: callbackUrl },
+      });
+      if (error) {
+        toast.error("구글 로그인 실패", { description: error.message });
+        setGoogleLoading(false);
+      }
     }
   };
 
