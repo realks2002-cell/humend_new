@@ -552,8 +552,9 @@ export default function ResumePage() {
             <label className="mb-1.5 block text-xs font-semibold text-foreground">계좌번호</label>
             <Input
               id="field-accountNumber"
-              placeholder="0000-0000-0000-00"
-              value={form.accountNumber.replace(/[^0-9]/g, "").replace(/(\d{4})(?=\d)/g, "$1-")}
+              inputMode="numeric"
+              placeholder="숫자만 입력"
+              value={form.accountNumber}
               onChange={(e) => handleChange("accountNumber", e.target.value.replace(/[^0-9]/g, ""))}
             />
           </div>
