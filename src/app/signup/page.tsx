@@ -40,13 +40,29 @@ export default function SignupPage() {
     const redirectTo = isNative()
       ? "com.humend.hr://auth/callback"
       : `${window.location.origin}/auth/callback`;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo },
-    });
-    if (error) {
-      toast.error("구글 연결 실패", { description: error.message });
+
+    if (isNative()) {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo, skipBrowserRedirect: true },
+      });
+      if (error || !data.url) {
+        toast.error("구글 연결 실패", { description: error?.message });
+        setGoogleLoading(false);
+        return;
+      }
+      const { Browser } = await import("@capacitor/browser");
+      await Browser.open({ url: data.url });
       setGoogleLoading(false);
+    } else {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      });
+      if (error) {
+        toast.error("구글 연결 실패", { description: error.message });
+        setGoogleLoading(false);
+      }
     }
   };
 

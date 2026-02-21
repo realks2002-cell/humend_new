@@ -54,13 +54,31 @@ function LoginContent() {
     const redirectTo = isNative()
       ? "com.humend.hr://auth/callback"
       : `${window.location.origin}/auth/callback`;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo },
-    });
-    if (error) {
-      toast.error("구글 로그인 실패", { description: error.message });
+
+    if (isNative()) {
+      // 앱: 시스템 브라우저로 OAuth 열기
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo, skipBrowserRedirect: true },
+      });
+      if (error || !data.url) {
+        toast.error("구글 로그인 실패", { description: error?.message });
+        setGoogleLoading(false);
+        return;
+      }
+      const { Browser } = await import("@capacitor/browser");
+      await Browser.open({ url: data.url });
       setGoogleLoading(false);
+    } else {
+      // 웹: 기본 리다이렉트
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      });
+      if (error) {
+        toast.error("구글 로그인 실패", { description: error.message });
+        setGoogleLoading(false);
+      }
     }
   };
 
