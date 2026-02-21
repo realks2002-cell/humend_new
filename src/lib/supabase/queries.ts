@@ -80,9 +80,14 @@ export interface Member {
   bank_name: string | null;
   account_holder: string | null;
   account_number: string | null;
+  rrn_front: string | null;
+  rrn_back: string | null;
+  email: string | null;
   status: string;
   created_at: string;
 }
+
+export type MemberWithStats = Member & { work_days: number; work_hours: number };
 
 export interface WorkRecord {
   id: string;
@@ -262,6 +267,42 @@ export async function getAllMembers() {
   return (data ?? []) as Member[];
 }
 
+export async function getAllMembersWithStats(): Promise<MemberWithStats[]> {
+  const admin = createAdminClient();
+
+  const [{ data: members }, { data: workRecords }] = await Promise.all([
+    admin.from("members").select("*").order("created_at", { ascending: false }),
+    admin.from("work_records").select("member_id, work_date, work_hours"),
+  ]);
+
+  const statsMap = new Map<string, { days: Set<string>; hours: number }>();
+  for (const wr of workRecords ?? []) {
+    const r = wr as { member_id: string; work_date: string; work_hours: number };
+    if (!statsMap.has(r.member_id)) {
+      statsMap.set(r.member_id, { days: new Set(), hours: 0 });
+    }
+    const s = statsMap.get(r.member_id)!;
+    s.days.add(r.work_date);
+    s.hours += r.work_hours ?? 0;
+  }
+
+  return ((members ?? []) as Member[]).map((m) => {
+    const s = statsMap.get(m.id);
+    return { ...m, work_days: s?.days.size ?? 0, work_hours: s?.hours ?? 0 };
+  });
+}
+
+export async function getWorkRecordsByMemberId(memberId: string) {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("work_records")
+    .select("client_name, work_date")
+    .eq("member_id", memberId)
+    .order("work_date", { ascending: false });
+
+  return (data ?? []) as { client_name: string; work_date: string }[];
+}
+
 export async function getAllClients() {
   const admin = createAdminClient();
   const { data } = await admin
@@ -297,6 +338,7 @@ export async function getAllClientsWithJobs() {
   const { data } = await admin
     .from("clients")
     .select(`*, job_postings(*)`)
+    .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
 
   return (data ?? []) as ClientWithJobs[];
@@ -473,6 +515,46 @@ export async function getWorkRecordStats(month?: string, pendingOnly?: boolean) 
   }
 
   return { total: filtered.length, pending, confirmed: 0, paid: 0, totalGross, totalNet };
+}
+
+// ========== 계약 전용 쿼리 ==========
+
+export interface SignedContract {
+  id: string;
+  work_date: string;
+  start_time: string;
+  end_time: string;
+  client_name: string;
+  hourly_wage: number;
+  net_pay: number;
+  signature_url: string | null;
+  signed_at: string | null;
+  members: { name: string | null; phone: string; rrn_front: string | null; rrn_back: string | null; region: string | null } | null;
+}
+
+export async function getSignedContracts(page = 1, pageSize = 50) {
+  const admin = createAdminClient();
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, count } = await admin
+    .from("work_records")
+    .select(
+      "id, work_date, start_time, end_time, client_name, hourly_wage, net_pay, signature_url, signed_at, members(name, phone, rrn_front, rrn_back, region)",
+      { count: "exact" }
+    )
+    .not("signature_url", "is", null)
+    .order("work_date", { ascending: false })
+    .range(from, to);
+
+  // Supabase returns members as array for joined tables, unwrap to single
+  const contracts = ((data ?? []) as unknown[]).map((r: unknown) => {
+    const rec = r as Record<string, unknown>;
+    const members = Array.isArray(rec.members) ? rec.members[0] ?? null : rec.members ?? null;
+    return { ...rec, members } as SignedContract;
+  });
+
+  return { data: contracts, total: count ?? 0 };
 }
 
 // ========== Payment 쿼리 ==========

@@ -10,13 +10,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, Phone, MapPin, Calendar, Briefcase, CreditCard } from "lucide-react";
+import { User, Phone, MapPin, Calendar, Briefcase, CreditCard, Mail, IdCard } from "lucide-react";
 import type { Member } from "@/lib/supabase/queries";
-import { formatPhone } from "@/lib/utils/format";
+import { formatPhone, formatDate } from "@/lib/utils/format";
 
 interface MemberDetailModalProps {
   member: Member | null;
   profileImageUrl: string | null;
+  workRecords: { client_name: string; work_date: string }[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -33,12 +34,18 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
   );
 }
 
-export function MemberDetailModal({ member, profileImageUrl, open, onOpenChange }: MemberDetailModalProps) {
+export function MemberDetailModal({ member, profileImageUrl, workRecords, open, onOpenChange }: MemberDetailModalProps) {
   if (!member) return null;
+
+  const rrnDisplay = member.rrn_front && member.rrn_back
+    ? `${member.rrn_front}-${member.rrn_back}`
+    : member.rrn_front
+      ? `${member.rrn_front}-*******`
+      : "-";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>회원 상세 정보</DialogTitle>
         </DialogHeader>
@@ -74,6 +81,8 @@ export function MemberDetailModal({ member, profileImageUrl, open, onOpenChange 
         {/* Detail info */}
         <div className="grid gap-4 sm:grid-cols-2">
           <InfoRow icon={Phone} label="전화번호" value={formatPhone(member.phone)} />
+          <InfoRow icon={Mail} label="이메일" value={member.email ?? "-"} />
+          <InfoRow icon={IdCard} label="주민번호" value={rrnDisplay} />
           <InfoRow icon={MapPin} label="지역" value={member.region ?? "-"} />
           <InfoRow icon={Calendar} label="생년월일" value={member.birth_date ?? "-"} />
           <InfoRow icon={User} label="성별" value={member.gender ?? "-"} />
@@ -98,6 +107,34 @@ export function MemberDetailModal({ member, profileImageUrl, open, onOpenChange 
               label="계좌 정보"
               value={`${member.bank_name} ${member.account_number ?? ""} (${member.account_holder ?? ""})`}
             />
+          </>
+        )}
+
+        {/* Work records */}
+        {workRecords.length > 0 && (
+          <>
+            <Separator />
+            <div>
+              <p className="text-sm font-semibold mb-2">근무 기록 ({workRecords.length}건)</p>
+              <div className="max-h-48 overflow-y-auto rounded-md border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50 text-center">
+                      <th className="px-3 py-2 font-medium text-left">근무장소</th>
+                      <th className="px-3 py-2 font-medium text-right">근무일</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {workRecords.map((wr, i) => (
+                      <tr key={i} className="border-b last:border-0">
+                        <td className="px-3 py-2 text-left">{wr.client_name}</td>
+                        <td className="px-3 py-2 text-right text-muted-foreground">{formatDate(wr.work_date)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </>
         )}
       </DialogContent>

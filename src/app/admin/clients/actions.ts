@@ -154,6 +154,7 @@ export async function updateClientSortOrder(orderedIds: string[]) {
 
   revalidatePath("/admin/clients");
   revalidatePath("/jobs");
+  revalidatePath("/admin/jobs");
   return { success: true };
 }
 

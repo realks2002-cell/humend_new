@@ -2,30 +2,25 @@ export const dynamic = "force-dynamic";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getAllApplications, getAllMembers } from "@/lib/supabase/queries";
+import { getAllApplications } from "@/lib/supabase/queries";
+import type { Member } from "@/lib/supabase/queries";
 import { createAdminClient } from "@/lib/supabase/server";
 import { ApplicationTable } from "./application-table";
 
 export default async function AdminApplicationsPage() {
-  const [all, members] = await Promise.all([
-    getAllApplications(),
-    getAllMembers(),
-  ]);
+  const all = await getAllApplications();
 
-  const membersMap = Object.fromEntries(members.map((m) => [m.id, m]));
+  // applications에서 member_id 추출 → 필요한 회원만 조회
+  const memberIds = [...new Set(all.map((a) => a.member_id))];
 
-  const profileImageUrls: Record<string, string> = {};
-  const withImage = members.filter((m) => m.profile_image_url);
-  if (withImage.length > 0) {
+  let membersMap: Record<string, Member> = {};
+  if (memberIds.length > 0) {
     const admin = createAdminClient();
-    await Promise.all(
-      withImage.map(async (m) => {
-        const { data } = await admin.storage
-          .from("profile-photos")
-          .createSignedUrl(m.profile_image_url!, 3600);
-        if (data?.signedUrl) profileImageUrls[m.id] = data.signedUrl;
-      })
-    );
+    const { data } = await admin
+      .from("members")
+      .select("*")
+      .in("id", memberIds);
+    membersMap = Object.fromEntries((data ?? []).map((m: Member) => [m.id, m]));
   }
 
   const pending = all.filter((a) => a.status === "대기");
@@ -51,28 +46,28 @@ export default async function AdminApplicationsPage() {
         <TabsContent value="pending" className="mt-4">
           <Card className="overflow-hidden py-0">
             <CardContent className="p-0">
-              <ApplicationTable apps={pending} showActions membersMap={membersMap} profileImageUrls={profileImageUrls} />
+              <ApplicationTable apps={pending} showActions membersMap={membersMap} profileImageUrls={{}} />
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="approved" className="mt-4">
           <Card className="overflow-hidden py-0">
             <CardContent className="p-0">
-              <ApplicationTable apps={approved} membersMap={membersMap} profileImageUrls={profileImageUrls} />
+              <ApplicationTable apps={approved} membersMap={membersMap} profileImageUrls={{}} />
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="rejected" className="mt-4">
           <Card className="overflow-hidden py-0">
             <CardContent className="p-0">
-              <ApplicationTable apps={rejected} membersMap={membersMap} profileImageUrls={profileImageUrls} />
+              <ApplicationTable apps={rejected} membersMap={membersMap} profileImageUrls={{}} />
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="all" className="mt-4">
           <Card className="overflow-hidden py-0">
             <CardContent className="p-0">
-              <ApplicationTable apps={all} showActions membersMap={membersMap} profileImageUrls={profileImageUrls} />
+              <ApplicationTable apps={all} showActions membersMap={membersMap} profileImageUrls={{}} />
             </CardContent>
           </Card>
         </TabsContent>

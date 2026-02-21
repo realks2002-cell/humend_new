@@ -1,0 +1,2 @@
+[    1300ms] [ERROR] KakaoMap init error: Error: 카카오맵 SDK 로드 실패
+    at r.onerror (https://humendhr.com/_next/static/chunks/1bbcbb8198b9c5ed.js:4:725) @ https://humendhr.com/_next/static/chunks/1bbcbb8198b9c5ed.js:3

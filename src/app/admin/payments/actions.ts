@@ -92,10 +92,14 @@ export async function getMemberDetail(memberId: string): Promise<{ member: Membe
   const member = data as Member;
   let profileImageUrl: string | null = null;
   if (member.profile_image_url) {
-    const { data: signed } = await admin.storage
-      .from("profile-photos")
-      .createSignedUrl(member.profile_image_url, 600);
-    if (signed?.signedUrl) profileImageUrl = signed.signedUrl;
+    if (member.profile_image_url.startsWith("http")) {
+      profileImageUrl = member.profile_image_url;
+    } else {
+      const { data: signed } = await admin.storage
+        .from("profile-photos")
+        .createSignedUrl(member.profile_image_url, 600);
+      if (signed?.signedUrl) profileImageUrl = signed.signedUrl;
+    }
   }
 
   return { member, profileImageUrl };

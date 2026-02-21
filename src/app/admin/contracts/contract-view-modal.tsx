@@ -8,13 +8,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { XIcon } from "lucide-react";
-import { type WorkRecord } from "@/lib/supabase/queries";
-
-interface MemberExtra {
-  rrn_front?: string;
-  rrn_back?: string;
-  region?: string;
-}
+import { type SignedContract, type WorkRecord } from "@/lib/supabase/queries";
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
@@ -43,19 +37,18 @@ function TableRow({ label, value, label2, value2 }: { label: string; value: stri
   );
 }
 
-export function ContractViewModal({ record, signatureUrl, trigger }: { record: WorkRecord; signatureUrl: string | null; trigger?: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+export function ContractViewModal({ record, signatureUrl, trigger, open: controlledOpen, onOpenChange: controlledOnOpenChange }: { record: SignedContract | WorkRecord; signatureUrl: string | null; trigger?: React.ReactNode; open?: boolean; onOpenChange?: (open: boolean) => void }) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
 
-  const m = record.members as (Record<string, unknown> & MemberExtra) | null;
-  const name = (m?.name as string) ?? "-";
-  const phone = (m?.phone as string) ?? "";
+  const m = record.members as { name: string | null; phone: string; rrn_front?: string | null; rrn_back?: string | null; region?: string | null } | null | undefined;
+  const name = m?.name ?? "-";
+  const phone = m?.phone ?? "";
   const rrnFront = m?.rrn_front ?? "";
   const rrnBack = m?.rrn_back ?? "";
   const region = m?.region ?? "";
   const rrn = rrnFront && rrnBack ? `${rrnFront}-${rrnBack}` : "-";
-
-  const p = record.payments;
-  const display = p ?? record;
 
   function formatPhone(ph: string) {
     const nums = ph.replace(/\D/g, "");
@@ -65,13 +58,15 @@ export function ContractViewModal({ record, signatureUrl, trigger }: { record: W
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <button className="text-left font-medium text-primary hover:underline">
-            {name}
-          </button>
-        )}
-      </DialogTrigger>
+      {controlledOpen === undefined && (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <button className="text-left font-medium text-primary hover:underline">
+              {name}
+            </button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent showCloseButton={false} className="!max-w-4xl max-h-[90vh] overflow-y-auto p-0 gap-0">
         <button
           onClick={() => setOpen(false)}
@@ -91,7 +86,7 @@ export function ContractViewModal({ record, signatureUrl, trigger }: { record: W
             <div className="overflow-hidden rounded border">
               <SectionHeader>사용자</SectionHeader>
               <TableRow label="회사명" value="휴멘드 에이치알" label2="연락처" value2="02-875-8332" />
-              <TableRow label="소재지" value="서울시 동작구 현충로151, 105호" />
+              <TableRow label="소재지" value="서울특별시 구로구 디지털로34번길 55, 비201-비2(구로동, 코오롱 싸이언스밸리2차)" />
             </div>
 
             {/* 근로자 */}
@@ -143,11 +138,11 @@ export function ContractViewModal({ record, signatureUrl, trigger }: { record: W
                     </div>
                     <div className="flex border-b text-xs">
                       <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">기본시급</div>
-                      <div className="px-2 py-1.5">{display.hourly_wage.toLocaleString()} 원</div>
+                      <div className="px-2 py-1.5">{record.hourly_wage.toLocaleString()} 원</div>
                     </div>
                     <div className="flex border-b text-xs">
                       <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">인건비 구성</div>
-                      <div className="px-2 py-1.5">통상시급 {display.hourly_wage.toLocaleString()}원 기타수당 0원</div>
+                      <div className="px-2 py-1.5">통상시급 {record.hourly_wage.toLocaleString()}원 기타수당 0원</div>
                     </div>
                     <div className="flex text-xs">
                       <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">급여산정</div>

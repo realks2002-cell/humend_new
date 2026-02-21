@@ -51,6 +51,12 @@ export async function deleteWorkRecord(workRecordId: string) {
   return { success: true };
 }
 
+export async function getSignatureUrl(signatureUrlPath: string): Promise<string | null> {
+  const admin = createAdminClient();
+  const { data } = await admin.storage.from("signatures").createSignedUrl(signatureUrlPath, 3600);
+  return data?.signedUrl ?? null;
+}
+
 export async function getMemberDetail(memberId: string): Promise<{ member: Member | null; profileImageUrl: string | null }> {
   const admin = createAdminClient();
   const { data } = await admin.from("members").select("*").eq("id", memberId).single();

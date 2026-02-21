@@ -1,0 +1,18 @@
+[   32302ms] ReferenceError: require is not defined
+    at <anonymous>:13:12
+    at f (https://code.claude.com/docs/_next/static/chunks/68789-e7d81f669637c445.js?dpl=dpl_4xVjeqBZtenbniUnD9hXkyqMk79q:1:27615)
+    at https://code.claude.com/docs/_next/static/chunks/68789-e7d81f669637c445.js?dpl=dpl_4xVjeqBZtenbniUnD9hXkyqMk79q:1:28429
+    at o1 (https://code.claude.com/docs/_next/static/chunks/87c73c54-dd8d81ac9604067c.js?dpl=dpl_4xVjeqBZtenbniUnD9hXkyqMk79q:1:88955)
+    at uE (https://code.claude.com/docs/_next/static/chunks/87c73c54-dd8d81ac9604067c.js?dpl=dpl_4xVjeqBZtenbniUnD9hXkyqMk79q:1:104847)
+    at ux (https://code.claude.com/docs/_next/static/chunks/87c73c54-dd8d81ac9604067c.js?dpl=dpl_4xVjeqBZtenbniUnD9hXkyqMk79q:1:104731)
+    at uE (https://code.claude.com/docs/_next/static/chunks/87c73c54-dd8d81ac9604067c.js?dpl=dpl_4xVjeqBZtenbniUnD9hXkyqMk79q:1:104827)
+    at ux (https://code.claude.com/docs/_next/static/chunks/87c73c54-dd8d81ac9604067c.js?dpl=dpl_4xVjeqBZtenbniUnD9hXkyqMk79q:1:104731)
+    at uE (https://code.claude.com/docs/_next/static/chunks/87c73c54-dd8d81ac9604067c.js?dpl=dpl_4xVjeqBZtenbniUnD9hXkyqMk79q:1:104892)
+    at ux (https://code.claude.com/docs/_next/static/chunks/87c73c54-dd8d81ac9604067c.js?dpl=dpl_4xVjeqBZtenbniUnD9hXkyqMk79q:1:104731)
+[   35034ms] [WARNING] Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('https://www.youtube.com') does not match the recipient window's origin ('https://www.google.com'). @ https://www.youtube.com/s/player/4c5cf06a/www-widgetapi.vflset/www-widgetapi.js:209
+[   44021ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://claude.ai/api/referral:0
+[   44022ms] [ERROR] [REACT_QUERY_CLIENT] QueryClient error: Error: ["referral"] data is undefined
+    at Object.onSuccess (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/75212-6636178aa9da790c.js:1:32507)
+    at y (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/75212-6636178aa9da790c.js:1:4893) @ https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/92351-a722d0e61890a54f.js:12
+[   44903ms] [WARNING] [Intercom] The App ID in your code snippet has not been set. Set it to your App ID found in settings to complete installation: https://app.intercom.com/a/apps/_/settings/web @ https://js.intercomcdn.com/frame-modern.c11e2f2b.js:0
+[ 5323834ms] [WARNING] ProseMirror expects the CSS white-space property to be set, preferably to 'pre-wrap'. It is recommended to load style/prosemirror.css from the prosemirror-view package. @ https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/92351-a722d0e61890a54f.js:12

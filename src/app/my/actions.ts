@@ -3,6 +3,55 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+export async function changePassword(currentPassword: string, newPassword: string) {
+  if (!newPassword || newPassword.length < 6) {
+    return { error: "새 비밀번호는 6자리 이상이어야 합니다." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "로그인이 필요합니다." };
+  }
+
+  // members 테이블에서 phone 조회
+  const admin = createAdminClient();
+  const { data: member } = await admin
+    .from("members")
+    .select("phone")
+    .eq("id", user.id)
+    .single();
+
+  if (!member?.phone) {
+    return { error: "회원 정보를 찾을 수 없습니다." };
+  }
+
+  // 현재 비밀번호 검증 (phone → email 변환 후 signInWithPassword)
+  const email = `${member.phone.replace(/[^0-9]/g, "")}@member.humend.hr`;
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password: currentPassword,
+  });
+
+  if (signInError) {
+    return { error: "현재 비밀번호가 올바르지 않습니다." };
+  }
+
+  // 새 비밀번호 설정
+  const { error: updateError } = await admin.auth.admin.updateUserById(user.id, {
+    password: newPassword,
+  });
+
+  if (updateError) {
+    return { error: "비밀번호 변경에 실패했습니다." };
+  }
+
+  return { success: true };
+}
+
 export async function deleteAccount() {
   const supabase = await createClient();
   const {

@@ -38,6 +38,8 @@ export default async function SalaryPage({ searchParams }: Props) {
   // 서명 완료 + payment 없음 (급여 신청 완료, 관리자 처리 대기)
   const pendingRecords = allRecords.filter((r) => r.signature_url && !r.payments);
 
+  const hasProfile = !!(profile?.name && profile?.bank_name && profile?.account_number && profile?.account_holder);
+
   const worker = {
     name: profile?.name ?? "",
     rrnFront: (profile as unknown as Record<string, unknown>)?.rrn_front as string ?? "",
@@ -94,7 +96,7 @@ export default async function SalaryPage({ searchParams }: Props) {
       <MonthSelector currentMonth={currentMonth} basePath="/my/salary" />
 
       {/* 별도 근무 급여신청 */}
-      <DirectSalaryModal clients={clients} worker={worker} />
+      <DirectSalaryModal clients={clients} worker={worker} hasProfile={hasProfile} />
 
       {/* Records (급여신청하기) */}
       <div className="space-y-3">
@@ -142,7 +144,7 @@ export default async function SalaryPage({ searchParams }: Props) {
                       {p ? (
                         <PayslipModal record={r} />
                       ) : signed ? null : (
-                        <ContractModal record={r} worker={worker} />
+                        <ContractModal record={r} worker={worker} hasProfile={hasProfile} />
                       )}
                     </div>
                   </CardContent>

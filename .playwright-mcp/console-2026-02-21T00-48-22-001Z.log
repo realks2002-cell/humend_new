@@ -1,0 +1,139 @@
+[   37801ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/:0
+[   39709ms] ReferenceError: mixpanel is not defined
+    at <anonymous>:1:19
+    at <anonymous>:1:223
+    at https://www.googletagmanager.com/gtm.js?id=GTM-NBHDMPB:920:429
+    at KR (https://www.googletagmanager.com/gtm.js?id=GTM-NBHDMPB:922:31)
+    at Od.JR (https://www.googletagmanager.com/gtm.js?id=GTM-NBHDMPB:919:85)
+    at Od.<anonymous> (https://www.googletagmanager.com/gtm.js?id=GTM-NBHDMPB:338:187)
+    at k.apply (https://www.googletagmanager.com/gtm.js?id=GTM-NBHDMPB:265:466)
+    at lb (https://www.googletagmanager.com/gtm.js?id=GTM-NBHDMPB:227:209)
+    at kb (https://www.googletagmanager.com/gtm.js?id=GTM-NBHDMPB:226:527)
+    at Od.<anonymous> (https://www.googletagmanager.com/gtm.js?id=GTM-NBHDMPB:289:473)
+[   40158ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://auth.wishket.com/login?next=/&_gl=1*ypln3g*_gcl_au*MTUzMTIwODgwOC4xNzcxNjMxMDk0LjE2NDM5OTU0MzguMTc3MTYzMTExMS4xNzcxNjMxMjAx:0
+[   41165ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://auth.wishket.com/login?next=/&_gl=1*ypln3g*_gcl_au*MTUzMTIwODgwOC4xNzcxNjMxMDk0LjE2NDM5OTU0MzguMTc3MTYzMTExMS4xNzcxNjMxMjAx:0
+[   41724ms] [ERROR] Cross-Origin-Opener-Policy policy would block the window.closed call. @ https://auth.wishket.com/_next/static/chunks/e20c2481a0e1c85c.js:0
+[   41724ms] [ERROR] Cross-Origin-Opener-Policy policy would block the window.closed call. @ https://auth.wishket.com/_next/static/chunks/e20c2481a0e1c85c.js:0
+[   44874ms] [ERROR] Cross-Origin-Opener-Policy policy would block the window.closed call. @ https://auth.wishket.com/_next/static/chunks/e20c2481a0e1c85c.js:0
+[   44874ms] [ERROR] Cross-Origin-Opener-Policy policy would block the window.closed call. @ https://auth.wishket.com/_next/static/chunks/e20c2481a0e1c85c.js:0
+[   45998ms] [ERROR] Access to fetch at 'https://www.wishket.com/?_rsc=h8o17' from origin 'https://auth.wishket.com' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ https://auth.wishket.com/login?next=/&_gl=1*ypln3g*_gcl_au*MTUzMTIwODgwOC4xNzcxNjMxMDk0LjE2NDM5OTU0MzguMTc3MTYzMTExMS4xNzcxNjMxMjAx:0
+[   45998ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://www.wishket.com/?_rsc=h8o17:0
+[   45999ms] [ERROR] Failed to fetch RSC payload for https://www.wishket.com/. Falling back to browser navigation. TypeError: Failed to fetch
+    at a (https://auth.wishket.com/_next/static/chunks/4e5e9381b3d568ec.js:4:5124)
+    at v (https://auth.wishket.com/_next/static/chunks/6dad3f0875474073.js:1:16843)
+    at P (https://auth.wishket.com/_next/static/chunks/6dad3f0875474073.js:1:15653)
+    at U (https://auth.wishket.com/_next/static/chunks/6dad3f0875474073.js:1:24801)
+    at j (https://auth.wishket.com/_next/static/chunks/6dad3f0875474073.js:1:23682)
+    at h (https://auth.wishket.com/_next/static/chunks/6dad3f0875474073.js:1:62950)
+    at f (https://auth.wishket.com/_next/static/chunks/6dad3f0875474073.js:1:69513)
+    at s (https://auth.wishket.com/_next/static/chunks/6dad3f0875474073.js:1:69206)
+    at s (https://auth.wishket.com/_next/static/chunks/6dad3f0875474073.js:2:3816)
+    at Object.action (https://auth.wishket.com/_next/static/chunks/6dad3f0875474073.js:2:6520) @ https://auth.wishket.com/_next/static/chunks/4e5e9381b3d568ec.js:3
+[   46868ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/mywishket/partners/:0
+[   49480ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/mywishket/partners/:0
+[   50147ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/partners/manage/interest/:0
+[   62755ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/partners/manage/interest/:0
+[   63010ms] ReferenceError: fbq is not defined
+    at https://www.wishket.com/project/152862/:576:7
+[   63581ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152862/:0
+[   80903ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152862/:0
+[   81584ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152862/proposal/apply/:0
+[  141574ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/152862/proposal/apply/:0
+[ 6057539ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152862/proposal/apply/:0
+[ 7702839ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152862/proposal/apply/:0
+[ 7717454ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152862/proposal/apply/:0
+[ 7728092ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152862/proposal/apply/:0
+[ 7788077ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/152862/proposal/apply/:0
+[ 7812450ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152862/proposal/apply/:0
+[ 7916136ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152862/proposal/apply/:0
+[ 7927195ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152862/proposal/apply/:0
+[ 7938663ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/:0
+[ 7946379ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/:0
+[ 7947955ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/mywishket/partners/:0
+[ 7963127ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/mywishket/partners/:0
+[ 7964129ms] ReferenceError: fbq is not defined
+    at https://www.wishket.com/project/152778/:576:7
+[ 7964508ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152778/:0
+[ 7978069ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152778/:0
+[ 7981784ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152778/:0
+[ 7982510ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/partners/manage/interest/:0
+[ 7992983ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/partners/manage/interest/:0
+[ 7993823ms] ReferenceError: fbq is not defined
+    at https://www.wishket.com/project/152870/:578:7
+[ 7994203ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152870/:0
+[ 8042030ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/152870/:0
+[ 8042130ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152870/:0
+[ 8042696ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/152870/:0
+[ 8042714ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152870/:0
+[ 8044673ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/#clear:0
+[ 8048511ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/#clear:0
+[ 8049223ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJkA%3D:0
+[ 8070773ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJkA%3D:0
+[ 8070935ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJkA%3D:0
+[ 8072217ms] ReferenceError: fbq is not defined
+    at https://www.wishket.com/project/153008/:581:7
+[ 8072821ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/153008/:0
+[ 8089442ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJkA%3D:0
+[ 8093512ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isATEA%3D%3D%3D:0
+[ 8101693ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isATEA%3D%3D%3D:0
+[ 8101855ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isATEA%3D%3D%3D:0
+[ 8102136ms] ReferenceError: fbq is not defined
+    at https://www.wishket.com/project/153015/:567:7
+[ 8102507ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/153015/:0
+[ 8135958ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isATEA%3D%3D%3D:0
+[ 8146810ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isATEA%3D%3D%3D:0
+[ 8146977ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isATEA%3D%3D%3D:0
+[ 8147167ms] ReferenceError: fbq is not defined
+    at https://www.wishket.com/project/152948/:580:7
+[ 8147480ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152948/:0
+[ 8160868ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isATEA%3D%3D%3D:0
+[ 8164934ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isATEA%3D%3D%3D:0
+[ 8165036ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isATEA%3D%3D%3D:0
+[ 8165336ms] ReferenceError: fbq is not defined
+    at https://www.wishket.com/project/152972/:576:7
+[ 8166096ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152972/:0
+[ 8200926ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152972/:0
+[ 8222383ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isATEA%3D%3D%3D:0
+[ 8225021ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isAzEA%3D%3D%3D:0
+[ 8245275ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isALEA%3D%3D%3D:0
+[ 8264929ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isArEA%3D%3D%3D:0
+[ 8282373ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isArEA%3D%3D%3D:0
+[ 8283730ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isArEA%3D%3D%3D:0
+[ 8283841ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isArEA%3D%3D%3D:0
+[ 8284105ms] ReferenceError: fbq is not defined
+    at https://www.wishket.com/project/152866/:578:7
+[ 8284471ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152866/:0
+[ 8319012ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isArEA%3D%3D%3D:0
+[ 8326954ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isArEA%3D%3D%3D:0
+[ 8327131ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isArEA%3D%3D%3D:0
+[ 8327781ms] ReferenceError: fbq is not defined
+    at https://www.wishket.com/project/152878/:567:7
+[ 8328121ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152878/:0
+[ 8365837ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isArEA%3D%3D%3D:0
+[ 8369684ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isArEA%3D%3D%3D:0
+[ 8369861ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isArEA%3D%3D%3D:0
+[ 8370003ms] ReferenceError: fbq is not defined
+    at https://www.wishket.com/project/152867/:569:7
+[ 8370340ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152867/:0
+[ 8375046ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isArEA%3D%3D%3D:0
+[ 8385606ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isAbEA%3D%3D%3D:0
+[ 8395005ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isAbEA%3D%3D%3D:0
+[ 8395156ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isAbEA%3D%3D%3D:0
+[ 8395862ms] ReferenceError: fbq is not defined
+    at https://www.wishket.com/project/152837/:576:7
+[ 8396223ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152837/:0
+[ 8414354ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isAbEA%3D%3D%3D:0
+[ 8426191ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isAbEA%3D%3D%3D:0
+[ 8426334ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isAbEA%3D%3D%3D:0
+[ 8426636ms] ReferenceError: fbq is not defined
+    at https://www.wishket.com/project/152859/:567:7
+[ 8426994ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152859/:0
+[ 8443114ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isAbEA%3D%3D%3D:0
+[ 8448491ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isA7EA%3D%3D%3D:0
+[ 8462046ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isA7EA%3D%3D%3D:0
+[ 8462228ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isA7EA%3D%3D%3D:0
+[ 8462510ms] ReferenceError: fbq is not defined
+    at https://www.wishket.com/project/152772/:576:7
+[ 8462879ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/152772/:0
+[ 8466347ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isA7EA%3D%3D%3D:0
+[ 8526295ms] [ERROR] Attestation check for Attribution Reporting on https://www.google-analytics.com failed. @ https://www.wishket.com/project/?d=A4FwvCCGDODWD6AjGBTAJgMmJA5isA7EA%3D%3D%3D:0

@@ -12,7 +12,8 @@ import {
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, PlusCircle, XIcon } from "lucide-react";
+import { AlertCircle, CalendarIcon, PlusCircle, XIcon } from "lucide-react";
+import Link from "next/link";
 import { ko } from "date-fns/locale";
 import { type Client } from "@/lib/supabase/queries";
 import { SignaturePad } from "@/components/signature/SignaturePad";
@@ -76,9 +77,10 @@ function TableRow({ label, value, label2, value2 }: { label: string; value: stri
   );
 }
 
-export function DirectSalaryModal({ clients, worker }: { clients: Client[]; worker: WorkerInfo }) {
+export function DirectSalaryModal({ clients, worker, hasProfile }: { clients: Client[]; worker: WorkerInfo; hasProfile: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [profileAlertOpen, setProfileAlertOpen] = useState(false);
   const [step, setStep] = useState<"form" | "contract" | "sign">("form");
   const [loading, setLoading] = useState(false);
 
@@ -144,9 +146,44 @@ export function DirectSalaryModal({ clients, worker }: { clients: Client[]; work
   }
 
   return (
+    <>
+    <Dialog open={profileAlertOpen} onOpenChange={setProfileAlertOpen}>
+      <DialogContent className="max-w-sm">
+        <DialogTitle className="sr-only">회원정보 미등록</DialogTitle>
+        <div className="flex flex-col items-center gap-4 py-2 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+            <AlertCircle className="h-6 w-6 text-amber-600" />
+          </div>
+          <div className="space-y-1.5">
+            <p className="font-semibold">회원정보 등록이 필요합니다</p>
+            <p className="text-sm text-muted-foreground">
+              급여신청은 회원정보(이름, 계좌정보) 등록 후<br />가능합니다.
+            </p>
+          </div>
+          <div className="flex w-full gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setProfileAlertOpen(false)}>
+              닫기
+            </Button>
+            <Link href="/my/resume" className="flex-1">
+              <Button className="w-full bg-[#1e2a5a] hover:bg-[#2a3a7a]">
+                회원정보 등록하기
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button className="w-full bg-[#1e2a5a] hover:bg-[#2a3a7a]">
+        <Button
+          className="w-full bg-[#1e2a5a] hover:bg-[#2a3a7a]"
+          onClick={(e) => {
+            if (!hasProfile) {
+              e.preventDefault();
+              setProfileAlertOpen(true);
+            }
+          }}
+        >
           <PlusCircle className="mr-2 h-4 w-4" />
           별도 근무 급여신청
         </Button>
@@ -219,10 +256,12 @@ export function DirectSalaryModal({ clients, worker }: { clients: Client[]; work
                       setCalendarOpen(false);
                     }}
                     modifiers={{
-                      weekend: (date) => date.getDay() === 0 || date.getDay() === 6,
+                      saturday: (date) => date.getDay() === 6,
+                      sunday: (date) => date.getDay() === 0,
                     }}
                     modifiersClassNames={{
-                      weekend: "text-red-500",
+                      saturday: "text-blue-500",
+                      sunday: "text-red-500",
                     }}
                   />
                 </PopoverContent>
@@ -319,7 +358,7 @@ export function DirectSalaryModal({ clients, worker }: { clients: Client[]; work
               <div className="overflow-hidden rounded border">
                 <SectionHeader>사용자</SectionHeader>
                 <TableRow label="회사명" value="휴멘드 에이치알" label2="연락처" value2="02-875-8332" />
-                <TableRow label="소재지" value="서울시 동작구 현충로151, 105호" />
+                <TableRow label="소재지" value="서울특별시 구로구 디지털로34번길 55, 비201-비2(구로동, 코오롱 싸이언스밸리2차)" />
               </div>
 
               {/* 근로자 */}
@@ -373,10 +412,6 @@ export function DirectSalaryModal({ clients, worker }: { clients: Client[]; work
                         <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">{wageType === "일급" ? "기본급" : "기본시급"}</div>
                         <div className="px-2 py-1.5">{displayWage.toLocaleString()} 원</div>
                       </div>
-                      <div className="flex border-b text-xs">
-                        <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">인건비 구성</div>
-                        <div className="px-2 py-1.5">{wageType === "일급" ? `기본급 ${displayWage.toLocaleString()}원 기타수당 0원` : `통상시급 ${displayWage.toLocaleString()}원 기타수당 0원`}</div>
-                      </div>
                       <div className="flex text-xs">
                         <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">급여산정</div>
                         <div className="px-2 py-1.5">{wageType === "일급" ? "기본급=1일임금" : "기본시급x(근무시간-공제시간)=1일임금"}</div>
@@ -384,7 +419,6 @@ export function DirectSalaryModal({ clients, worker }: { clients: Client[]; work
                     </div>
                     <p className="mt-2 text-xs text-gray-500">{wageType === "일급" ? "※ 기본급은 홈페이지에 공지된 일급이며 별도의 안내를 받으신분은 따로 기입후 지급됨" : "※ 기본시급은 홈페이지에 공지된 시급이며 별도의 안내를 받으신분은 따로 기입후 지급됨"}</p>
                     <p className="text-xs text-gray-500">※ 임금은 근무 후 익 주 월~수요일 19시 지급이며 근무업장 사정에 따라 최대 7일, 최소 2시간 지연 입금 될 수 있다.</p>
-                    <p className="text-xs text-gray-500">※ 신한은행 외 타행으로 급여이체 받을 시 이체수수료 500원이 공제되어 지급됩니다</p>
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">6. 적용제외</p>
@@ -392,15 +426,11 @@ export function DirectSalaryModal({ clients, worker }: { clients: Client[]; work
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">7. 사회보험료 및 소득세</p>
-                    <p>임금지급 시 근로자부담금인 고용보험료[급여액의 0.65%]는 공제 후 입금된다.</p>
+                    <p>임금 지급시 근로자 부담금 (사회보험료와 소득세) 은 원천징수 후 근무자가 지정한 예금통장으로 지급한다.</p>
                     <div className="mt-2 overflow-hidden rounded border">
                       <div className="flex border-b text-xs">
                         <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">{wageType === "일급" ? "기본급" : "기본시급"}</div>
                         <div className="px-2 py-1.5">{displayWage.toLocaleString()} 원</div>
-                      </div>
-                      <div className="flex border-b text-xs">
-                        <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">인건비 구성</div>
-                        <div className="px-2 py-1.5">{wageType === "일급" ? `기본급 ${displayWage.toLocaleString()}원 기타수당 0원` : `통상시급 ${displayWage.toLocaleString()}원 기타수당 0원`}</div>
                       </div>
                       <div className="flex text-xs">
                         <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">급여산정</div>
@@ -470,5 +500,6 @@ export function DirectSalaryModal({ clients, worker }: { clients: Client[]; work
         )}
       </DialogContent>
     </Dialog>
+    </>
   );
 }

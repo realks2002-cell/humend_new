@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import {
 import { CalendarIcon, Download } from "lucide-react";
 import { toast } from "sonner";
 import { formatDate, formatCurrency } from "@/lib/utils/format";
-import { type PaymentRecord, getPaymentsForCsvExport } from "./actions";
+import { type PaymentRecord, getPaymentsForCsvExport, getMemberDetail } from "./actions";
 import { type Member } from "@/lib/supabase/queries";
 import { MemberDetailModal } from "../members/member-detail-modal";
 
@@ -36,6 +36,17 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls }: Paymen
   const [filterStartDate, setFilterStartDate] = useState("");
   const [filterEndDate, setFilterEndDate] = useState("");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [selectedProfileUrl, setSelectedProfileUrl] = useState<string | null>(null);
+  const [isLoadingProfile, startProfileTransition] = useTransition();
+
+  function handleMemberClick(member: Member) {
+    setSelectedMember(member);
+    setSelectedProfileUrl(null);
+    startProfileTransition(async () => {
+      const { profileImageUrl } = await getMemberDetail(member.id);
+      setSelectedProfileUrl(profileImageUrl);
+    });
+  }
 
   // CSV date range
   const [startDate, setStartDate] = useState<Date | undefined>();
@@ -262,7 +273,7 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls }: Paymen
                         <button
                           type="button"
                           className="font-medium text-blue-600 hover:underline"
-                          onClick={() => setSelectedMember(member)}
+                          onClick={() => handleMemberClick(member)}
                         >
                           {wr?.members?.name ?? "-"}
                         </button>
@@ -298,7 +309,7 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls }: Paymen
 
       <MemberDetailModal
         member={selectedMember}
-        profileImageUrl={selectedMember ? profileImageUrls[selectedMember.id] ?? null : null}
+        profileImageUrl={selectedProfileUrl}
         workRecords={[]}
         open={!!selectedMember}
         onOpenChange={(open) => { if (!open) setSelectedMember(null); }}

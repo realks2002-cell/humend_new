@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,6 +14,7 @@ import { formatDate, formatPhone, formatWage } from "@/lib/utils/format";
 import { ApplicationActions } from "./application-actions";
 import { MemberDetailModal } from "../members/member-detail-modal";
 import type { Member } from "@/lib/supabase/queries";
+import { getMemberDetail } from "../payments/actions";
 
 const statusConfig: Record<string, { label: string; variant: "secondary" | "default" | "destructive" }> = {
   "대기": { label: "대기중", variant: "secondary" },
@@ -46,7 +47,18 @@ interface ApplicationTableProps {
 
 export function ApplicationTable({ apps, showActions, membersMap, profileImageUrls }: ApplicationTableProps) {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [selectedProfileUrl, setSelectedProfileUrl] = useState<string | null>(null);
+  const [isLoadingProfile, startProfileTransition] = useTransition();
   const [filterStartDate, setFilterStartDate] = useState("");
+
+  function handleMemberClick(member: Member) {
+    setSelectedMember(member);
+    setSelectedProfileUrl(null);
+    startProfileTransition(async () => {
+      const { profileImageUrl } = await getMemberDetail(member.id);
+      setSelectedProfileUrl(profileImageUrl);
+    });
+  }
   const [filterEndDate, setFilterEndDate] = useState("");
   const [filterClient, setFilterClient] = useState("all");
 
@@ -154,7 +166,7 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                       <button
                         type="button"
                         className="font-medium text-blue-600 hover:underline"
-                        onClick={() => setSelectedMember(member)}
+                        onClick={() => handleMemberClick(member)}
                       >
                         {app.members?.name ?? "-"}
                       </button>
@@ -188,7 +200,7 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
 
       <MemberDetailModal
         member={selectedMember}
-        profileImageUrl={selectedMember ? profileImageUrls[selectedMember.id] ?? null : null}
+        profileImageUrl={selectedProfileUrl}
         workRecords={[]}
         open={!!selectedMember}
         onOpenChange={(open) => { if (!open) setSelectedMember(null); }}

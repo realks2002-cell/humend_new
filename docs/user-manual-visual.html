@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Humend HR — 비주얼 사용자 매뉴얼</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-base:#F0F2F5;--bg-surface:#FFFFFF;--bg-hover:#F5F7FA;--bg-active:#EBF2FF;
+  --primary-50:#EFF6FF;--primary-100:#DBEAFE;--primary-200:#BFDBFE;--primary-300:#93C5FD;
+  --primary-400:#60A5FA;--primary-500:#3B82F6;--primary-600:#2563EB;--primary-700:#1D4ED8;
+  --text-primary:#111827;--text-secondary:#4B5563;--text-tertiary:#9CA3AF;--text-label:#6B7280;
+  --success:#10B981;--success-bg:#ECFDF5;--warning:#F59E0B;--warning-bg:#FFFBEB;
+  --error:#EF4444;--error-bg:#FEF2F2;--info:#3B82F6;--info-bg:#EFF6FF;
+  --border-light:#F3F4F6;--border-default:#E5E7EB;
+  --font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono','SF Mono',monospace;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,0.06),0 2px 4px -2px rgba(0,0,0,0.04);
+  --shadow-lg:0 10px 15px -3px rgba(0,0,0,0.08),0 4px 6px -4px rgba(0,0,0,0.04);
+  --shadow-xl:0 20px 25px -5px rgba(0,0,0,0.08),0 8px 10px -6px rgba(0,0,0,0.04);
+  --ease:cubic-bezier(0.25,0.1,0.25,1);
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{font-size:16px;scroll-behavior:smooth;scroll-padding-top:80px}
+body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-family);line-height:1.6;-webkit-font-smoothing:antialiased}
+
+/* ─── Sticky Header ─── */
+.doc-header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.92);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--border-light);padding:0}
+.doc-header .inner{max-width:1280px;margin:0 auto;padding:14px 32px;display:flex;align-items:center;justify-content:space-between}
+.doc-header .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.doc-header .logo-icon{width:32px;height:32px;border-radius:8px;background:var(--primary-600);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px}
+.doc-header .logo-text{font-size:15px;font-weight:700;letter-spacing:-0.02em;color:var(--text-primary)}
+.doc-header .logo-text span{color:var(--text-tertiary);font-weight:400;margin-left:4px}
+.doc-header nav{display:flex;gap:4px}
+.doc-header nav a{font-size:13px;font-weight:500;color:var(--text-secondary);text-decoration:none;padding:6px 14px;border-radius:8px;transition:all 0.15s var(--ease)}
+.doc-header nav a:hover{background:var(--bg-hover);color:var(--text-primary)}
+.doc-header nav a.active{background:var(--primary-50);color:var(--primary-600);font-weight:600}
+
+/* ─── Container ─── */
+.container{max-width:1280px;margin:0 auto;padding:0 32px}
+
+/* ─── Hero ─── */
+.hero{padding:100px 0 80px;background:var(--bg-surface);border-bottom:1px solid var(--border-light);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40%;right:-5%;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,0.05) 0%,transparent 70%);pointer-events:none}
+.hero::after{content:'';position:absolute;bottom:-30%;left:-10%;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,0.04) 0%,transparent 70%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--primary-50);border:1px solid var(--primary-200);border-radius:9999px;font-size:12px;font-weight:600;color:var(--primary-600);margin-bottom:24px}
+.hero-badge .dot{width:6px;height:6px;background:var(--primary-500);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero h1{font-size:48px;font-weight:800;line-height:1.12;letter-spacing:-0.035em;margin-bottom:16px;background:linear-gradient(135deg,var(--text-primary) 0%,var(--primary-700) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:17px;color:var(--text-secondary);max-width:560px;line-height:1.7}
+.hero-meta{display:flex;gap:32px;margin-top:32px}
+.hero-meta-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-tertiary)}
+.hero-meta-item svg{width:16px;height:16px;color:var(--primary-400)}
+
+/* ─── Section ─── */
+.section{padding:80px 0;border-bottom:1px solid var(--border-light)}
+.section:last-of-type{border-bottom:none}
+.section-num{font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--primary-500);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-num::after{content:'';flex:1;max-width:40px;height:1px;background:var(--primary-300)}
+.section-title{font-size:32px;font-weight:800;letter-spacing:-0.03em;margin-bottom:8px}
+.section-desc{font-size:15px;color:var(--text-secondary);margin-bottom:48px;max-width:640px;line-height:1.7}
+
+/* ─── Page Card ─── */
+.page-card{background:var(--bg-surface);border:1px solid var(--border-light);border-radius:16px;overflow:hidden;margin-bottom:48px;box-shadow:var(--shadow-sm);transition:box-shadow 0.3s var(--ease)}
+.page-card:hover{box-shadow:var(--shadow-lg)}
+.page-card-header{padding:32px 40px 24px;border-bottom:1px solid var(--border-light);display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.page-card-title{display:flex;align-items:center;gap:12px}
+.page-card-number{width:36px;height:36px;border-radius:10px;background:var(--primary-50);color:var(--primary-600);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0}
+.page-card-name{font-size:20px;font-weight:700;letter-spacing:-0.01em}
+.page-card-path{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--bg-base);border:1px solid var(--border-light);border-radius:6px;font-size:12px;font-family:var(--font-mono);color:var(--text-tertiary);white-space:nowrap;flex-shrink:0}
+.page-card-body{padding:32px 40px}
+.page-card-desc{font-size:14px;color:var(--text-secondary);line-height:1.7;margin-bottom:28px;max-width:720px}
+
+/* ─── Screenshot Frames ─── */
+.screenshot-grid{display:grid;gap:24px;margin-bottom:24px}
+.screenshot-grid.dual{grid-template-columns:1fr 320px}
+.screenshot-grid.single{grid-template-columns:1fr}
+
+/* macOS Browser Frame */
+.browser-frame{border-radius:12px;overflow:hidden;border:1px solid var(--border-default);box-shadow:var(--shadow-md);background:#f5f5f5}
+.browser-frame .titlebar{height:38px;background:linear-gradient(180deg,#f5f5f5 0%,#e8e8e8 100%);border-bottom:1px solid #d5d5d5;display:flex;align-items:center;padding:0 14px;gap:8px}
+.browser-frame .titlebar .dots{display:flex;gap:6px}
+.browser-frame .titlebar .dot{width:12px;height:12px;border-radius:50%}
+.browser-frame .titlebar .dot.red{background:#FF5F57;border:1px solid #E0443E}
+.browser-frame .titlebar .dot.yellow{background:#FEBC2E;border:1px solid #DEA123}
+.browser-frame .titlebar .dot.green{background:#28C840;border:1px solid #1AAB29}
+.browser-frame .titlebar .url{flex:1;text-align:center;font-size:11px;font-family:var(--font-mono);color:#666;background:white;border-radius:5px;padding:4px 12px;margin:0 60px;border:1px solid #d5d5d5}
+.browser-frame .frame-body{overflow:hidden;background:white}
+.browser-frame .frame-body img{width:100%;height:auto;display:block}
+
+/* iPhone Frame */
+.phone-frame{width:320px;flex-shrink:0}
+.phone-frame-inner{background:#111;border-radius:40px;padding:14px;box-shadow:var(--shadow-lg),inset 0 0 0 2px #333}
+.phone-frame-notch{width:120px;height:28px;background:#111;border-radius:0 0 16px 16px;margin:0 auto -14px;position:relative;z-index:2}
+.phone-frame-screen{border-radius:28px;overflow:hidden;background:white;position:relative}
+.phone-frame-screen img{width:100%;height:auto;display:block;max-height:600px;object-fit:cover;object-position:top}
+.phone-frame-bar{height:5px;width:130px;background:#111;border-radius:3px;margin:8px auto 0}
+
+/* ─── Feature Table ─── */
+.feature-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:20px}
+.feature-table thead th{text-align:left;font-weight:600;color:var(--text-label);font-size:11px;letter-spacing:0.04em;text-transform:uppercase;padding:8px 12px;border-bottom:2px solid var(--border-default);background:var(--bg-base)}
+.feature-table tbody td{padding:10px 12px;border-bottom:1px solid var(--border-light);color:var(--text-secondary);vertical-align:top}
+.feature-table tbody tr:last-child td{border-bottom:none}
+.feature-table tbody td:first-child{font-weight:600;color:var(--text-primary);white-space:nowrap}
+
+/* ─── Badge ─── */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:9999px;font-size:11px;font-weight:600}
+.badge-blue{background:var(--primary-50);color:var(--primary-600)}
+.badge-green{background:var(--success-bg);color:var(--success)}
+.badge-red{background:var(--error-bg);color:var(--error)}
+.badge-yellow{background:var(--warning-bg);color:var(--warning)}
+.badge-gray{background:var(--bg-base);color:var(--text-secondary)}
+
+/* ─── Appendix ─── */
+.appendix-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px}
+.appendix-card{background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;padding:28px;box-shadow:var(--shadow-sm)}
+.appendix-card h4{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.appendix-card h4 .bar{width:3px;height:18px;background:var(--primary-500);border-radius:2px}
+
+/* ─── Flow Diagram ─── */
+.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:20px 0}
+.flow-step{padding:8px 16px;background:var(--primary-50);border:1px solid var(--primary-200);border-radius:8px;font-size:13px;font-weight:600;color:var(--primary-700)}
+.flow-arrow{color:var(--primary-300);font-size:16px}
+
+/* ─── Footer ─── */
+.doc-footer{padding:48px 0;text-align:center;border-top:1px solid var(--border-light);background:var(--bg-surface)}
+.doc-footer p{font-size:13px;color:var(--text-tertiary)}
+
+/* ─── Animations ─── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.animate{animation:fadeUp 0.5s var(--ease) both}
+.d1{animation-delay:.05s}.d2{animation-delay:.1s}.d3{animation-delay:.15s}
+
+/* ─── Responsive ─── */
+@media(max-width:900px){
+  .hero h1{font-size:32px}
+  .screenshot-grid.dual{grid-template-columns:1fr}
+  .phone-frame{width:100%;max-width:320px;margin:0 auto}
+  .page-card-header{flex-direction:column}
+  .page-card-header,.page-card-body{padding:20px 24px}
+  .container{padding:0 16px}
+  .doc-header nav{display:none}
+  .hero-meta{flex-direction:column;gap:12px}
+  .appendix-grid{grid-template-columns:1fr}
+  .section{padding:48px 0}
+  .hero{padding:60px 0 48px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════ HEADER ═══════ -->
+<header class="doc-header">
+  <div class="inner">
+    <a class="logo" href="#top">
+      <div class="logo-icon">H</div>
+      <div class="logo-text">Humend<span>사용자 매뉴얼</span></div>
+    </a>
+    <nav id="nav">
+      <a href="#section-public" class="active">공통 화면</a>
+      <a href="#section-member">회원 메뉴</a>
+      <a href="#section-admin">관리자 메뉴</a>
+      <a href="#section-appendix">부록</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ═══════ HERO ═══════ -->
+<div class="hero" id="top">
+  <div class="container">
+    <div class="hero-badge animate"><div class="dot"></div>Visual User Manual</div>
+    <h1 class="animate d1">Humend HR<br>비주얼 사용자 매뉴얼</h1>
+    <p class="animate d2">인력파견 플랫폼 Humend HR의 전체 화면과 기능을 스크린샷과 함께 안내합니다. 회원(파견 근로자)과 관리자(파견업체) 두 역할의 모든 메뉴를 다룹니다.</p>
+    <div class="hero-meta animate d3">
+      <div class="hero-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        데스크탑 + 모바일 반응형
+      </div>
+      <div class="hero-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        회원 + 관리자 2역할
+      </div>
+      <div class="hero-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+        32개 실제 화면 캡처
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- 01. 공통 화면 -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="section-public">
+  <div class="container">
+    <div class="section-num">01 — Public Pages</div>
+    <h2 class="section-title">공통 화면</h2>
+    <p class="section-desc">로그인 없이 누구나 접근할 수 있는 페이지입니다. 홈페이지, 일자리 목록/상세, 로그인, 회원가입, 소개, 관리자 로그인을 포함합니다.</p>
+
+    <!-- 1.1 홈페이지 -->
+    <div class="page-card" id="page-home">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">1.1</div>
+          <div class="page-card-name">홈페이지</div>
+        </div>
+        <div class="page-card-path">/</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">사이트에 접속했을 때 가장 먼저 보이는 화면입니다. 히어로 섹션, 최근 알바공고, 서비스 통계, 소개 영역으로 구성됩니다.</p>
+        <div class="screenshot-grid dual">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com</div></div>
+            <div class="frame-body"><img src="screenshots/public-home-desktop.png" alt="홈페이지 데스크탑" loading="lazy"></div>
+          </div>
+          <div class="phone-frame">
+            <div class="phone-frame-inner">
+              <div class="phone-frame-notch"></div>
+              <div class="phone-frame-screen"><img src="screenshots/public-home-mobile.png" alt="홈페이지 모바일" loading="lazy"></div>
+              <div class="phone-frame-bar"></div>
+            </div>
+          </div>
+        </div>
+        <table class="feature-table">
+          <thead><tr><th>버튼/링크</th><th>위치</th><th>동작</th></tr></thead>
+          <tbody>
+            <tr><td>일자리 보기</td><td>히어로 섹션</td><td><code>/jobs</code> 일자리 목록으로 이동</td></tr>
+            <tr><td>회원가입</td><td>상단 네비게이션</td><td><code>/signup</code> 회원가입 페이지로 이동</td></tr>
+            <tr><td>로그인</td><td>상단 네비게이션</td><td><code>/login</code> 로그인 페이지로 이동</td></tr>
+            <tr><td>마이페이지</td><td>상단 네비게이션 (로그인 시)</td><td><code>/my</code> 마이페이지로 이동</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 1.2 일자리 목록 -->
+    <div class="page-card" id="page-jobs">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">1.2</div>
+          <div class="page-card-name">일자리 목록</div>
+        </div>
+        <div class="page-card-path">/jobs</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">현재 모집 중인 모든 일자리를 카드 형태로 보여주는 페이지입니다. 날짜 필터로 원하는 기간의 일자리를 검색할 수 있습니다.</p>
+        <div class="screenshot-grid dual">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/jobs</div></div>
+            <div class="frame-body"><img src="screenshots/public-jobs-desktop.png" alt="일자리 목록 데스크탑" loading="lazy"></div>
+          </div>
+          <div class="phone-frame">
+            <div class="phone-frame-inner">
+              <div class="phone-frame-notch"></div>
+              <div class="phone-frame-screen"><img src="screenshots/public-jobs-mobile.png" alt="일자리 목록 모바일" loading="lazy"></div>
+              <div class="phone-frame-bar"></div>
+            </div>
+          </div>
+        </div>
+        <table class="feature-table">
+          <thead><tr><th>기능</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td>날짜 필터</td><td>시작일~종료일 범위로 일자리 검색</td></tr>
+            <tr><td>일자리 카드</td><td>고객사 이미지, 위치, 시급, 모집건수, 날짜별 지원 버튼</td></tr>
+            <tr><td>지원하기</td><td>프로필 완성 시 지원 확인 다이얼로그 &rarr; 미완성 시 프로필 페이지 안내</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 1.3 일자리 상세 -->
+    <div class="page-card" id="page-jobdetail">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">1.3</div>
+          <div class="page-card-name">일자리 상세</div>
+        </div>
+        <div class="page-card-path">/jobs/[id]</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">특정 일자리의 상세 정보를 보여주는 페이지입니다. 이미지 갤러리, 기본 정보, 모집 일정, 상세 설명, 지도 등을 포함합니다.</p>
+        <div class="screenshot-grid single">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/jobs/[id]</div></div>
+            <div class="frame-body"><img src="screenshots/public-jobdetail-desktop.png" alt="일자리 상세 데스크탑" loading="lazy"></div>
+          </div>
+        </div>
+        <table class="feature-table">
+          <thead><tr><th>영역</th><th>내용</th></tr></thead>
+          <tbody>
+            <tr><td>이미지 갤러리</td><td>고객사/현장 사진 1~3장 표시</td></tr>
+            <tr><td>정보 카드</td><td>모집인원, 업무형태, 성별 조건, 업종</td></tr>
+            <tr><td>모집 일정</td><td>날짜별 시간/인원/지원 버튼</td></tr>
+            <tr><td>복장/가이드</td><td>준비물 SVG 가이드, 주의사항</td></tr>
+            <tr><td>지도</td><td>카카오맵으로 근무지 위치 표시</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 1.4 회원 로그인 -->
+    <div class="page-card" id="page-login">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">1.4</div>
+          <div class="page-card-name">회원 로그인</div>
+        </div>
+        <div class="page-card-path">/login</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">전화번호와 비밀번호로 로그인합니다. 로그인 성공 시 마이페이지(<code>/my</code>)로 이동합니다.</p>
+        <div class="screenshot-grid dual">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/login</div></div>
+            <div class="frame-body"><img src="screenshots/public-login-desktop.png" alt="로그인 데스크탑" loading="lazy"></div>
+          </div>
+          <div class="phone-frame">
+            <div class="phone-frame-inner">
+              <div class="phone-frame-notch"></div>
+              <div class="phone-frame-screen"><img src="screenshots/public-login-mobile.png" alt="로그인 모바일" loading="lazy"></div>
+              <div class="phone-frame-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1.5 회원가입 -->
+    <div class="page-card" id="page-signup">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">1.5</div>
+          <div class="page-card-name">회원가입</div>
+        </div>
+        <div class="page-card-path">/signup</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">이름, 전화번호, 비밀번호를 입력하여 간편하게 가입합니다. 가입 완료 후 로그인 페이지로 이동합니다.</p>
+        <div class="screenshot-grid dual">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/signup</div></div>
+            <div class="frame-body"><img src="screenshots/public-signup-desktop.png" alt="회원가입 데스크탑" loading="lazy"></div>
+          </div>
+          <div class="phone-frame">
+            <div class="phone-frame-inner">
+              <div class="phone-frame-notch"></div>
+              <div class="phone-frame-screen"><img src="screenshots/public-signup-mobile.png" alt="회원가입 모바일" loading="lazy"></div>
+              <div class="phone-frame-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1.6 소개 -->
+    <div class="page-card" id="page-about">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">1.6</div>
+          <div class="page-card-name">사업소개</div>
+        </div>
+        <div class="page-card-path">/about</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">Humend HR 서비스의 프로세스(공고 등록 &rarr; 인력 매칭 &rarr; 근무 확인 &rarr; 급여 정산)와 핵심 가치를 소개합니다.</p>
+        <div class="screenshot-grid single">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/about</div></div>
+            <div class="frame-body"><img src="screenshots/public-about-desktop.png" alt="소개 데스크탑" loading="lazy"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1.7 관리자 로그인 -->
+    <div class="page-card" id="page-adminlogin">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">1.7</div>
+          <div class="page-card-name">관리자 로그인</div>
+        </div>
+        <div class="page-card-path">/admin/login</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">관리자 전용 로그인 페이지입니다. 관리자 ID와 비밀번호로 인증 후 관리자 대시보드로 이동합니다. 좌측에 관리자 사이드바 네비게이션이 표시됩니다.</p>
+        <div class="screenshot-grid single">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/login</div></div>
+            <div class="frame-body"><img src="screenshots/public-adminlogin-desktop.png" alt="관리자 로그인" loading="lazy"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- 02. 회원 메뉴 -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="section-member">
+  <div class="container">
+    <div class="section-num">02 — Member Pages</div>
+    <h2 class="section-title">회원 메뉴</h2>
+    <p class="section-desc">로그인한 회원만 접근 가능한 페이지입니다. 비로그인 시 자동으로 로그인 페이지로 이동합니다.</p>
+
+    <div class="flow" style="margin-bottom:48px">
+      <div class="flow-step">회원가입</div><div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">프로필 등록</div><div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">일자리 지원</div><div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">승인 대기</div><div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">근무</div><div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">계약 서명</div><div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">급여 수령</div>
+    </div>
+
+    <!-- 2.1 마이페이지 -->
+    <div class="page-card" id="page-mypage">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">2.1</div>
+          <div class="page-card-name">마이페이지 (대시보드)</div>
+        </div>
+        <div class="page-card-path">/my</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">로그인 후 가장 먼저 보이는 회원 전용 메인 페이지입니다. 프로필 영역, 상태 카드(대기/승인/급여), 빠른 링크, 다가오는 근무 일정을 한눈에 확인할 수 있습니다.</p>
+        <div class="screenshot-grid dual">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/my</div></div>
+            <div class="frame-body"><img src="screenshots/member-mypage-desktop.png" alt="마이페이지 데스크탑" loading="lazy"></div>
+          </div>
+          <div class="phone-frame">
+            <div class="phone-frame-inner">
+              <div class="phone-frame-notch"></div>
+              <div class="phone-frame-screen"><img src="screenshots/member-mypage-mobile.png" alt="마이페이지 모바일" loading="lazy"></div>
+              <div class="phone-frame-bar"></div>
+            </div>
+          </div>
+        </div>
+        <table class="feature-table">
+          <thead><tr><th>영역</th><th>내용</th></tr></thead>
+          <tbody>
+            <tr><td>프로필 영역</td><td>프로필 사진, 이름, 환영 메시지, 비밀번호 수정/회원탈퇴 버튼</td></tr>
+            <tr><td>상태 카드 (3개)</td><td>대기 중 지원 (노란), 승인된 지원 (녹색), 이번 달 급여 (회색)</td></tr>
+            <tr><td>바로가기 (4개)</td><td>프로필 관리, 근무신청 조회, 근무내역, 급여신청</td></tr>
+            <tr><td>다가오는 근무</td><td>D-day 배지로 임박한 근무 일정 표시</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 2.2 프로필 관리 -->
+    <div class="page-card" id="page-resume">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">2.2</div>
+          <div class="page-card-name">프로필 관리 (이력서)</div>
+        </div>
+        <div class="page-card-path">/my/resume</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">회원 정보를 등록하고 수정하는 핵심 페이지입니다. 일자리에 지원하려면 반드시 프로필을 완성해야 합니다. 기본 정보, 본인인증, 경력 사항, 계좌 정보, 개인정보 동의 섹션으로 구성됩니다.</p>
+        <div class="screenshot-grid dual">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/my/resume</div></div>
+            <div class="frame-body"><img src="screenshots/member-resume-desktop.png" alt="프로필 관리 데스크탑" loading="lazy"></div>
+          </div>
+          <div class="phone-frame">
+            <div class="phone-frame-inner">
+              <div class="phone-frame-notch"></div>
+              <div class="phone-frame-screen"><img src="screenshots/member-resume-mobile.png" alt="프로필 관리 모바일" loading="lazy"></div>
+              <div class="phone-frame-bar"></div>
+            </div>
+          </div>
+        </div>
+        <table class="feature-table">
+          <thead><tr><th>섹션</th><th>필드</th></tr></thead>
+          <tbody>
+            <tr><td>기본 정보</td><td>이름(읽기전용), 전화번호(읽기전용), 생년월일, 성별, 이메일, 지역, 신장</td></tr>
+            <tr><td>본인인증</td><td>주민번호 앞/뒷자리, NICE 인증 버튼</td></tr>
+            <tr><td>경력 사항</td><td>경력 여부 토글, 상세 경력 텍스트</td></tr>
+            <tr><td>계좌 정보</td><td>은행명 드롭다운(21개 은행), 예금주, 계좌번호</td></tr>
+            <tr><td>개인정보 동의</td><td>개인정보처리방침 전문 + 동의 체크박스</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 2.3 근무신청 조회 -->
+    <div class="page-card" id="page-applications">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">2.3</div>
+          <div class="page-card-name">근무신청 조회</div>
+        </div>
+        <div class="page-card-path">/my/applications</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">내가 지원한 모든 일자리의 상태를 확인하는 페이지입니다. 요약 카드(대기/승인/거절)와 탭 메뉴로 필터링할 수 있습니다.</p>
+        <div class="screenshot-grid dual">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/my/applications</div></div>
+            <div class="frame-body"><img src="screenshots/member-applications-desktop.png" alt="근무신청 조회 데스크탑" loading="lazy"></div>
+          </div>
+          <div class="phone-frame">
+            <div class="phone-frame-inner">
+              <div class="phone-frame-notch"></div>
+              <div class="phone-frame-screen"><img src="screenshots/member-applications-mobile.png" alt="근무신청 조회 모바일" loading="lazy"></div>
+              <div class="phone-frame-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.4 급여신청 -->
+    <div class="page-card" id="page-salary">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">2.4</div>
+          <div class="page-card-name">급여신청</div>
+        </div>
+        <div class="page-card-path">/my/salary</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">계약서 서명 및 급여 신청을 처리하는 핵심 페이지입니다. 계좌 정보 확인, 미서명 근무 기록에 대한 계약 체결(전자서명), 서명 완료 후 급여 지급 대기 상태를 관리합니다.</p>
+        <div class="screenshot-grid dual">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/my/salary</div></div>
+            <div class="frame-body"><img src="screenshots/member-salary-desktop.png" alt="급여신청 데스크탑" loading="lazy"></div>
+          </div>
+          <div class="phone-frame">
+            <div class="phone-frame-inner">
+              <div class="phone-frame-notch"></div>
+              <div class="phone-frame-screen"><img src="screenshots/member-salary-mobile.png" alt="급여신청 모바일" loading="lazy"></div>
+              <div class="phone-frame-bar"></div>
+            </div>
+          </div>
+        </div>
+        <table class="feature-table">
+          <thead><tr><th>기능</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td>계약 체결</td><td>서명 패드에 직접 서명 &rarr; 계약 확정</td></tr>
+            <tr><td>계약서 보기</td><td>서명된 계약서 PDF 확인</td></tr>
+            <tr><td>급여명세서</td><td>세전/공제/실수령액 상세 보기</td></tr>
+            <tr><td>직접 급여신청</td><td>고객사 선택 후 수동 급여 신청</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 2.5 계약서 조회 -->
+    <div class="page-card" id="page-contracts">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">2.5</div>
+          <div class="page-card-name">계약서 조회</div>
+        </div>
+        <div class="page-card-path">/my/contracts</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">서명 완료된 모든 계약서를 조회하는 페이지입니다. 고객사명, 근무일, 실수령액, 상태를 확인할 수 있습니다.</p>
+        <div class="screenshot-grid dual">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/my/contracts</div></div>
+            <div class="frame-body"><img src="screenshots/member-contracts-desktop.png" alt="계약서 조회 데스크탑" loading="lazy"></div>
+          </div>
+          <div class="phone-frame">
+            <div class="phone-frame-inner">
+              <div class="phone-frame-notch"></div>
+              <div class="phone-frame-screen"><img src="screenshots/member-contracts-mobile.png" alt="계약서 조회 모바일" loading="lazy"></div>
+              <div class="phone-frame-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.6 근무내역 -->
+    <div class="page-card" id="page-history">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">2.6</div>
+          <div class="page-card-name">근무내역</div>
+        </div>
+        <div class="page-card-path">/my/history</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">월별 근무 내역과 급여 요약을 확인하는 페이지입니다. 월간 통계(근무일수, 총 근무시간, 실수령 급여)와 상세 기록을 조회합니다.</p>
+        <div class="screenshot-grid dual">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/my/history</div></div>
+            <div class="frame-body"><img src="screenshots/member-history-desktop.png" alt="근무내역 데스크탑" loading="lazy"></div>
+          </div>
+          <div class="phone-frame">
+            <div class="phone-frame-inner">
+              <div class="phone-frame-notch"></div>
+              <div class="phone-frame-screen"><img src="screenshots/member-history-mobile.png" alt="근무내역 모바일" loading="lazy"></div>
+              <div class="phone-frame-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- 03. 관리자 메뉴 -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="section-admin">
+  <div class="container">
+    <div class="section-num">03 — Admin Pages</div>
+    <h2 class="section-title">관리자 메뉴</h2>
+    <p class="section-desc">관리자 계정으로 로그인해야 접근 가능합니다. 좌측 사이드바로 모든 관리 메뉴에 접근합니다.</p>
+
+    <div class="flow" style="margin-bottom:48px">
+      <div class="flow-step">관리자 로그인</div><div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">고객사 등록</div><div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">일자리 등록</div><div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">지원 승인/거절</div><div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">급여 승인</div><div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">지급 확인</div>
+    </div>
+
+    <!-- 3.1 대시보드 -->
+    <div class="page-card" id="page-admin-dashboard">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">3.1</div>
+          <div class="page-card-name">관리자 대시보드</div>
+        </div>
+        <div class="page-card-path">/admin</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">전체 현황을 한눈에 파악하는 메인 페이지입니다. 5개 통계 카드, 지원 현황 파이 차트, 월별 급여 추이 바 차트, 미처리 지원 목록, 최근 활동 타임라인을 제공합니다.</p>
+        <div class="screenshot-grid single">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin</div></div>
+            <div class="frame-body"><img src="screenshots/admin-dashboard-desktop.png" alt="관리자 대시보드" loading="lazy"></div>
+          </div>
+        </div>
+        <table class="feature-table">
+          <thead><tr><th>통계 카드</th><th>내용</th><th>색상</th></tr></thead>
+          <tbody>
+            <tr><td>확정 근무</td><td>확정된 근무 기록 수</td><td><span class="badge badge-blue">파랑</span></td></tr>
+            <tr><td>미처리 지원</td><td>승인 대기 중인 지원 수</td><td><span class="badge badge-yellow">노랑</span></td></tr>
+            <tr><td>등록 회원</td><td>전체 등록 회원 수</td><td style="color:var(--text-secondary)">보라</td></tr>
+            <tr><td>제휴 고객사</td><td>등록된 고객사 수</td><td><span class="badge badge-green">녹색</span></td></tr>
+            <tr><td>이번 달 급여</td><td>당월 총 급여 지급액</td><td><span class="badge badge-red">핑크</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 3.2 회원 관리 -->
+    <div class="page-card" id="page-admin-members">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">3.2</div>
+          <div class="page-card-name">회원 관리</div>
+        </div>
+        <div class="page-card-path">/admin/members</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">등록된 전체 회원을 조회하고 상세 정보를 확인합니다. 검색바로 이름/전화번호 검색, 이름 클릭 시 회원 상세 모달이 열립니다.</p>
+        <div class="screenshot-grid single">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/members</div></div>
+            <div class="frame-body"><img src="screenshots/admin-members-desktop.png" alt="회원 관리" loading="lazy"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.3 고객사 관리 -->
+    <div class="page-card" id="page-admin-clients">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">3.3</div>
+          <div class="page-card-name">고객사 관리</div>
+        </div>
+        <div class="page-card-path">/admin/clients</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">제휴 고객사(업체)를 등록, 수정, 삭제, 순서 변경하는 페이지입니다. 드래그로 표시 순서를 변경할 수 있습니다.</p>
+        <div class="screenshot-grid single">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/clients</div></div>
+            <div class="frame-body"><img src="screenshots/admin-clients-desktop.png" alt="고객사 관리" loading="lazy"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.4 일자리 관리 -->
+    <div class="page-card" id="page-admin-jobs">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">3.4</div>
+          <div class="page-card-name">일자리 관리</div>
+        </div>
+        <div class="page-card-path">/admin/jobs</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">일자리(근무 슬롯)를 등록하고 관리합니다. 고객사별로 카드가 표시되며, 각 카드에서 날짜/시간/인원을 설정한 슬롯을 추가합니다.</p>
+        <div class="screenshot-grid single">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/jobs</div></div>
+            <div class="frame-body"><img src="screenshots/admin-jobs-desktop.png" alt="일자리 관리" loading="lazy"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.5 지원 관리 -->
+    <div class="page-card" id="page-admin-applications">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">3.5</div>
+          <div class="page-card-name">지원 관리</div>
+        </div>
+        <div class="page-card-path">/admin/applications</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">회원들의 일자리 지원을 승인/거절하는 페이지입니다. 대기/승인/거절/전체 탭으로 필터링하며, 승인/거절 버튼은 "대기" 탭에서만 표시됩니다.</p>
+        <div class="screenshot-grid single">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/applications</div></div>
+            <div class="frame-body"><img src="screenshots/admin-applications-desktop.png" alt="지원 관리" loading="lazy"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.6 급여 관리 -->
+    <div class="page-card" id="page-admin-payroll">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">3.6</div>
+          <div class="page-card-name">급여 관리</div>
+        </div>
+        <div class="page-card-path">/admin/payroll</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">회원의 급여를 확인하고 처리합니다. 서명 완료 &rarr; 관리자 승인 &rarr; 급여 지급 확인 &rarr; 지급 완료 흐름으로 처리합니다.</p>
+        <div class="screenshot-grid single">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/payroll</div></div>
+            <div class="frame-body"><img src="screenshots/admin-payroll-desktop.png" alt="급여 관리" loading="lazy"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.7 급여지급 내역 -->
+    <div class="page-card" id="page-admin-payments">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">3.7</div>
+          <div class="page-card-name">급여지급 내역</div>
+        </div>
+        <div class="page-card-path">/admin/payments</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">지급 완료된 급여 내역을 조회하는 페이지입니다. 월별 조회, 수령자, 금액, 지급 방법, 상태를 확인합니다.</p>
+        <div class="screenshot-grid single">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/payments</div></div>
+            <div class="frame-body"><img src="screenshots/admin-payments-desktop.png" alt="급여지급 내역" loading="lazy"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.8 계약서 관리 -->
+    <div class="page-card" id="page-admin-contracts">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">3.8</div>
+          <div class="page-card-name">계약서 관리</div>
+        </div>
+        <div class="page-card-path">/admin/contracts</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">모든 서명 완료된 계약서를 조회합니다. 회원 이름 클릭 시 계약서 보기 모달(서명 이미지 포함)이 열리며, PDF 다운로드도 가능합니다.</p>
+        <div class="screenshot-grid single">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/contracts</div></div>
+            <div class="frame-body"><img src="screenshots/admin-contracts-desktop.png" alt="계약서 관리" loading="lazy"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.9 설정 -->
+    <div class="page-card" id="page-admin-settings">
+      <div class="page-card-header">
+        <div class="page-card-title">
+          <div class="page-card-number">3.9</div>
+          <div class="page-card-name">설정 (관리자 계정)</div>
+        </div>
+        <div class="page-card-path">/admin/settings</div>
+      </div>
+      <div class="page-card-body">
+        <p class="page-card-desc">관리자 계정을 추가하고 관리하는 페이지입니다. 관리자 ID, 이름, 비밀번호를 입력하여 새 관리자를 생성하거나 삭제할 수 있습니다.</p>
+        <div class="screenshot-grid single">
+          <div class="browser-frame">
+            <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/settings</div></div>
+            <div class="frame-body"><img src="screenshots/admin-settings-desktop.png" alt="설정" loading="lazy"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- 부록 -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="section-appendix">
+  <div class="container">
+    <div class="section-num">Appendix</div>
+    <h2 class="section-title">부록</h2>
+    <p class="section-desc">상태 배지 가이드와 접근 권한 요약입니다.</p>
+
+    <div class="appendix-grid">
+      <div class="appendix-card">
+        <h4><span class="bar"></span>상태 배지 색상</h4>
+        <table class="feature-table" style="margin-top:0">
+          <thead><tr><th>상태</th><th>색상</th><th>사용 위치</th></tr></thead>
+          <tbody>
+            <tr><td>대기 / 대기중</td><td><span class="badge badge-yellow">앰버</span></td><td>지원, 급여</td></tr>
+            <tr><td>승인</td><td><span class="badge badge-green">에메랄드</span></td><td>지원 승인</td></tr>
+            <tr><td>거절</td><td><span class="badge badge-red">레드</span></td><td>지원 거절</td></tr>
+            <tr><td>확정</td><td><span class="badge badge-green">에메랄드</span></td><td>근무 확정</td></tr>
+            <tr><td>지급완료</td><td><span class="badge badge-blue">블루</span></td><td>급여 지급</td></tr>
+            <tr><td>모집중</td><td><span class="badge badge-green">녹색</span></td><td>일자리</td></tr>
+            <tr><td>마감</td><td><span class="badge badge-gray">회색</span></td><td>일자리</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="appendix-card">
+        <h4><span class="bar"></span>접근 권한</h4>
+        <table class="feature-table" style="margin-top:0">
+          <thead><tr><th>경로</th><th>비로그인</th><th>회원</th><th>관리자</th></tr></thead>
+          <tbody>
+            <tr><td><code>/</code></td><td>O</td><td>O</td><td>O</td></tr>
+            <tr><td><code>/jobs</code></td><td>O</td><td>O</td><td>O</td></tr>
+            <tr><td><code>/login</code></td><td>O</td><td>&rarr; /my</td><td>-</td></tr>
+            <tr><td><code>/signup</code></td><td>O</td><td>-</td><td>-</td></tr>
+            <tr><td><code>/my/*</code></td><td>&rarr; /login</td><td>O</td><td>-</td></tr>
+            <tr><td><code>/admin/*</code></td><td>&rarr; /admin/login</td><td>-</td><td>O</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="appendix-card">
+        <h4><span class="bar"></span>회원 업무 흐름</h4>
+        <div class="flow">
+          <div class="flow-step">회원가입</div><div class="flow-arrow">&rarr;</div>
+          <div class="flow-step">로그인</div><div class="flow-arrow">&rarr;</div>
+          <div class="flow-step">프로필 등록</div><div class="flow-arrow">&rarr;</div>
+          <div class="flow-step">일자리 지원</div><div class="flow-arrow">&rarr;</div>
+          <div class="flow-step">승인 대기</div><div class="flow-arrow">&rarr;</div>
+          <div class="flow-step">근무</div><div class="flow-arrow">&rarr;</div>
+          <div class="flow-step">계약 서명</div><div class="flow-arrow">&rarr;</div>
+          <div class="flow-step">급여 수령</div>
+        </div>
+      </div>
+      <div class="appendix-card">
+        <h4><span class="bar"></span>관리자 업무 흐름</h4>
+        <div class="flow">
+          <div class="flow-step">로그인</div><div class="flow-arrow">&rarr;</div>
+          <div class="flow-step">고객사 등록</div><div class="flow-arrow">&rarr;</div>
+          <div class="flow-step">일자리 등록</div><div class="flow-arrow">&rarr;</div>
+          <div class="flow-step">지원 승인</div><div class="flow-arrow">&rarr;</div>
+          <div class="flow-step">급여 승인</div><div class="flow-arrow">&rarr;</div>
+          <div class="flow-step">지급 확인</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════ FOOTER ═══════ -->
+<footer class="doc-footer">
+  <p>Humend HR Visual User Manual &middot; 2026 &middot; 32 Screenshots</p>
+</footer>
+
+<!-- ═══════ NAV SCROLL HIGHLIGHT ═══════ -->
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+  const sections=document.querySelectorAll('.section');
+  const navLinks=document.querySelectorAll('#nav a');
+  const observer=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        navLinks.forEach(l=>l.classList.remove('active'));
+        const id=e.target.id;
+        const link=document.querySelector(`#nav a[href="#${id}"]`);
+        if(link)link.classList.add('active');
+      }
+    });
+  },{rootMargin:'-40% 0px -60% 0px'});
+  sections.forEach(s=>observer.observe(s));
+
+  // Fade-in on scroll
+  const cards=document.querySelectorAll('.page-card');
+  const fadeObserver=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.style.opacity='1';
+        e.target.style.transform='translateY(0)';
+        fadeObserver.unobserve(e.target);
+      }
+    });
+  },{threshold:0.05});
+  cards.forEach(c=>{
+    c.style.opacity='0';
+    c.style.transform='translateY(24px)';
+    c.style.transition='opacity 0.5s ease, transform 0.5s ease';
+    fadeObserver.observe(c);
+  });
+});
+</script>
+
+</body>
+</html>

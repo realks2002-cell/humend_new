@@ -115,8 +115,8 @@ SUPABASE_SERVICE_ROLE_KEY=
 # Vercel Blob Storage (프로필 사진 업로드)
 BLOB_READ_WRITE_TOKEN=
 
-# Kakao Map (고객사 위치 표시)
-NEXT_PUBLIC_KAKAO_MAP_KEY=
+# Google Maps (고객사 위치 표시)
+NEXT_PUBLIC_GOOGLE_MAPS_KEY=
 
 # Google Sheets (선택)
 GOOGLE_SERVICE_ACCOUNT_EMAIL=

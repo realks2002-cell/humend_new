@@ -1,0 +1,4 @@
+[ 1315442ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/?_rsc=1ch6o:0
+[ 4701189ms] [ERROR] Google Maps JavaScript API error: RefererNotAllowedMapError
+https://developers.google.com/maps/documentation/javascript/error-messages#referer-not-allowed-map-error
+Your site URL to be authorized: http://localhost:3000 @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127

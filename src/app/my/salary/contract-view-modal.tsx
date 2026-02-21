@@ -87,7 +87,7 @@ export function ContractViewModal({ record, worker, signatureUrl }: { record: Wo
           <div className="overflow-hidden rounded border">
             <SectionHeader>사용자</SectionHeader>
             <TableRow label="회사명" value="휴멘드 에이치알" label2="연락처" value2="02-875-8332" />
-            <TableRow label="소재지" value="서울시 동작구 현충로151, 105호" />
+            <TableRow label="소재지" value="서울특별시 구로구 디지털로34번길 55, 비201-비2(구로동, 코오롱 싸이언스밸리2차)" />
           </div>
 
           {/* 근로자 */}

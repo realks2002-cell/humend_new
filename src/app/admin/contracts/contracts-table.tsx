@@ -1,21 +1,45 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDate, formatCurrency } from "@/lib/utils/format";
-import { type WorkRecord } from "@/lib/supabase/queries";
+import { type SignedContract } from "@/lib/supabase/queries";
 import { ContractViewModal } from "./contract-view-modal";
+import { getSignatureUrl } from "./actions";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ContractsTableProps {
-  records: WorkRecord[];
-  signatureUrls: Record<string, string>;
+  records: SignedContract[];
+  page: number;
+  pageSize: number;
+  total: number;
 }
 
-export function ContractsTable({ records, signatureUrls }: ContractsTableProps) {
+export function ContractsTable({ records, page, pageSize, total }: ContractsTableProps) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [selectedRecord, setSelectedRecord] = useState<SignedContract | null>(null);
+  const [selectedSignatureUrl, setSelectedSignatureUrl] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const totalPages = Math.ceil(total / pageSize);
+
+  function handleContractView(record: SignedContract) {
+    startTransition(async () => {
+      const url = record.signature_url ? await getSignatureUrl(record.signature_url) : null;
+      setSelectedSignatureUrl(url);
+      setSelectedRecord(record);
+    });
+  }
+
+  function goToPage(p: number) {
+    router.push(`/admin/contracts?page=${p}`);
+  }
 
   const filtered = useMemo(() => {
     return records.filter((r) => {
@@ -105,10 +129,14 @@ export function ContractsTable({ records, signatureUrls }: ContractsTableProps) 
                 return (
                   <tr key={r.id} className="transition-colors hover:bg-muted/30">
                     <td className="px-2 py-3 text-center">
-                      <ContractViewModal
-                        record={r}
-                        signatureUrl={signatureUrls[r.id] ?? null}
-                      />
+                      <button
+                        type="button"
+                        className="font-medium text-primary hover:underline"
+                        disabled={isPending}
+                        onClick={() => handleContractView(r)}
+                      >
+                        {r.members?.name ?? "-"}
+                      </button>
                     </td>
                     <td className="px-2 py-3 hidden sm:table-cell text-center text-muted-foreground">{phone || "-"}</td>
                     <td className="px-2 py-3 text-center font-medium">{r.client_name}</td>
@@ -124,6 +152,61 @@ export function ContractsTable({ records, signatureUrls }: ContractsTableProps) 
           </tbody>
         </table>
       </div>
+
+      {/* 페이지네이션 */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1 border-t px-4 py-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => goToPage(page - 1)}
+            className="h-8 w-8 p-0"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1)
+            .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+            .reduce<(number | "ellipsis")[]>((acc, p, idx, arr) => {
+              if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("ellipsis");
+              acc.push(p);
+              return acc;
+            }, [])
+            .map((item, idx) =>
+              item === "ellipsis" ? (
+                <span key={`e-${idx}`} className="px-1 text-xs text-muted-foreground">...</span>
+              ) : (
+                <Button
+                  key={item}
+                  variant={item === page ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => goToPage(item)}
+                  className="h-8 w-8 p-0 text-xs"
+                >
+                  {item}
+                </Button>
+              )
+            )}
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => goToPage(page + 1)}
+            className="h-8 w-8 p-0"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      {selectedRecord && (
+        <ContractViewModal
+          record={selectedRecord}
+          signatureUrl={selectedSignatureUrl}
+          open={!!selectedRecord}
+          onOpenChange={(open) => { if (!open) { setSelectedRecord(null); setSelectedSignatureUrl(null); } }}
+        />
+      )}
     </div>
   );
 }

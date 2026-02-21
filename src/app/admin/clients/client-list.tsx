@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -132,6 +132,10 @@ function SortableCard({ client, onDelete }: { client: ClientItem; onDelete: (id:
 
 export function DraggableClientList({ clients: initialClients }: { clients: ClientItem[] }) {
   const [clients, setClients] = useState(initialClients);
+
+  useEffect(() => {
+    setClients(initialClients);
+  }, [initialClients]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

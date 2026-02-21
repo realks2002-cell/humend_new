@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Humend HR - 히어로 섹션</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary: #4F46E5;
+    --primary-light: #818CF8;
+    --coral: #FF6154;
+    --lime: #22C55E;
+    --yellow: #FBBF24;
+    --sky: #38BDF8;
+    --dark: #1E1B4B;
+    --gray-900: #111827;
+    --gray-600: #4B5563;
+    --gray-400: #9CA3AF;
+    --bg: #FAFBFF;
+    --white: #FFFFFF;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--gray-900);
+    font-family: 'Noto Sans KR', sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 16px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    backdrop-filter: blur(20px);
+    background: rgba(250,251,255,0.8);
+    border-bottom: 1px solid rgba(79,70,229,0.08);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: -0.5px;
+    color: var(--dark);
+  }
+  .logo span { color: var(--primary); }
+
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--gray-600);
+  }
+  .nav-links li { cursor: pointer; transition: color 0.3s; }
+  .nav-links li:hover { color: var(--primary); }
+
+  .nav-cta {
+    background: linear-gradient(135deg, #4F46E5, #6366F1);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .nav-cta:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 30px rgba(79,70,229,0.3);
+  }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 120px 24px 60px;
+    position: relative;
+    overflow: hidden;
+    background: 
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(129,140,248,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 80%, rgba(56,189,248,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 50% 40% at 10% 60%, rgba(251,191,36,0.06) 0%, transparent 50%),
+      var(--bg);
+  }
+
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.5;
+    animation: blobFloat 10s ease-in-out infinite;
+  }
+  .blob-1 {
+    width: 400px; height: 400px;
+    background: linear-gradient(135deg, #c7d2fe, #a5b4fc);
+    top: -80px; right: 10%;
+  }
+  .blob-2 {
+    width: 350px; height: 350px;
+    background: linear-gradient(135deg, #fde68a, #fbbf24);
+    bottom: 5%; left: -5%;
+    animation-delay: -3s;
+    opacity: 0.3;
+  }
+  .blob-3 {
+    width: 300px; height: 300px;
+    background: linear-gradient(135deg, #99f6e4, #5eead4);
+    top: 40%; right: -5%;
+    animation-delay: -6s;
+    opacity: 0.3;
+  }
+
+  @keyframes blobFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(20px, -20px) scale(1.04); }
+    66% { transform: translate(-15px, 15px) scale(0.96); }
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(79,70,229,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,70,229,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
+  }
+
+  /* Badge - slide in + typing feel */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    border: 1px solid rgba(79,70,229,0.12);
+    padding: 8px 20px;
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 40px;
+    box-shadow: 0 2px 12px rgba(79,70,229,0.08);
+    animation: badgeIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: 0.2s;
+    overflow: hidden;
+  }
+  .badge-dot {
+    width: 8px; height: 8px;
+    background: var(--lime);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .badge-text {
+    display: inline-block;
+    overflow: hidden;
+    white-space: nowrap;
+    animation: typeIn 1.2s steps(20) both;
+    animation-delay: 0.6s;
+    border-right: 2px solid var(--primary);
+  }
+  .badge-text.done {
+    border-right-color: transparent;
+  }
+
+  @keyframes badgeIn {
+    from { opacity: 0; transform: scale(0.8) translateY(-10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes typeIn {
+    from { max-width: 0; }
+    to { max-width: 400px; }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  /* ===== HEADLINE — per-character staggered bounce ===== */
+  .headline {
+    font-weight: 900;
+    font-size: clamp(2.6rem, 6.5vw, 5rem);
+    line-height: 1.2;
+    letter-spacing: -2px;
+    color: var(--dark);
+    margin-bottom: 20px;
+  }
+  .headline .line {
+    display: block;
+    overflow: hidden;
+  }
+
+  .char {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(60px) rotateX(40deg);
+    animation: charIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  .char.space { width: 0.25em; }
+
+  @keyframes charIn {
+    to { opacity: 1; transform: translateY(0) rotateX(0deg); }
+  }
+
+  /* Accent primary - warm red gradient via per-char colors */
+  .accent-primary .char:nth-child(1) { color: #EF4444; }
+  .accent-primary .char:nth-child(2) { color: #F43F5E; }
+  .accent-primary .char:nth-child(3) { color: #F97316; }
+  .accent-primary .char:nth-child(4) { color: #FB7185; }
+  .accent-primary .char:nth-child(5) { color: #FF6154; }
+  
+  /* Shimmer animation after entrance */
+  .accent-primary .char {
+    animation: charIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+               shimmerColor 3s ease-in-out 2s infinite;
+  }
+  @keyframes shimmerColor {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.4); }
+  }
+
+  /* Coral accent with pop */
+  .accent-coral {
+    color: var(--coral);
+    display: inline-block;
+    animation: popColor 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: 1.4s;
+  }
+  @keyframes popColor {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+  }
+
+  /* Highlight underline draw */
+  .highlight {
+    position: relative;
+    display: inline-block;
+  }
+  .highlight::after {
+    content: '';
+    position: absolute;
+    bottom: 4px; left: -6px; right: -6px;
+    height: 16px;
+    background: linear-gradient(90deg, rgba(251,191,36,0.4), rgba(255,97,84,0.25));
+    border-radius: 4px;
+    z-index: -1;
+    transform: scaleX(0);
+    transform-origin: left;
+    animation: drawLine 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: 1.6s;
+  }
+  @keyframes drawLine {
+    to { transform: scaleX(1); }
+  }
+
+  /* Subheadline — slide up + fade */
+  .subheadline {
+    font-weight: 700;
+    font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+    line-height: 1.5;
+    margin-bottom: 16px;
+    color: var(--gray-600);
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideUp 0.7s ease-out forwards;
+    animation-delay: 1.8s;
+  }
+
+  @keyframes slideUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Description — word-by-word fade */
+  .description {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: var(--gray-400);
+    max-width: 520px;
+    margin: 0 auto 44px;
+  }
+  .desc-word {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: wordIn 0.4s ease-out forwards;
+  }
+  @keyframes wordIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* CTA — bounce in */
+  .cta-group {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: ctaBounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation-delay: 2.8s;
+  }
+  @keyframes ctaBounce {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .cta-primary {
+    background: linear-gradient(135deg, #4F46E5, #6366F1, #818CF8);
+    color: white;
+    border: none;
+    padding: 18px 44px;
+    border-radius: 16px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: 'Noto Sans KR', sans-serif;
+    box-shadow: 0 4px 20px rgba(79,70,229,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-primary::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    animation: shimmer 3s ease-in-out infinite;
+    animation-delay: 3.5s;
+  }
+  @keyframes shimmer {
+    0% { left: -100%; }
+    50% { left: 100%; }
+    100% { left: 100%; }
+  }
+  .cta-primary:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 12px 40px rgba(79,70,229,0.4);
+  }
+
+  .cta-secondary {
+    background: white;
+    color: var(--dark);
+    border: 1.5px solid rgba(79,70,229,0.15);
+    padding: 18px 44px;
+    border-radius: 16px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: 'Noto Sans KR', sans-serif;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .cta-secondary:hover {
+    border-color: var(--primary);
+    background: rgba(79,70,229,0.03);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  }
+
+  /* Stats — count up feel with stagger */
+  .stats-bar {
+    display: flex;
+    gap: 0;
+    justify-content: center;
+    margin-top: 48px;
+    flex-wrap: wrap;
+    background: white;
+    border-radius: 14px;
+    border: 1px solid rgba(79,70,229,0.08);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+  .stat {
+    text-align: center;
+    padding: 18px 28px;
+    flex: 1;
+    min-width: 120px;
+    position: relative;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideUp 0.6s ease-out forwards;
+  }
+  .stat:nth-child(1) { animation-delay: 3s; }
+  .stat:nth-child(2) { animation-delay: 3.15s; }
+  .stat:nth-child(3) { animation-delay: 3.3s; }
+  .stat + .stat::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 20%; bottom: 20%;
+    width: 1px;
+    background: rgba(79,70,229,0.08);
+  }
+  .stat-number {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: var(--dark);
+    letter-spacing: -1px;
+  }
+  .stat-accent { color: var(--primary); }
+  .stat-label {
+    font-size: 0.7rem;
+    color: var(--gray-400);
+    margin-top: 4px;
+    font-weight: 600;
+  }
+
+  /* Hover wiggle on stat numbers */
+  .stat:hover .stat-number {
+    animation: wiggle 0.5s ease-in-out;
+  }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(-3deg); }
+    75% { transform: rotate(3deg); }
+  }
+
+  /* Marquee */
+  .marquee-wrapper {
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+    margin-top: 48px;
+    padding: 18px 0;
+    opacity: 0;
+    animation: slideUp 0.6s ease-out forwards;
+    animation-delay: 3.4s;
+  }
+  .marquee {
+    display: flex;
+    gap: 16px;
+    animation: scroll 24s linear infinite;
+    width: max-content;
+  }
+  .marquee:hover { animation-play-state: paused; }
+  .marquee-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    border: 1px solid rgba(79,70,229,0.08);
+    padding: 10px 20px;
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    transition: all 0.3s;
+  }
+  .marquee-chip:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: scale(1.05);
+  }
+  .chip-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  @keyframes scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* VARIANT CARDS */
+  .variants {
+    padding: 60px 24px 120px;
+    position: relative;
+    z-index: 2;
+  }
+  .variants-title {
+    text-align: center;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--gray-400);
+    margin-bottom: 40px;
+    font-weight: 700;
+  }
+  .variant-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    max-width: 1060px;
+    margin: 0 auto;
+  }
+  .variant-card {
+    background: white;
+    border: 1px solid rgba(79,70,229,0.08);
+    border-radius: 20px;
+    padding: 36px 28px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+  }
+  .variant-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+  }
+  .variant-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    display: inline-flex;
+    padding: 4px 12px;
+    border-radius: 6px;
+  }
+  .variant-card:nth-child(1) .variant-label { color: var(--primary); background: #EEF2FF; }
+  .variant-card:nth-child(2) .variant-label { color: var(--coral); background: #FFF1F0; }
+  .variant-card:nth-child(3) .variant-label { color: #0D9488; background: #F0FDFA; }
+  .variant-headline {
+    font-size: 1.5rem;
+    font-weight: 900;
+    line-height: 1.4;
+    margin-bottom: 10px;
+    color: var(--dark);
+    letter-spacing: -0.5px;
+  }
+  .variant-headline .v-brand {
+    font-family: 'Syne', sans-serif;
+    color: var(--primary);
+  }
+  .variant-sub {
+    font-size: 0.92rem;
+    color: var(--gray-400);
+    line-height: 1.6;
+  }
+
+  @media (max-width: 768px) {
+    nav { padding: 14px 20px; }
+    .nav-links { display: none; }
+    .stat { padding: 20px 16px; }
+    .headline { letter-spacing: -1px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">humend<span>HR</span></div>
+  <ul class="nav-links">
+    <li>알바 찾기</li>
+    <li>급여 관리</li>
+    <li>이용후기</li>
+    <li>고객센터</li>
+  </ul>
+  <button class="nav-cta">지금 시작하기</button>
+</nav>
+
+<section class="hero">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+
+  <div class="hero-content">
+    <div class="badge">
+      <span class="badge-dot"></span>
+      <span class="badge-text" id="badgeText">오늘도 새로운 알바가 널 기다리는 중</span>
+    </div>
+
+    <h1 class="headline">
+      <span class="line" id="line1"></span>
+      <span class="line" id="line2"></span>
+    </h1>
+
+    <p class="subheadline">
+      오늘 지원하고, 내일 출근하자.
+    </p>
+
+    <p class="description" id="description"></p>
+
+    <div class="cta-group">
+      <button class="cta-primary">Humend HR에서 알바 시작 →</button>
+      <button class="cta-secondary">어떤 알바가 있을까?</button>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="stat-number"><span id="counter1">0</span><span class="stat-accent">%</span></div>
+        <div class="stat-label">급여 정시 지급률</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number"><span id="counter2">0</span><span class="stat-accent">★</span></div>
+        <div class="stat-label">알바생 만족도</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number"><span id="counter3">0</span><span class="stat-accent">초</span></div>
+        <div class="stat-label">평균 매칭 시간</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="marquee-wrapper">
+    <div class="marquee">
+      <span class="marquee-chip"><span class="chip-dot" style="background:#4F46E5"></span>웨딩홀 서빙</span>
+      <span class="marquee-chip"><span class="chip-dot" style="background:#FF6154"></span>카페 바리스타</span>
+      <span class="marquee-chip"><span class="chip-dot" style="background:#22C55E"></span>뷔페 홀서빙</span>
+      <span class="marquee-chip"><span class="chip-dot" style="background:#FBBF24"></span>행사 스태프</span>
+      <span class="marquee-chip"><span class="chip-dot" style="background:#38BDF8"></span>케이터링 보조</span>
+      <span class="marquee-chip"><span class="chip-dot" style="background:#A855F7"></span>연회장 세팅</span>
+      <span class="marquee-chip"><span class="chip-dot" style="background:#F472B6"></span>호텔 연회</span>
+      <span class="marquee-chip"><span class="chip-dot" style="background:#2DD4BF"></span>주방 보조</span>
+      <span class="marquee-chip"><span class="chip-dot" style="background:#4F46E5"></span>웨딩홀 서빙</span>
+      <span class="marquee-chip"><span class="chip-dot" style="background:#FF6154"></span>카페 바리스타</span>
+      <span class="marquee-chip"><span class="chip-dot" style="background:#22C55E"></span>뷔페 홀서빙</span>
+      <span class="marquee-chip"><span class="chip-dot" style="background:#FBBF24"></span>행사 스태프</span>
+      <span class="marquee-chip"><span class="chip-dot" style="background:#38BDF8"></span>케이터링 보조</span>
+      <span class="marquee-chip"><span class="chip-dot" style="background:#A855F7"></span>연회장 세팅</span>
+      <span class="marquee-chip"><span class="chip-dot" style="background:#F472B6"></span>호텔 연회</span>
+      <span class="marquee-chip"><span class="chip-dot" style="background:#2DD4BF"></span>주방 보조</span>
+    </div>
+  </div>
+</section>
+
+<section class="variants">
+  <div class="variants-title">✦ Humend HR 브랜드 문구 대안 ✦</div>
+  <div class="variant-grid">
+    <div class="variant-card">
+      <div class="variant-label">Option A — 신뢰 + 행동</div>
+      <div class="variant-headline">
+        일할 준비 됐으면,<br>탭 한 번이면 끝.<br>
+        <span class="v-brand">Humend HR</span>이 연결해줄게.
+      </div>
+      <div class="variant-sub">오늘 지원하고 내일 출근하자.<br>급여도, 스케줄도, 우리가 책임질게.</div>
+    </div>
+    <div class="variant-card">
+      <div class="variant-label">Option B — 파트너 느낌</div>
+      <div class="variant-headline">
+        첫 알바?<br>
+        <span class="v-brand">Humend HR</span>이면<br>걱정 붙들어 매.
+      </div>
+      <div class="variant-sub">지원부터 급여까지 한 번에.<br>네가 할 일은 출근뿐이야.</div>
+    </div>
+    <div class="variant-card">
+      <div class="variant-label">Option C — 자신감 부여</div>
+      <div class="variant-headline">
+        알바도 <span class="v-brand">Humend HR</span>에서<br>
+        하면 다르다.
+      </div>
+      <div class="variant-sub">확실한 급여, 깔끔한 현장, 믿을 수 있는 매칭.<br>여기서 일하면 알바도 커리어가 된다.</div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // === Character-by-character headline animation ===
+  function makeChars(text, baseDelay) {
+    let html = '';
+    let idx = 0;
+    for (const char of text) {
+      const delay = baseDelay + idx * 40;
+      if (char === ' ') {
+        html += `<span class="char space" style="animation-delay:${delay}ms">&nbsp;</span>`;
+      } else {
+        html += `<span class="char" style="animation-delay:${delay}ms">${char}</span>`;
+      }
+      idx++;
+    }
+    return html;
+  }
+
+  // Line 1: "일할 준비 됐으면,"
+  document.getElementById('line1').innerHTML = makeChars('일할 준비 됐으면,', 500);
+
+  // Line 2: "탭 한 번" (accent + highlight) + "이면 끝."
+  document.getElementById('line2').innerHTML =
+    '<span class="highlight"><span class="accent-primary">' +
+    makeChars('탭 한 번', 900) +
+    '</span></span>' +
+    makeChars('이면 끝.', 900 + 4 * 40);
+
+  // === Word-by-word description ===
+  const descText = '쉬운 지원, 확실한 급여. 첫 알바도 걱정 없어.';
+  const descEl = document.getElementById('description');
+  const words = descText.split(' ');
+  let descHtml = '';
+  words.forEach((word, i) => {
+    const delay = 2000 + i * 120;
+    descHtml += `<span class="desc-word" style="animation-delay:${delay}ms">${word}</span> `;
+  });
+  descEl.innerHTML = descHtml;
+
+  // === Badge typing cursor removal ===
+  setTimeout(() => {
+    document.getElementById('badgeText').classList.add('done');
+  }, 2000);
+
+  // === Counter animation ===
+  function animateCounter(id, target, decimals = 0, duration = 1500) {
+    const el = document.getElementById(id);
+    const start = 0;
+    const startTime = performance.now();
+
+    function update(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const current = start + (target - start) * ease;
+      el.textContent = decimals > 0 ? current.toFixed(decimals) : Math.round(current);
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  }
+
+  // Start counters after stats appear
+  setTimeout(() => {
+    animateCounter('counter1', 98, 0, 1200);
+    animateCounter('counter2', 4.8, 1, 1200);
+    animateCounter('counter3', 30, 0, 1000);
+  }, 3000);
+</script>
+
+</body>
+</html>

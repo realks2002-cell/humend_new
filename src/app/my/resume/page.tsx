@@ -194,6 +194,8 @@ export default function ResumePage() {
         ...form,
         identityVerified,
         privacyAgreed,
+        name: memberName,
+        phone: memberPhone,
       });
 
       if (result.error) {
@@ -284,13 +286,24 @@ export default function ResumePage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-foreground">이름</label>
-              <Input value={memberName} readOnly disabled className="bg-muted/50" />
+              <Input
+                value={memberName}
+                onChange={memberName ? undefined : (e) => setMemberName(e.target.value)}
+                readOnly={!!memberName}
+                disabled={!!memberName}
+                className={memberName ? "bg-muted/50" : ""}
+                placeholder="이름을 입력해주세요"
+              />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-foreground">전화번호</label>
               <Input
-                value={memberPhone.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3")}
-                readOnly disabled className="bg-muted/50"
+                value={memberPhone ? memberPhone.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3") : memberPhone}
+                onChange={memberPhone ? undefined : (e) => setMemberPhone(e.target.value.replace(/\D/g, ""))}
+                readOnly={!!memberPhone}
+                disabled={!!memberPhone}
+                className={memberPhone ? "bg-muted/50" : ""}
+                placeholder="01012345678"
               />
             </div>
           </div>

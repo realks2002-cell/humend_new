@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,23 +11,24 @@ import { formatCurrency } from "@/lib/utils/format";
 import { type WorkRecord, type Member } from "@/lib/supabase/queries";
 import { MemberDetailModal } from "../members/member-detail-modal";
 import { ContractViewModal } from "../contracts/contract-view-modal";
-import { deleteWorkRecord } from "./actions";
+import { deleteWorkRecord, getMemberDetail, getSignatureUrl } from "./actions";
 
 interface PayrollTableProps {
   records: WorkRecord[];
   month: string;
-  membersMap: Record<string, Member>;
-  profileImageUrls: Record<string, string>;
-  signatureUrls: Record<string, string>;
 }
 
-export function PayrollTable({ records, month, membersMap, profileImageUrls, signatureUrls }: PayrollTableProps) {
+export function PayrollTable({ records, month }: PayrollTableProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [selectedProfileUrl, setSelectedProfileUrl] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedContractRecord, setSelectedContractRecord] = useState<WorkRecord | null>(null);
+  const [selectedSignatureUrl, setSelectedSignatureUrl] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const filtered = useMemo(() => {
     const list = records.filter((r) => {
@@ -60,6 +61,24 @@ export function PayrollTable({ records, month, membersMap, profileImageUrls, sig
       toast.success("삭제되었습니다.");
       router.refresh();
     }
+  }
+
+  function handleMemberClick(memberId: string) {
+    startTransition(async () => {
+      const { member, profileImageUrl } = await getMemberDetail(memberId);
+      if (member) {
+        setSelectedMember(member);
+        setSelectedProfileUrl(profileImageUrl);
+      }
+    });
+  }
+
+  function handleContractView(record: WorkRecord) {
+    startTransition(async () => {
+      const url = record.signature_url ? await getSignatureUrl(record.signature_url) : null;
+      setSelectedSignatureUrl(url);
+      setSelectedContractRecord(record);
+    });
   }
 
   function getDisplayPay(r: WorkRecord) {
@@ -140,7 +159,6 @@ export function PayrollTable({ records, month, membersMap, profileImageUrls, sig
               filtered.map((r) => {
                 const display = getDisplayPay(r);
                 const status = getDisplayStatus(r);
-                const member = membersMap[r.member_id] ?? null;
                 const rawPhone = (r.members?.phone ?? "").replace(/\D/g, "");
                 const phone = rawPhone.length === 11
                   ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 7)}-${rawPhone.slice(7)}`
@@ -150,19 +168,16 @@ export function PayrollTable({ records, month, membersMap, profileImageUrls, sig
                 return (
                   <tr key={r.id} className="border-b hover:bg-muted/50">
                     <td className="py-2 px-2 text-center">
-                      {member ? (
-                        <button
-                          type="button"
-                          className="hover:underline"
-                          onClick={() => setSelectedMember(member)}
-                        >
-                          <div className="font-medium text-blue-600">
-                            {r.members?.name ?? "-"}
-                          </div>
-                        </button>
-                      ) : (
-                        <div className="font-medium">{r.members?.name ?? "-"}</div>
-                      )}
+                      <button
+                        type="button"
+                        className="hover:underline"
+                        onClick={() => handleMemberClick(r.member_id)}
+                        disabled={isPending}
+                      >
+                        <div className="font-medium text-blue-600">
+                          {r.members?.name ?? "-"}
+                        </div>
+                      </button>
                       {phone && (
                         <div className="text-xs text-muted-foreground">{phone}</div>
                       )}
@@ -198,11 +213,14 @@ export function PayrollTable({ records, month, membersMap, profileImageUrls, sig
                     </td>
                     <td className="py-2 px-2 hidden sm:table-cell text-center">
                       {r.signature_url ? (
-                        <ContractViewModal
-                          record={r}
-                          signatureUrl={signatureUrls[r.id] ?? null}
-                          trigger={<Button variant="outline" size="sm">보기</Button>}
-                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={isPending}
+                          onClick={() => handleContractView(r)}
+                        >
+                          보기
+                        </Button>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
@@ -228,11 +246,20 @@ export function PayrollTable({ records, month, membersMap, profileImageUrls, sig
 
       <MemberDetailModal
         member={selectedMember}
-        profileImageUrl={selectedMember ? profileImageUrls[selectedMember.id] ?? null : null}
+        profileImageUrl={selectedProfileUrl}
         workRecords={[]}
         open={!!selectedMember}
-        onOpenChange={(open) => { if (!open) setSelectedMember(null); }}
+        onOpenChange={(open) => { if (!open) { setSelectedMember(null); setSelectedProfileUrl(null); } }}
       />
+
+      {selectedContractRecord && (
+        <ContractViewModal
+          record={selectedContractRecord}
+          signatureUrl={selectedSignatureUrl}
+          open={!!selectedContractRecord}
+          onOpenChange={(open) => { if (!open) { setSelectedContractRecord(null); setSelectedSignatureUrl(null); } }}
+        />
+      )}
     </div>
   );
 }

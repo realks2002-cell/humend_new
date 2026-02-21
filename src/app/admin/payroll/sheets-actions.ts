@@ -74,7 +74,12 @@ export async function exportPayrollToSheets(month: string) {
       "시작시간", "종료시간", "휴게시간", "근무시간", "초과수당", "주휴수당", "시급",
       "기본급", "총지급액", "국민연금", "건강보험", "장기요양", "고용보험", "소득세", "공제합계",
       "실수령액", "계좌(은행)", "계좌(번호)",
-      "원본_총지급액", "원본_실수령액", "확정여부", "메모", "급여유형"
+      "원본_시급", "원본_기본급", "원본_근무시간", "원본_초과수당", "원본_주휴수당",
+      "원본_총지급액",
+      "원본_국민연금", "원본_건강보험", "원본_장기요양", "원본_고용보험", "원본_소득세", "원본_공제합계",
+      "원본_실수령액",
+      "원본_시작시간", "원본_종료시간", "원본_휴게시간",
+      "확정여부", "메모", "급여유형"
     ];
 
     const rows = recs.map((r) => {
@@ -125,8 +130,22 @@ export async function exportPayrollToSheets(month: string) {
         r.net_pay, // 실수령액
         members?.bank_name ?? "", // 계좌(은행)
         members?.account_number ?? "", // 계좌(번호)
+        r.hourly_wage, // 원본_시급
+        r.base_pay, // 원본_기본급
+        Number(r.work_hours ?? 0) + Number(r.overtime_hours ?? 0), // 원본_근무시간
+        r.overtime_pay, // 원본_초과수당
+        r.weekly_holiday_pay, // 원본_주휴수당
         r.gross_pay, // 원본_총지급액
+        r.national_pension, // 원본_국민연금
+        r.health_insurance, // 원본_건강보험
+        r.long_term_care, // 원본_장기요양
+        r.employment_insurance, // 원본_고용보험
+        incomeTax, // 원본_소득세
+        totalDeduction, // 원본_공제합계
         r.net_pay, // 원본_실수령액
+        timeToDecimal(r.start_time as string), // 원본_시작시간
+        timeToDecimal(r.end_time as string), // 원본_종료시간
+        Number(r.break_hours ?? 0), // 원본_휴게시간
         "N", // 확정여부 (항상 미확정으로 시작)
         (r.admin_memo ?? "") as string, // 메모
         r.wage_type ?? "시급", // 급여유형
@@ -135,8 +154,8 @@ export async function exportPayrollToSheets(month: string) {
 
     const result = await exportToSheets(sheetName, headers, rows as (string | number)[][]);
 
-    // 이름(B=1), 전화번호(C=2), 주민번호(D=3) 컬럼 편집 보호
-    await protectColumns(result.sheetId, [1, 2, 3], rows.length);
+    // 이름(B=1), 전화번호(C=2), 주민번호(D=3), 원본 컬럼(24~39) 편집 보호
+    await protectColumns(result.sheetId, [1, 2, 3, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39], rows.length);
 
     const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID ?? "";
     const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
@@ -144,6 +163,34 @@ export async function exportPayrollToSheets(month: string) {
   } catch (e) {
     return { error: (e as Error).message };
   }
+}
+
+// 숫자 컬럼의 현재 값과 원본 값을 비교하여 수정 여부를 감지
+function detectModification(row: Record<string, string>): boolean {
+  const comparisons = [
+    ["시급", "원본_시급"],
+    ["기본급", "원본_기본급"],
+    ["근무시간", "원본_근무시간"],
+    ["초과수당", "원본_초과수당"],
+    ["주휴수당", "원본_주휴수당"],
+    ["총지급액", "원본_총지급액"],
+    ["국민연금", "원본_국민연금"],
+    ["건강보험", "원본_건강보험"],
+    ["장기요양", "원본_장기요양"],
+    ["고용보험", "원본_고용보험"],
+    ["소득세", "원본_소득세"],
+    ["공제합계", "원본_공제합계"],
+    ["실수령액", "원본_실수령액"],
+    ["시작시간", "원본_시작시간"],
+    ["종료시간", "원본_종료시간"],
+    ["휴게시간", "원본_휴게시간"],
+  ];
+
+  return comparisons.some(([current, original]) => {
+    const curr = Number(row[current]) || 0;
+    const orig = Number(row[original]) || 0;
+    return curr !== orig;
+  });
 }
 
 export async function importPayrollFromSheets(month: string) {
@@ -189,9 +236,13 @@ export async function importPayrollFromSheets(month: string) {
 
       const sheetStatus = row["상태"]?.trim();
       if (sheetStatus !== "지급") {
-        console.log("⏭️ 상태가 '지급'이 아닌 행 스킵:", { 이름: sheetName2, 상태: sheetStatus || "(비어있음)" });
-        skipped++;
-        continue;
+        const isModified = detectModification(row);
+        if (!isModified) {
+          console.log("⏭️ 변경 없음, 스킵:", { 이름: sheetName2, 상태: sheetStatus || "(비어있음)" });
+          skipped++;
+          continue;
+        }
+        console.log("🔄 수정 감지, 자동 지급 처리:", { 이름: sheetName2 });
       }
 
       // 2. DB에서 매칭되는 work_record 찾기
@@ -224,7 +275,7 @@ export async function importPayrollFromSheets(month: string) {
         total_deduction: Number(row["공제합계"]) || 0,
         net_pay: Number(row["실수령액"]) || 0,
         admin_memo: row["메모"] || null,
-        status: row["상태"] || "확정",
+        status: "지급",
       };
 
       if (!matched) {

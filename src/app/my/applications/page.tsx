@@ -15,11 +15,12 @@ const statusConfig: Record<string, { label: string; variant: "secondary" | "defa
 };
 
 function ApplicationItem({ app }: { app: Application }) {
+  if (!app.job_postings) return null;
   const config = statusConfig[app.status] ?? statusConfig["대기"];
   return (
     <div className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-muted/30">
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm truncate">{app.job_postings.clients.company_name}</p>
+        <p className="font-semibold text-sm truncate">{app.job_postings.clients?.company_name ?? "정보 없음"}</p>
         <p className="text-xs text-muted-foreground">
           {formatDate(app.job_postings.work_date)} {app.job_postings.start_time.slice(0, 5)}~{app.job_postings.end_time.slice(0, 5)}
         </p>

@@ -2,8 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { MonthSelector } from "@/components/ui/month-selector";
-import { getAllWorkRecords, getAllMembers } from "@/lib/supabase/queries";
-import { createAdminClient } from "@/lib/supabase/server";
+import { getAllWorkRecords } from "@/lib/supabase/queries";
 import { PayrollTable } from "./payroll-table";
 import { SheetsSync } from "./sheets-sync";
 
@@ -16,38 +15,7 @@ export default async function PayrollPage({ searchParams }: Props) {
   const now = new Date();
   const currentMonth = params.month ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-  const [records, members] = await Promise.all([
-    getAllWorkRecords({ month: currentMonth, status: params.status, signedOnly: true, pendingOnly: true }),
-    getAllMembers(),
-  ]);
-
-  const membersMap = Object.fromEntries(members.map((m) => [m.id, m]));
-
-  const admin = createAdminClient();
-
-  const profileImageUrls: Record<string, string> = {};
-  const withImage = members.filter((m) => m.profile_image_url);
-  if (withImage.length > 0) {
-    await Promise.all(
-      withImage.map(async (m) => {
-        const { data } = await admin.storage
-          .from("profile-photos")
-          .createSignedUrl(m.profile_image_url!, 3600);
-        if (data?.signedUrl) profileImageUrls[m.id] = data.signedUrl;
-      })
-    );
-  }
-
-  // 서명 URL 생성 (계약서 보기용)
-  const signatureUrls: Record<string, string> = {};
-  for (const r of records) {
-    if (r.signature_url) {
-      const { data } = await admin.storage
-        .from("signatures")
-        .createSignedUrl(r.signature_url, 3600);
-      if (data?.signedUrl) signatureUrls[r.id] = data.signedUrl;
-    }
-  }
+  const records = await getAllWorkRecords({ month: currentMonth, status: params.status, signedOnly: true, pendingOnly: true });
 
   return (
     <div className="p-6 space-y-6">
@@ -63,7 +31,7 @@ export default async function PayrollPage({ searchParams }: Props) {
 
       <Card className="overflow-hidden py-0">
         <CardContent className="p-0 pt-4">
-          <PayrollTable records={records} month={currentMonth} membersMap={membersMap} profileImageUrls={profileImageUrls} signatureUrls={signatureUrls} />
+          <PayrollTable records={records} month={currentMonth} />
         </CardContent>
       </Card>
     </div>

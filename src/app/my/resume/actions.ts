@@ -17,6 +17,8 @@ export async function saveResume(formData: {
   height: string;
   privacyAgreed: boolean;
   email: string;
+  name?: string;
+  phone?: string;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -25,24 +27,28 @@ export async function saveResume(formData: {
     return { error: "로그인이 필요합니다." };
   }
 
+  const updateData: Record<string, unknown> = {
+    birth_date: formData.birthDate || null,
+    gender: formData.gender || null,
+    region: formData.region || null,
+    has_experience: formData.hasExperience === "yes",
+    experience_detail: formData.experience || null,
+    bank_name: formData.bankName || null,
+    account_holder: formData.accountHolder || null,
+    account_number: formData.accountNumber || null,
+    rrn_front: formData.rrnFront || null,
+    rrn_back: formData.rrnBack || null,
+    identity_verified: formData.identityVerified,
+    height: formData.height ? parseInt(formData.height) : null,
+    privacy_agreed: formData.privacyAgreed,
+    email: formData.email || null,
+  };
+  if (formData.name) updateData.name = formData.name;
+  if (formData.phone) updateData.phone = formData.phone;
+
   const { data: updated, error } = await supabase
     .from("members")
-    .update({
-      birth_date: formData.birthDate || null,
-      gender: formData.gender || null,
-      region: formData.region || null,
-      has_experience: formData.hasExperience === "yes",
-      experience_detail: formData.experience || null,
-      bank_name: formData.bankName || null,
-      account_holder: formData.accountHolder || null,
-      account_number: formData.accountNumber || null,
-      rrn_front: formData.rrnFront || null,
-      rrn_back: formData.rrnBack || null,
-      identity_verified: formData.identityVerified,
-      height: formData.height ? parseInt(formData.height) : null,
-      privacy_agreed: formData.privacyAgreed,
-      email: formData.email || null,
-    })
+    .update(updateData)
     .eq("id", user.id)
     .select();
 
@@ -56,8 +62,8 @@ export async function saveResume(formData: {
       .from("members")
       .insert({
         id: user.id,
-        phone: (user.user_metadata?.phone as string) || user.email?.split("@")[0]?.slice(0, 20) || "",
-        name: (user.user_metadata?.name as string) || "",
+        phone: formData.phone || (user.user_metadata?.phone as string) || user.email?.split("@")[0]?.slice(0, 20) || "",
+        name: formData.name || (user.user_metadata?.name as string) || "",
         birth_date: formData.birthDate || null,
         gender: formData.gender || null,
         region: formData.region || null,

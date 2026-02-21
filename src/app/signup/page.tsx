@@ -10,6 +10,7 @@ import { CheckCircle, Loader2, User, Phone, Lock, Eye, EyeOff } from "lucide-rea
 import { toast } from "sonner";
 import { memberSignup } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/client";
+import { nativeGoogleSignIn } from "@/lib/google-auth";
 
 function formatPhoneDisplay(value: string): string {
   const nums = value.replace(/\D/g, "").slice(0, 11);
@@ -35,45 +36,61 @@ export default function SignupPage() {
 
   const handleGoogleSignup = async () => {
     setGoogleLoading(true);
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    const ua = navigator.userAgent;
-    const inWebView =
-      /; wv\)/.test(ua) ||
-      (/iPhone|iPad|iPod/.test(ua) && !/Safari/.test(ua));
+      // 네이티브 앱: Capacitor GoogleAuth 플러그인 사용
+      const nativeUser = await nativeGoogleSignIn();
 
-    if (inWebView) {
-      // WebView: 별도 앱 전용 callback 경로 사용 + 시스템 브라우저로 열기
-      const appCallbackUrl = `${window.location.origin}/auth/callback/app`;
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: appCallbackUrl, skipBrowserRedirect: true },
-      });
-      if (error || !data.url) {
-        toast.error("구글 연결 실패", { description: error?.message });
+      if (nativeUser) {
+        // 네이티브: idToken으로 Supabase 로그인
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: "google",
+          token: nativeUser.idToken,
+        });
+        if (error) {
+          toast.error("구글 연결 실패", { description: error.message });
+          setGoogleLoading(false);
+          return;
+        }
+
+        // members 테이블 확인
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: member } = await supabase
+            .from("members")
+            .select("id")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (member) {
+            // 이미 회원 → 마이페이지
+            toast.success("구글 로그인 성공!");
+            router.push("/my");
+            router.refresh();
+          } else {
+            // 신규 구글 회원 → 추가 정보 입력
+            router.push("/signup/complete");
+            router.refresh();
+          }
+        }
         setGoogleLoading(false);
-        return;
+      } else {
+        // 웹 브라우저: PKCE 리다이렉트
+        const webCallbackUrl = `${window.location.origin}/auth/callback`;
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: webCallbackUrl },
+        });
+        if (error) {
+          toast.error("구글 연결 실패", { description: error.message });
+          setGoogleLoading(false);
+        }
       }
-      // <a target="_blank"> 시뮬레이션으로 시스템 브라우저 열기
-      const a = document.createElement("a");
-      a.href = data.url;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+    } catch (err) {
+      console.error("[GoogleSignup] handleGoogleSignup 에러:", err);
+      toast.error("오류가 발생했습니다", { description: "다시 시도해주세요." });
       setGoogleLoading(false);
-    } else {
-      // 웹 브라우저: 일반 리다이렉트
-      const webCallbackUrl = `${window.location.origin}/auth/callback`;
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: webCallbackUrl },
-      });
-      if (error) {
-        toast.error("구글 연결 실패", { description: error.message });
-        setGoogleLoading(false);
-      }
     }
   };
 

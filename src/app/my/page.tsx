@@ -6,10 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   ClipboardList, Calendar, ArrowRight,
-  Clock, Wallet, User, ChevronRight,
-  AlertCircle,
-  Settings,
+  Clock, Wallet, User,
 } from "lucide-react";
+import { ChangePasswordButton } from "./change-password-button";
 import { DeleteAccountButton } from "./delete-account-button";
 import { getMyProfile, getMyApplications } from "@/lib/supabase/queries";
 import { formatDate } from "@/lib/utils/format";
@@ -64,7 +63,7 @@ export default async function MyPage() {
   ];
   const filledCount = profileFields.filter(Boolean).length;
   const profilePercent = Math.round((filledCount / profileFields.length) * 100);
-  const upcomingJobs = applications.filter((a) => a.status === "승인").slice(0, 3);
+  const upcomingJobs = applications.filter((a) => a.status === "승인" && a.job_postings && a.job_postings.clients).slice(0, 3);
 
   const quickLinks = [
     { href: "/my/resume", icon: User, label: "프로필 관리", desc: "회원정보 등록/수정", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
@@ -113,10 +112,7 @@ export default async function MyPage() {
 
         {/* Profile Action Badges */}
         <div className="relative mt-4 flex flex-wrap gap-2">
-          <Badge variant="secondary" className="cursor-pointer gap-1.5 rounded-none px-3 py-1.5 text-[13px] font-medium transition-colors hover:bg-slate-200">
-            <Settings className="h-3 w-3" />
-            비밀번호 수정
-          </Badge>
+          <ChangePasswordButton />
           <DeleteAccountButton />
         </div>
       </div>
@@ -183,16 +179,16 @@ export default async function MyPage() {
                     key={app.id}
                     className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-muted/30"
                   >
-                    <span className={`shrink-0 rounded-lg px-2 py-1 text-[12px] font-bold ${getDdayColor(app.job_postings.work_date)}`}>
-                      {getDday(app.job_postings.work_date)}
+                    <span className={`shrink-0 rounded-lg px-2 py-1 text-[12px] font-bold ${getDdayColor(app.job_postings?.work_date ?? "")}`}>
+                      {getDday(app.job_postings?.work_date ?? "")}
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-[15px] font-semibold truncate">
-                        {app.job_postings.clients.company_name}
+                        {app.job_postings?.clients?.company_name ?? "정보 없음"}
                       </p>
                       <p className="text-[13px] text-muted-foreground">
-                        {formatDate(app.job_postings.work_date)}{" "}
-                        {app.job_postings.start_time.slice(0, 5)}~{app.job_postings.end_time.slice(0, 5)}
+                        {formatDate(app.job_postings?.work_date ?? "")}{" "}
+                        {app.job_postings?.start_time?.slice(0, 5) ?? ""}~{app.job_postings?.end_time?.slice(0, 5) ?? ""}
                       </p>
                     </div>
                     <Badge
