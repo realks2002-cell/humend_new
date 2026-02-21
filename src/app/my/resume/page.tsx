@@ -571,12 +571,13 @@ export default function ResumePage() {
         <CardContent className="space-y-3 p-5">
           <div className="max-h-48 overflow-y-auto rounded-xl border bg-muted/20 p-4 text-xs leading-relaxed text-muted-foreground">
             <p>
-              회사는 「개인정보 보호법」 등 관련 법령에 따라 회원정보 등록을 위해 아래와 같이 개인정보를 수집·이용합니다.
+              당사는 「개인정보 보호법」제24조, 「소득세법」제164조 등 관련 법령에 따라 회원정보 등록을 위해 아래와 같이 개인정보를 수집·이용합니다.
             </p>
             <p className="mt-2 font-semibold text-foreground">수집 목적</p>
             <ul className="ml-4 list-disc">
               <li>채용 지원 및 인재풀 관리</li>
               <li>채용 관련 안내 및 연락</li>
+              <li>지급명세 제출 및 고용보험 및 산업재해보상보험의 보험료 징수에 관한 법률 시행규칙 제16조의(서식 22의7)에 의한 근로내용확인 신고</li>
             </ul>
             <p className="mt-2 font-semibold text-foreground">수집 항목</p>
             <ul className="ml-4 list-disc">
