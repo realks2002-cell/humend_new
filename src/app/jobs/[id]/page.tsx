@@ -206,7 +206,6 @@ export default async function JobDetailPage({
         <JobDetailMap
           latitude={data.latitude ?? undefined}
           longitude={data.longitude ?? undefined}
-          address={data.location}
         />
       </div>
     </div>

@@ -16,7 +16,7 @@ import { Loader2, Plus, Pencil } from "lucide-react";
 import { createClientAction, updateClientAction } from "./actions";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { RichEditor } from "@/components/ui/rich-editor";
-import { KakaoMap } from "@/components/ui/kakao-map";
+import { GoogleMap } from "@/components/ui/google-map";
 import { PREPARATION_GUIDE_HTML } from "./preparation-guide-html";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -164,24 +164,22 @@ function ClientFormDialog({
             />
           </div>
           <div>
-            <Label htmlFor="location">위치 *</Label>
+            <Label htmlFor="location">위치</Label>
             <Input
               id="location"
               name="location"
-              required
               defaultValue={client?.location}
-              placeholder="서울 강남구"
+              placeholder="강남역 사거리에서 500미터 직진"
             />
           </div>
 
-          {/* 카카오맵 주소 검색 */}
+          {/* 구글맵 주소 검색 */}
           <div>
             <Label>지도 위치</Label>
             <div className="mt-1.5">
-              <KakaoMap
+              <GoogleMap
                 latitude={latitude}
                 longitude={longitude}
-                address={client?.location}
                 editable
                 onLocationChange={(lat, lng) => {
                   setLatitude(lat);
