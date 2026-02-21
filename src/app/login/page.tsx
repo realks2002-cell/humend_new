@@ -51,32 +51,39 @@ function LoginContent() {
     setGoogleLoading(true);
     const supabase = createClient();
 
-    // WebView 감지 (User-Agent 기반, isNative() 대신 사용)
+    // WebView 감지 (User-Agent 기반)
     const ua = navigator.userAgent;
     const inWebView =
       /; wv\)/.test(ua) ||
       (/iPhone|iPad|iPod/.test(ua) && !/Safari/.test(ua));
 
-    const callbackUrl = `${window.location.origin}/auth/callback${inWebView ? "?source=app" : ""}`;
-
     if (inWebView) {
-      // WebView: 시스템 브라우저로 열기 (Google이 WebView OAuth 차단하므로)
+      // WebView: 별도 앱 전용 callback 경로 사용 + 시스템 브라우저로 열기
+      const appCallbackUrl = `${window.location.origin}/auth/callback/app`;
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: callbackUrl, skipBrowserRedirect: true },
+        options: { redirectTo: appCallbackUrl, skipBrowserRedirect: true },
       });
       if (error || !data.url) {
         toast.error("구글 로그인 실패", { description: error?.message });
         setGoogleLoading(false);
         return;
       }
-      window.open(data.url, "_blank");
+      // <a target="_blank"> 시뮬레이션으로 시스템 브라우저 열기
+      const a = document.createElement("a");
+      a.href = data.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       setGoogleLoading(false);
     } else {
       // 웹 브라우저: 일반 리다이렉트
+      const webCallbackUrl = `${window.location.origin}/auth/callback`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: callbackUrl },
+        options: { redirectTo: webCallbackUrl },
       });
       if (error) {
         toast.error("구글 로그인 실패", { description: error.message });
