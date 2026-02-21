@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { getAllClientsWithJobs, getAllClients } from "@/lib/supabase/queries";
 import { formatDate, formatWage } from "@/lib/utils/format";
 import { Building2, Clock, Megaphone } from "lucide-react";
-import { CreateJobButton, AddSlotButton } from "./job-form";
+import { CreateJobButton, AddSlotButton, EditJobButton } from "./job-form";
 import { DeleteJobButton } from "./delete-job-button";
 
 export default async function AdminJobsPage() {
@@ -41,7 +41,7 @@ export default async function AdminJobsPage() {
           <p className="mt-1 text-xs text-muted-foreground">위의 버튼으로 공고를 등록하세요.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {clientsWithJobs.map((client) => (
             <Card key={client.id} className="overflow-hidden py-0 border-gray-400">
               <div className="flex items-center justify-between bg-gradient-to-r from-slate-50 to-gray-50/50 px-5 py-3 border-b">
@@ -99,6 +99,7 @@ export default async function AdminJobsPage() {
                             >
                               {job.status === "open" ? "모집중" : job.status === "closed" ? "마감" : "종료"}
                             </Badge>
+                            <EditJobButton job={job} />
                             <DeleteJobButton postingId={job.id} />
                           </div>
                         </div>

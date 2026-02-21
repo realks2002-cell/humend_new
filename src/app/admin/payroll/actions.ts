@@ -38,6 +38,19 @@ async function sendPaymentNotifications(workRecordIds: string[]) {
   }
 }
 
+export async function deleteWorkRecord(workRecordId: string) {
+  const admin = createAdminClient();
+
+  // payments 먼저 삭제
+  await admin.from("payments").delete().eq("work_record_id", workRecordId);
+
+  const { error } = await admin.from("work_records").delete().eq("id", workRecordId);
+  if (error) return { error: `삭제 실패: ${error.message}` };
+
+  revalidatePath("/admin/payroll");
+  return { success: true };
+}
+
 export async function getMemberDetail(memberId: string): Promise<{ member: Member | null; profileImageUrl: string | null }> {
   const admin = createAdminClient();
   const { data } = await admin.from("members").select("*").eq("id", memberId).single();
@@ -46,10 +59,14 @@ export async function getMemberDetail(memberId: string): Promise<{ member: Membe
   const member = data as Member;
   let profileImageUrl: string | null = null;
   if (member.profile_image_url) {
-    const { data: signed } = await admin.storage
-      .from("profile-photos")
-      .createSignedUrl(member.profile_image_url, 600);
-    if (signed?.signedUrl) profileImageUrl = signed.signedUrl;
+    if (member.profile_image_url.startsWith("http")) {
+      profileImageUrl = member.profile_image_url;
+    } else {
+      const { data: signed } = await admin.storage
+        .from("profile-photos")
+        .createSignedUrl(member.profile_image_url, 600);
+      if (signed?.signedUrl) profileImageUrl = signed.signedUrl;
+    }
   }
 
   return { member, profileImageUrl };

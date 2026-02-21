@@ -55,7 +55,7 @@ export async function exportPayrollToSheets(month: string) {
 
     const { data: records } = await supabase
       .from("work_records")
-      .select("*, members(name, phone, bank_name, account_number), payments(id)")
+      .select("*, members(name, phone, rrn_front, rrn_back, bank_name, account_number), payments(id)")
       .gte("work_date", start)
       .lte("work_date", end)
       .not("signature_url", "is", null)
@@ -70,7 +70,7 @@ export async function exportPayrollToSheets(month: string) {
     const sheetName = toSheetName(month);
 
     const headers = [
-      "상태", "이름", "전화번호", "고객사", "근무일",
+      "상태", "이름", "전화번호", "주민번호", "고객사", "근무일",
       "시작시간", "종료시간", "휴게시간", "근무시간", "초과수당", "주휴수당", "시급",
       "기본급", "총지급액", "국민연금", "건강보험", "장기요양", "고용보험", "소득세", "공제합계",
       "실수령액", "계좌(은행)", "계좌(번호)",
@@ -96,10 +96,15 @@ export async function exportPayrollToSheets(month: string) {
         Number(r.employment_insurance ?? 0) +
         incomeTax;
 
+      const rrnFront = members?.rrn_front ? String(members.rrn_front) : "";
+      const rrnBack = members?.rrn_back ? String(members.rrn_back) : "";
+      const rrn = rrnFront && rrnBack ? `${rrnFront}-${rrnBack}` : rrnFront || "";
+
       return [
         r.status, // 상태
         members?.name ?? "", // 이름
         `'${phone}`, // 전화번호 (텍스트 형식)
+        rrn ? `'${rrn}` : "", // 주민번호 (텍스트 형식)
         r.client_name, // 고객사
         r.work_date, // 근무일
         timeToDecimal(r.start_time as string), // 시작시간
@@ -130,8 +135,8 @@ export async function exportPayrollToSheets(month: string) {
 
     const result = await exportToSheets(sheetName, headers, rows as (string | number)[][]);
 
-    // 이름(B=1), 전화번호(C=2) 컬럼 편집 보호
-    await protectColumns(result.sheetId, [1, 2], rows.length);
+    // 이름(B=1), 전화번호(C=2), 주민번호(D=3) 컬럼 편집 보호
+    await protectColumns(result.sheetId, [1, 2, 3], rows.length);
 
     const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID ?? "";
     const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;

@@ -1,7 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatDate, formatPhone, formatWage } from "@/lib/utils/format";
 import { ApplicationActions } from "./application-actions";
 import { MemberDetailModal } from "../members/member-detail-modal";
@@ -38,6 +46,25 @@ interface ApplicationTableProps {
 
 export function ApplicationTable({ apps, showActions, membersMap, profileImageUrls }: ApplicationTableProps) {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [filterStartDate, setFilterStartDate] = useState("");
+  const [filterEndDate, setFilterEndDate] = useState("");
+  const [filterClient, setFilterClient] = useState("all");
+
+  const clientNames = useMemo(() => {
+    const names = Array.from(new Set(apps.map((a) => a.job_postings.clients.company_name)));
+    names.sort();
+    return names;
+  }, [apps]);
+
+  const filtered = useMemo(() => {
+    return apps.filter((a) => {
+      const d = a.job_postings.work_date;
+      if (filterStartDate && d < filterStartDate) return false;
+      if (filterEndDate && d > filterEndDate) return false;
+      if (filterClient !== "all" && a.job_postings.clients.company_name !== filterClient) return false;
+      return true;
+    });
+  }, [apps, filterStartDate, filterEndDate, filterClient]);
 
   if (apps.length === 0) {
     return (
@@ -49,6 +76,42 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
 
   return (
     <>
+      <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+        <Input
+          type="date"
+          value={filterStartDate}
+          onChange={(e) => setFilterStartDate(e.target.value)}
+          className="w-[145px] h-9 text-sm"
+        />
+        <span className="text-xs text-muted-foreground">~</span>
+        <Input
+          type="date"
+          value={filterEndDate}
+          onChange={(e) => setFilterEndDate(e.target.value)}
+          className="w-[145px] h-9 text-sm"
+        />
+        <Select value={filterClient} onValueChange={setFilterClient}>
+          <SelectTrigger className="w-[160px] h-9 text-sm">
+            <SelectValue placeholder="근무지 선택" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">전체 근무지</SelectItem>
+            {clientNames.map((name) => (
+              <SelectItem key={name} value={name}>{name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {(filterStartDate || filterEndDate || filterClient !== "all") && (
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => { setFilterStartDate(""); setFilterEndDate(""); setFilterClient("all"); }}
+          >
+            초기화
+          </button>
+        )}
+        <span className="ml-auto text-xs text-muted-foreground">{filtered.length}건</span>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm table-fixed">
           <colgroup>
@@ -74,7 +137,10 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
             </tr>
           </thead>
           <tbody>
-            {apps.map((app) => {
+            {filtered.length === 0 ? (
+              <tr><td colSpan={showActions ? 8 : 7} className="py-8 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</td></tr>
+            ) : null}
+            {filtered.map((app) => {
               const config = statusConfig[app.status] ?? statusConfig["대기"];
               const member = membersMap[app.member_id];
               return (
@@ -123,6 +189,7 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
       <MemberDetailModal
         member={selectedMember}
         profileImageUrl={selectedMember ? profileImageUrls[selectedMember.id] ?? null : null}
+        workRecords={[]}
         open={!!selectedMember}
         onOpenChange={(open) => { if (!open) setSelectedMember(null); }}
       />

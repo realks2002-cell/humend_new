@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,8 @@ interface PaymentsTableProps {
 
 export function PaymentsTable({ payments, membersMap, profileImageUrls }: PaymentsTableProps) {
   const [search, setSearch] = useState("");
+  const [filterStartDate, setFilterStartDate] = useState("");
+  const [filterEndDate, setFilterEndDate] = useState("");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
   // CSV date range
@@ -42,21 +44,23 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls }: Paymen
   const [endOpen, setEndOpen] = useState(false);
   const [csvLoading, setCsvLoading] = useState(false);
 
-  const filtered = payments.filter((p) => {
-    if (!search) return true;
-    const s = search.replace(/-/g, "");
-    const name = p.work_record?.members?.name ?? "";
-    const phone = (p.work_record?.members?.phone ?? "").replace(/-/g, "");
-    const workDate = (p.work_record?.work_date ?? "").replace(/-/g, "");
-    const client = p.work_record?.client_name ?? "";
-    return (
-      name.includes(search) ||
-      phone.includes(s) ||
-      (p.work_record?.work_date ?? "").includes(search) ||
-      workDate.includes(s) ||
-      client.includes(search)
-    );
-  });
+  const filtered = useMemo(() => {
+    return payments.filter((p) => {
+      const d = p.work_record?.work_date ?? "";
+      if (filterStartDate && d < filterStartDate) return false;
+      if (filterEndDate && d > filterEndDate) return false;
+      if (!search) return true;
+      const s = search.replace(/-/g, "");
+      const name = p.work_record?.members?.name ?? "";
+      const phone = (p.work_record?.members?.phone ?? "").replace(/-/g, "");
+      const client = p.work_record?.client_name ?? "";
+      return (
+        name.includes(search) ||
+        phone.includes(s) ||
+        client.includes(search)
+      );
+    });
+  }, [payments, search, filterStartDate, filterEndDate]);
 
   async function handleCsvExport() {
     if (!startDate || !endDate) {
@@ -139,11 +143,34 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls }: Paymen
       {/* Toolbar */}
       <div className="mb-4 flex flex-wrap items-center gap-2 px-4">
         <Input
-          placeholder="이름, 전화번호, 근무일 검색..."
+          placeholder="이름, 전화번호 검색..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
+          className="w-[180px] h-9 text-sm"
         />
+        <Input
+          type="date"
+          value={filterStartDate}
+          onChange={(e) => setFilterStartDate(e.target.value)}
+          className="w-[145px] h-9 text-sm"
+        />
+        <span className="text-xs text-muted-foreground">~</span>
+        <Input
+          type="date"
+          value={filterEndDate}
+          onChange={(e) => setFilterEndDate(e.target.value)}
+          className="w-[145px] h-9 text-sm"
+        />
+        {(search || filterStartDate || filterEndDate) && (
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => { setSearch(""); setFilterStartDate(""); setFilterEndDate(""); }}
+          >
+            초기화
+          </button>
+        )}
+        <span className="text-xs text-muted-foreground">{filtered.length}건</span>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {/* CSV Export */}
           <Popover open={startOpen} onOpenChange={setStartOpen}>
@@ -272,6 +299,7 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls }: Paymen
       <MemberDetailModal
         member={selectedMember}
         profileImageUrl={selectedMember ? profileImageUrls[selectedMember.id] ?? null : null}
+        workRecords={[]}
         open={!!selectedMember}
         onOpenChange={(open) => { if (!open) setSelectedMember(null); }}
       />

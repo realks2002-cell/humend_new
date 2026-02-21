@@ -80,6 +80,35 @@ export async function deleteJobPosting(postingId: string) {
   return { success: true };
 }
 
+export async function updateJobPosting(postingId: string, formData: FormData) {
+  const db = await getAdminSupabase();
+  if (!db) return { error: "관리자 권한이 필요합니다." };
+
+  const workDate = formData.get("work_date") as string;
+  const startTime = formData.get("start_time") as string;
+  const endTime = formData.get("end_time") as string;
+  const headcount = Number(formData.get("headcount")) || 1;
+  const status = formData.get("status") as string;
+
+  if (!workDate || !startTime || !endTime) {
+    return { error: "모든 항목을 입력해주세요." };
+  }
+
+  const { error } = await db
+    .from("job_postings")
+    .update({ work_date: workDate, start_time: startTime, end_time: endTime, headcount, status })
+    .eq("id", postingId);
+
+  if (error) {
+    console.error("updateJobPosting error:", error);
+    return { error: `수정에 실패했습니다: ${error.message}` };
+  }
+
+  revalidatePath("/admin/jobs");
+  revalidatePath("/jobs");
+  return { success: true };
+}
+
 export async function updateJobStatus(postingId: string, status: string) {
   const db = await getAdminSupabase();
   if (!db) return { error: "관리자 권한이 필요합니다." };

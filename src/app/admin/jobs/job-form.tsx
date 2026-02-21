@@ -19,8 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus } from "lucide-react";
-import { createJobPosting } from "./actions";
+import { Loader2, Plus, Pencil } from "lucide-react";
+import { createJobPosting, updateJobPosting } from "./actions";
 
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const h = String(Math.floor(i / 2)).padStart(2, "0");
@@ -247,6 +247,135 @@ export function AddSlotButton({ clientId, clients }: { clientId: string; clients
             <Button type="submit" disabled={loading || !startTime || !endTime}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               추가
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface JobData {
+  id: string;
+  work_date: string;
+  start_time: string;
+  end_time: string;
+  headcount: number;
+  status: string;
+}
+
+export function EditJobButton({ job }: { job: JobData }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [startTime, setStartTime] = useState(job.start_time.slice(0, 5));
+  const [endTime, setEndTime] = useState(job.end_time.slice(0, 5));
+  const [status, setStatus] = useState(job.status);
+
+  const handleDialogChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (nextOpen) {
+      setStartTime(job.start_time.slice(0, 5));
+      setEndTime(job.end_time.slice(0, 5));
+      setStatus(job.status);
+      setError("");
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const formData = new FormData(e.currentTarget);
+    formData.set("start_time", startTime);
+    formData.set("end_time", endTime);
+    formData.set("status", status);
+
+    const result = await updateJobPosting(job.id, formData);
+    setLoading(false);
+
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+
+    setOpen(false);
+    router.refresh();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleDialogChange}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-7 w-7">
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>일정 수정</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</div>
+          )}
+          <div>
+            <Label htmlFor="edit_work_date">근무일 *</Label>
+            <Input id="edit_work_date" name="work_date" type="date" defaultValue={job.work_date} required />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>시작 *</Label>
+              <Select value={startTime} onValueChange={setStartTime}>
+                <SelectTrigger>
+                  <SelectValue placeholder="시작" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIME_OPTIONS.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>종료 *</Label>
+              <Select value={endTime} onValueChange={setEndTime}>
+                <SelectTrigger>
+                  <SelectValue placeholder="종료" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIME_OPTIONS.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="edit_headcount">모집 인원</Label>
+            <Input id="edit_headcount" name="headcount" type="number" min={1} defaultValue={job.headcount} required />
+          </div>
+          <div>
+            <Label>상태</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="open">모집중</SelectItem>
+                <SelectItem value="closed">마감</SelectItem>
+                <SelectItem value="completed">종료</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              취소
+            </Button>
+            <Button type="submit" disabled={loading || !startTime || !endTime}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              저장
             </Button>
           </div>
         </form>
