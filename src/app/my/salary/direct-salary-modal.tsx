@@ -177,7 +177,14 @@ export function DirectSalaryModal({ clients, worker }: { clients: Client[]; work
               <label className="text-sm font-medium text-gray-700">근무지</label>
               <select
                 value={selectedClientId}
-                onChange={(e) => setSelectedClientId(e.target.value)}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setSelectedClientId(id);
+                  const c = clients.find((cl) => cl.id === id);
+                  if (c && wageType === "시급") {
+                    setWageAmount(String(c.hourly_wage));
+                  }
+                }}
                 className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">근무지를 선택해 주세요</option>
@@ -241,7 +248,10 @@ export function DirectSalaryModal({ clients, worker }: { clients: Client[]; work
                     type="radio"
                     name="directWageType"
                     checked={wageType === "시급"}
-                    onChange={() => setWageType("시급")}
+                    onChange={() => {
+                      setWageType("시급");
+                      if (selectedClient) setWageAmount(String(selectedClient.hourly_wage));
+                    }}
                     className="h-4 w-4 accent-[#1e2a5a]"
                   />
                   <span className="text-sm">시급</span>
@@ -251,7 +261,10 @@ export function DirectSalaryModal({ clients, worker }: { clients: Client[]; work
                     type="radio"
                     name="directWageType"
                     checked={wageType === "일급"}
-                    onChange={() => setWageType("일급")}
+                    onChange={() => {
+                      setWageType("일급");
+                      setWageAmount("");
+                    }}
                     className="h-4 w-4 accent-[#1e2a5a]"
                   />
                   <span className="text-sm">일급</span>
