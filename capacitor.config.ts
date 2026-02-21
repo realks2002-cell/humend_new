@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'out',
   server: {
     url: 'https://humendhr.com',
-    allowNavigation: ['https://humendhr.com/*', 'https://*.supabase.co/*'],
+    allowNavigation: ['https://humendhr.com/*', 'https://*.supabase.co/*', 'https://accounts.google.com/*'],
   },
   android: {
     webContentsDebuggingEnabled: true,

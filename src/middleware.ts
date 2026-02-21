@@ -41,10 +41,11 @@ export async function middleware(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
 
     // 공개 페이지는 리다이렉트 불필요
-    const publicPaths = ["/", "/about", "/jobs", "/login", "/signup", "/admin/login"];
+    const publicPaths = ["/", "/about", "/jobs", "/login", "/signup", "/signup/complete", "/admin/login"];
     const isPublic =
       publicPaths.includes(pathname) ||
-      pathname.startsWith("/jobs/");
+      pathname.startsWith("/jobs/") ||
+      pathname.startsWith("/auth/callback");
 
     if (isPublic) {
       return supabaseResponse;

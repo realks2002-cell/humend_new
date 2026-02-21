@@ -93,6 +93,67 @@ export async function memberLogin(formData: FormData) {
   return { success: true };
 }
 
+// ========== 구글 회원가입 ==========
+
+export async function createGoogleMember(formData: FormData) {
+  const phone = formData.get("phone") as string;
+  const name = formData.get("name") as string;
+
+  if (!phone || !name) {
+    return { error: "전화번호와 이름을 입력해주세요." };
+  }
+
+  const supabase = await createClient();
+
+  // 현재 로그인된 구글 유저 확인
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "인증 정보가 없습니다. 다시 로그인해주세요." };
+  }
+
+  // RLS 우회를 위해 admin 클라이언트 사용
+  const { createAdminClient } = await import("@/lib/supabase/server");
+  const admin = createAdminClient();
+
+  // 이미 members에 등록된 경우
+  const { data: existing } = await admin
+    .from("members")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (existing) {
+    return { success: true };
+  }
+
+  // 같은 전화번호로 가입된 회원이 있는지 확인
+  const cleanedPhone = phone.replace(/[^0-9]/g, "");
+  const { data: phoneExists } = await admin
+    .from("members")
+    .select("id")
+    .eq("phone", cleanedPhone)
+    .maybeSingle();
+
+  if (phoneExists) {
+    return { error: "이미 등록된 전화번호입니다." };
+  }
+
+  // members 테이블에 레코드 생성
+  const { error: memberError } = await admin.from("members").insert({
+    id: user.id,
+    phone: cleanedPhone,
+    name,
+  });
+
+  if (memberError) {
+    console.error("[createGoogleMember] members insert error:", memberError.message);
+    return { error: "회원 정보 저장에 실패했습니다." };
+  }
+
+  return { success: true };
+}
+
 // ========== 관리자 ==========
 
 export async function adminLogin(formData: FormData) {
@@ -165,7 +226,20 @@ export async function resetPasswordByEmail(email: string) {
     return { error: "비밀번호 재설정에 실패했습니다." };
   }
 
-  return { success: true, tempPassword };
+  // 이메일로 임시 비밀번호 발송
+  try {
+    const { sendTempPasswordEmail } = await import("@/lib/email");
+    await sendTempPasswordEmail({
+      to: email,
+      memberName: member.name,
+      tempPassword,
+    });
+  } catch (e) {
+    console.error("[resetPasswordByEmail] email send error:", e);
+    return { error: "임시 비밀번호 이메일 발송에 실패했습니다." };
+  }
+
+  return { success: true };
 }
 
 // ========== 공통 ==========
