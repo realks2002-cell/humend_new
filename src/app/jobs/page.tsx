@@ -12,15 +12,22 @@ import { ApplyButton } from "@/components/jobs/ApplyButton";
 import { JobFilters } from "./filters";
 
 interface Props {
-  searchParams: Promise<{ from?: string; to?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; client?: string }>;
 }
 
 export default async function JobsPage({ searchParams }: Props) {
   const params = await searchParams;
   const allClients = await getClientsWithJobs();
 
+  // 드롭박스용 고객사 목록 (필터 전 전체 목록)
+  const clientNames = allClients.map((c) => ({ id: c.id, name: c.company_name }));
+
   // 필터 적용
   let clientsWithJobs = allClients;
+
+  if (params.client) {
+    clientsWithJobs = clientsWithJobs.filter((c) => c.id === params.client);
+  }
 
   if (params.from || params.to) {
     clientsWithJobs = clientsWithJobs
@@ -35,7 +42,7 @@ export default async function JobsPage({ searchParams }: Props) {
       .filter((c) => c.job_postings.length > 0);
   }
 
-  const hasFilters = !!(params.from || params.to);
+  const hasFilters = !!(params.from || params.to || params.client);
 
   return (
     <div className="mx-auto max-w-5xl animate-in fade-in duration-500 px-4 py-8">
@@ -47,7 +54,7 @@ export default async function JobsPage({ searchParams }: Props) {
       </div>
 
       {/* Filters */}
-      <JobFilters />
+      <JobFilters clientNames={clientNames} />
 
       {clientsWithJobs.length === 0 ? (
         <Card className="py-20 text-center">
