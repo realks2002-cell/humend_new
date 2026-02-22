@@ -45,8 +45,8 @@ export function PayrollTable({ records, month }: PayrollTableProps) {
         r.client_name.includes(search)
       );
     });
-    // 요청일(created_at) 최신순 정렬
-    list.sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+    // 근무일(work_date) 최신순 정렬
+    list.sort((a, b) => (b.work_date ?? "").localeCompare(a.work_date ?? ""));
     return list;
   }, [records, search, startDate, endDate]);
 
@@ -134,7 +134,7 @@ export function PayrollTable({ records, month }: PayrollTableProps) {
             <tr className="border-b text-center text-muted-foreground">
               <th className="pb-2 px-2">이름</th>
               <th className="pb-2 px-2">근무지</th>
-              <th className="pb-2 px-2 hidden sm:table-cell">요청일</th>
+              <th className="pb-2 px-2 hidden sm:table-cell">근무일</th>
               <th className="pb-2 px-2 hidden sm:table-cell">시작시간</th>
               <th className="pb-2 px-2 hidden sm:table-cell">종료시간</th>
               <th className="pb-2 px-2 hidden sm:table-cell">급여타입</th>
@@ -184,7 +184,7 @@ export function PayrollTable({ records, month }: PayrollTableProps) {
                     </td>
                     <td className="py-2 px-2 text-center">{r.client_name}</td>
                     <td className="py-2 px-2 hidden sm:table-cell text-center whitespace-nowrap text-xs text-muted-foreground">
-                      {r.created_at ? r.created_at.slice(0, 10) : "-"}
+                      {r.work_date ? r.work_date.slice(0, 10) : "-"}
                     </td>
                     <td className="py-2 px-2 hidden sm:table-cell text-center whitespace-nowrap">{r.start_time?.slice(0, 5)}</td>
                     <td className="py-2 px-2 hidden sm:table-cell text-center whitespace-nowrap">{r.end_time?.slice(0, 5)}</td>
