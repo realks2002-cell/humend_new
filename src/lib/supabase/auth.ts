@@ -47,7 +47,44 @@ export async function memberSignup(formData: FormData) {
 
   if (error) {
     if (error.message.includes("already registered")) {
-      return { error: "이미 가입된 전화번호입니다." };
+      // 고아 계정 복구: Auth에는 있지만 members에 없는 경우
+      const { data: signInData, error: signInError } =
+        await supabase.auth.signInWithPassword({ email, password });
+
+      if (signInError) {
+        // 비밀번호 불일치 = 진짜 기존 회원
+        return { error: "이미 가입된 전화번호입니다." };
+      }
+
+      const { createAdminClient } = await import("@/lib/supabase/server");
+      const admin = createAdminClient();
+
+      const { data: existingMember } = await admin
+        .from("members")
+        .select("id")
+        .eq("id", signInData.user.id)
+        .maybeSingle();
+
+      if (existingMember) {
+        // members에도 있음 = 진짜 중복 가입
+        await supabase.auth.signOut();
+        return { error: "이미 가입된 전화번호입니다." };
+      }
+
+      // members에 없음 = 고아 계정 → 복구
+      const { error: recoverError } = await admin.from("members").insert({
+        id: signInData.user.id,
+        phone: phone.replace(/[^0-9]/g, ""),
+        name,
+      });
+
+      if (recoverError) {
+        console.error("[memberSignup] orphan recovery insert error:", recoverError.message);
+        await supabase.auth.signOut();
+        return { error: "회원가입에 실패했습니다. 다시 시도해주세요." };
+      }
+
+      return { success: true };
     }
     return { error: "회원가입에 실패했습니다. 다시 시도해주세요." };
   }
