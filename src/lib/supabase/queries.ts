@@ -110,6 +110,7 @@ export interface WorkRecord {
   health_insurance: number;
   long_term_care: number;
   employment_insurance: number;
+  income_tax: number;
   total_deduction: number;
   net_pay: number;
   status: string;
@@ -139,6 +140,7 @@ export interface Payment {
   health_insurance: number;
   long_term_care: number;
   employment_insurance: number;
+  income_tax: number;
   total_deduction: number;
   net_pay: number;
   status: string;
@@ -631,6 +633,7 @@ export async function createPayment(record: WorkRecord) {
       health_insurance: record.health_insurance,
       long_term_care: record.long_term_care,
       employment_insurance: record.employment_insurance,
+      income_tax: record.income_tax,
       total_deduction: record.total_deduction,
       net_pay: record.net_pay,
       status: "확정",
@@ -697,6 +700,7 @@ export async function bulkCreatePayments(workRecordIds: string[]) {
     health_insurance: r.health_insurance,
     long_term_care: r.long_term_care,
     employment_insurance: r.employment_insurance,
+    income_tax: r.income_tax,
     total_deduction: r.total_deduction,
     net_pay: r.net_pay,
     status: "확정",

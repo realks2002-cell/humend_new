@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { exportToSheets, importFromSheets, protectColumns } from "@/lib/google/sheets";
+import { exportToSheets, importFromSheets, protectColumns, formatNumberColumns } from "@/lib/google/sheets";
 import { revalidatePath } from "next/cache";
 
 function toSheetName(month: string) {
@@ -82,10 +82,11 @@ export async function exportPayrollToSheets(month: string) {
       "확정여부", "메모", "급여유형"
     ];
 
-    const rows = recs.map((r) => {
+    const rows = recs.map((r, i) => {
+      const rowIdx = i + 2; // 헤더=1행, 데이터는 2행부터
       const members = r.members as Record<string, unknown> | null;
       const grossPay = Number(r.gross_pay ?? 0);
-      const incomeTax = Math.round(grossPay * 0.033); // 소득세 3.3% 계산
+      const incomeTax = Math.round(grossPay * 0.033); // 소득세 3.3% (원본용)
       const rawPhone = members?.phone ? String(members.phone).replace(/\D/g, "") : "";
       const phone = rawPhone.length === 11
         ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 7)}-${rawPhone.slice(7)}`
@@ -125,9 +126,9 @@ export async function exportPayrollToSheets(month: string) {
         r.health_insurance, // 건강보험
         r.long_term_care, // 장기요양
         r.employment_insurance, // 고용보험
-        incomeTax, // 소득세 (3.3%)
-        totalDeduction, // 공제합계 (4대보험 + 소득세)
-        r.net_pay, // 실수령액
+        `=ROUND(O${rowIdx}*0.033)`, // 소득세 (3.3%) - 수식
+        `=SUM(P${rowIdx}:T${rowIdx})`, // 공제합계 - 수식
+        `=O${rowIdx}-U${rowIdx}`, // 실수령액 - 수식
         members?.bank_name ?? "", // 계좌(은행)
         members?.account_number ?? "", // 계좌(번호)
         r.hourly_wage, // 원본_시급
@@ -157,6 +158,13 @@ export async function exportPayrollToSheets(month: string) {
     // 이름(B=1), 전화번호(C=2), 주민번호(D=3), 원본 컬럼(24~39) 편집 보호
     await protectColumns(result.sheetId, [1, 2, 3, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39], rows.length);
 
+    // 급여 숫자 컬럼에 세자릿수 콤마 포맷 적용
+    const salaryColumns = [
+      10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,  // 급여 항목
+      24, 25, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,   // 원본 급여 항목
+    ];
+    await formatNumberColumns(result.sheetId, salaryColumns, rows.length);
+
     const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID ?? "";
     const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
     return { success: true, count: rows.length, sheetUrl };
@@ -165,8 +173,15 @@ export async function exportPayrollToSheets(month: string) {
   }
 }
 
+// 콤마 포함 숫자 문자열 파싱 (예: "3,300" → 3300)
+function parseNum(value: string | undefined): number {
+  if (!value) return 0;
+  const n = Number(String(value).replace(/,/g, ""));
+  return isNaN(n) ? 0 : n;
+}
+
 // 숫자 컬럼의 현재 값과 원본 값을 비교하여 수정 여부를 감지
-function detectModification(row: Record<string, string>): boolean {
+function detectModification(row: Record<string, string>, debugLabel?: string): boolean {
   const comparisons = [
     ["시급", "원본_시급"],
     ["기본급", "원본_기본급"],
@@ -178,17 +193,28 @@ function detectModification(row: Record<string, string>): boolean {
     ["건강보험", "원본_건강보험"],
     ["장기요양", "원본_장기요양"],
     ["고용보험", "원본_고용보험"],
-    ["소득세", "원본_소득세"],
-    ["공제합계", "원본_공제합계"],
-    ["실수령액", "원본_실수령액"],
+    // 소득세, 공제합계, 실수령액 제거 — 수식 자동계산 컬럼이라 원본과 구조적으로 불일치
     ["시작시간", "원본_시작시간"],
     ["종료시간", "원본_종료시간"],
     ["휴게시간", "원본_휴게시간"],
   ];
 
+  if (debugLabel) {
+    console.log(`🔍 [detectModification] ${debugLabel} — 비교 시작`);
+    for (const [current, original] of comparisons) {
+      const rawCurr = row[current];
+      const rawOrig = row[original];
+      const curr = parseNum(row[current]);
+      const orig = parseNum(row[original]);
+      if (curr !== orig) {
+        console.log(`  ✏️ 차이 발견: ${current}="${rawCurr}"(${curr}) vs ${original}="${rawOrig}"(${orig})`);
+      }
+    }
+  }
+
   return comparisons.some(([current, original]) => {
-    const curr = Number(row[current]) || 0;
-    const orig = Number(row[original]) || 0;
+    const curr = parseNum(row[current]);
+    const orig = parseNum(row[original]);
     return curr !== orig;
   });
 }
@@ -234,16 +260,16 @@ export async function importPayrollFromSheets(month: string) {
         continue;
       }
 
-      const sheetStatus = row["상태"]?.trim();
-      if (sheetStatus !== "지급") {
-        const isModified = detectModification(row);
-        if (!isModified) {
-          console.log("⏭️ 변경 없음, 스킵:", { 이름: sheetName2, 상태: sheetStatus || "(비어있음)" });
-          skipped++;
-          continue;
-        }
-        console.log("🔄 수정 감지, 자동 지급 처리:", { 이름: sheetName2 });
+      // 상태와 무관하게 숫자 변경 여부만으로 import 결정
+      const debugLabel = skipped === 0 && updated === 0 && created === 0
+        ? `${sheetName2} (${sheetDate})` : undefined; // 첫 번째 행만 디버깅
+      const isModified = detectModification(row, debugLabel);
+      if (!isModified) {
+        console.log("⏭️ 변경 없음, 스킵:", { 이름: sheetName2, 근무일: sheetDate });
+        skipped++;
+        continue;
       }
+      console.log("🔄 수정 감지, import 처리:", { 이름: sheetName2, 근무일: sheetDate });
 
       // 2. DB에서 매칭되는 work_record 찾기
       const matched = dbRecords.find((wr) => {
@@ -261,19 +287,19 @@ export async function importPayrollFromSheets(month: string) {
       });
 
       const paymentData = {
-        hourly_wage: Number(row["시급"]) || 0,
-        work_hours: Number(row["근무시간"]) || 0,
+        hourly_wage: parseNum(row["시급"]),
+        work_hours: parseNum(row["근무시간"]),
         overtime_hours: 0,
-        base_pay: Number(row["기본급"]) || 0,
-        overtime_pay: Number(row["초과수당"]) || 0,
-        weekly_holiday_pay: Number(row["주휴수당"]) || 0,
-        gross_pay: Number(row["총지급액"]) || 0,
-        national_pension: Number(row["국민연금"]) || 0,
-        health_insurance: Number(row["건강보험"]) || 0,
-        long_term_care: Number(row["장기요양"]) || 0,
-        employment_insurance: Number(row["고용보험"]) || 0,
-        total_deduction: Number(row["공제합계"]) || 0,
-        net_pay: Number(row["실수령액"]) || 0,
+        base_pay: parseNum(row["기본급"]),
+        overtime_pay: parseNum(row["초과수당"]),
+        weekly_holiday_pay: parseNum(row["주휴수당"]),
+        gross_pay: parseNum(row["총지급액"]),
+        national_pension: parseNum(row["국민연금"]),
+        health_insurance: parseNum(row["건강보험"]),
+        long_term_care: parseNum(row["장기요양"]),
+        employment_insurance: parseNum(row["고용보험"]),
+        total_deduction: parseNum(row["공제합계"]),
+        net_pay: parseNum(row["실수령액"]),
         admin_memo: row["메모"] || null,
         status: "지급",
       };
@@ -310,7 +336,7 @@ export async function importPayrollFromSheets(month: string) {
           work_date: sheetDate,
           start_time: decimalToTime(row["시작시간"]),
           end_time: decimalToTime(row["종료시간"]),
-          break_hours: Number(row["휴게시간"]) || 0,
+          break_hours: parseNum(row["휴게시간"]),
           work_hours: paymentData.work_hours,
           overtime_hours: 0,
           hourly_wage: paymentData.hourly_wage,

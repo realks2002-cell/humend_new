@@ -130,7 +130,7 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
                   </td>
                   <td className="px-2 py-3 text-center text-muted-foreground">{formatPhone(m.phone)}</td>
                   <td className="hidden px-2 py-3 text-center text-muted-foreground md:table-cell">
-                    {m.rrn_front ? `${m.rrn_front}-*******` : "-"}
+                    {m.rrn_front ? `${m.rrn_front}-${m.rrn_back ?? ""}` : "-"}
                   </td>
                   <td className="hidden px-2 py-3 text-center text-muted-foreground md:table-cell">
                     {m.gender === "male" ? "남" : m.gender === "female" ? "여" : m.gender ?? "-"}

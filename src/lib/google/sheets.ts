@@ -162,6 +162,41 @@ export async function protectColumns(
 }
 
 /**
+ * 특정 컬럼들에 숫자 콤마 포맷(#,##0) 적용
+ */
+export async function formatNumberColumns(
+  sheetId: number,
+  columns: number[],
+  rowCount: number
+) {
+  const sheets = getSheets();
+  const spreadsheetId = getSpreadsheetId();
+
+  const requests = columns.map((col) => ({
+    repeatCell: {
+      range: {
+        sheetId,
+        startRowIndex: 1,
+        endRowIndex: rowCount + 1,
+        startColumnIndex: col,
+        endColumnIndex: col + 1,
+      },
+      cell: {
+        userEnteredFormat: {
+          numberFormat: { type: "NUMBER" as const, pattern: "#,##0" },
+        },
+      },
+      fields: "userEnteredFormat.numberFormat",
+    },
+  }));
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: { requests },
+  });
+}
+
+/**
  * Google Sheets에서 데이터 가져오기
  */
 export async function importFromSheets(sheetName: string) {

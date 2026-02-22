@@ -350,14 +350,14 @@ export const PREPARATION_GUIDE_HTML = `<style>
       </div>
       <div class="items-grid">
         <div class="item-card">
-          <span class="item-icon">👟</span>
-          <div class="item-name">운동화</div>
-          <div class="item-sub">크록스 · 올리패디 제외</div>
+          <span class="item-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h5.426a1 1 0 0 1 .863 .496l1.064 1.823a3 3 0 0 0 1.896 1.407l4.677 1.114a4 4 0 0 1 3.074 3.89v2.27a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-10a1 1 0 0 1 1 -1"/><path d="M14 13l1 -2"/><path d="M8 18v-1a4 4 0 0 0 -4 -4h-1"/><path d="M10 12l1.5 -3"/></svg></span>
+          <div class="item-name">검정구두</div>
+          <div class="item-sub">Black Dress Shoes</div>
         </div>
         <div class="item-card">
-          <span class="item-icon"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 4h20v6l-2 26h-6l-2-18-2 18h-6L10 10V4z" fill="#1C1C1E"/><rect x="10" y="4" width="20" height="4" rx="1" fill="#2C2C2E"/></svg></span>
-          <div class="item-name">검정 바지</div>
-          <div class="item-sub">Dark Trousers</div>
+          <span class="item-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M13 3v6l4.798 5.142a4 4 0 0 1 -5.441 5.86l-6.736 -6.41a2 2 0 0 1 -.621 -1.451v-9.141h8"/><path d="M7.895 15.768c.708 -.721 1.105 -1.677 1.105 -2.768a4 4 0 0 0 -4 -4"/></svg></span>
+          <div class="item-name">검정 양말</div>
+          <div class="item-sub">Black Socks</div>
         </div>
       </div>
     </div>
@@ -370,19 +370,14 @@ export const PREPARATION_GUIDE_HTML = `<style>
       </div>
       <div class="items-grid">
         <div class="item-card">
-          <span class="item-icon">👟</span>
-          <div class="item-name">운동화</div>
-          <div class="item-sub">크록스 · 올리패디 제외</div>
+          <span class="item-icon"><svg width="40" height="40" viewBox="0 0 256 256" fill="#1C1C1E" xmlns="http://www.w3.org/2000/svg"><path d="M231,156.19,180,144.7,69.66,34.34a8,8,0,0,0-11.56.26C36.11,58.64,24,89,24,120v72a16,16,0,0,0,16,16H72a16,16,0,0,0,16-16V143.06c2.49,1.45,4.94,3,7.34,4.64a112.45,112.45,0,0,1,40.55,50.39A15.9,15.9,0,0,0,150.72,208H240a16,16,0,0,0,16-16v-4.73A31.72,31.72,0,0,0,231,156.19ZM72,192H40V128.29a110.88,110.88,0,0,1,32,7.12Zm168,0H150.68a128.36,128.36,0,0,0-46.27-57.46,126.9,126.9,0,0,0-64.12-22.26A110.67,110.67,0,0,1,64.46,51.78L170.34,157.66a8,8,0,0,0,3.9,2.14l53.24,12A15.81,15.81,0,0,1,240,187.31Z"/></svg></span>
+          <div class="item-name">낮은 검정구두</div>
+          <div class="item-sub">Low Heel Black Shoes</div>
         </div>
         <div class="item-card">
-          <span class="item-icon"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 4h20v6l-2 26h-6l-2-18-2 18h-6L10 10V4z" fill="#1C1C1E"/><rect x="10" y="4" width="20" height="4" rx="1" fill="#2C2C2E"/></svg></span>
-          <div class="item-name">검정 바지</div>
-          <div class="item-sub">Dark Trousers</div>
-        </div>
-        <div class="item-card">
-          <span class="item-icon">💇\u200d♀️</span>
-          <div class="item-name">머리망 · 실핀</div>
-          <div class="item-sub">Hair Net &amp; Pins</div>
+          <span class="item-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M13 3v6l4.798 5.142a4 4 0 0 1 -5.441 5.86l-6.736 -6.41a2 2 0 0 1 -.621 -1.451v-9.141h8"/><path d="M7.895 15.768c.708 -.721 1.105 -1.677 1.105 -2.768a4 4 0 0 0 -4 -4"/></svg></span>
+          <div class="item-name">스타킹</div>
+          <div class="item-sub">Stockings</div>
         </div>
       </div>
     </div>

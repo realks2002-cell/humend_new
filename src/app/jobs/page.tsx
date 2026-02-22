@@ -45,7 +45,7 @@ export default async function JobsPage({ searchParams }: Props) {
   const hasFilters = !!(params.from || params.to || params.client);
 
   return (
-    <div className="mx-auto max-w-5xl animate-in fade-in duration-500 px-4 py-8">
+    <div className="mx-auto max-w-7xl animate-in fade-in duration-500 px-4 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold md:text-3xl">알바공고</h1>
         <p className="mt-1 text-muted-foreground">
@@ -76,7 +76,7 @@ export default async function JobsPage({ searchParams }: Props) {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {clientsWithJobs.map((client) => (
             <Card key={client.id} className="group overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lg py-0 rounded-[10px]">
               <Link href={`/jobs/${client.id}`}>
@@ -87,7 +87,7 @@ export default async function JobsPage({ searchParams }: Props) {
                       alt={client.company_name}
                       fill
                       className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center">

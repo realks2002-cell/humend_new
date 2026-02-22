@@ -37,11 +37,9 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
 export function MemberDetailModal({ member, profileImageUrl, workRecords, open, onOpenChange }: MemberDetailModalProps) {
   if (!member) return null;
 
-  const rrnDisplay = member.rrn_front && member.rrn_back
-    ? `${member.rrn_front}-${member.rrn_back}`
-    : member.rrn_front
-      ? `${member.rrn_front}-*******`
-      : "-";
+  const rrnDisplay = member.rrn_front
+    ? `${member.rrn_front}-${member.rrn_back ?? ""}`
+    : "-";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

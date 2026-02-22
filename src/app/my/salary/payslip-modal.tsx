@@ -64,7 +64,7 @@ export function PayslipModal({ record }: { record: WorkRecord }) {
           )}
           <Row label="기본급" value={formatCurrency(p.base_pay)} />
           {p.overtime_pay > 0 && (
-            <Row label="연장수당 (1.5배)" value={formatCurrency(p.overtime_pay)} />
+            <Row label="연장수당" value={formatCurrency(p.overtime_pay)} />
           )}
           {p.weekly_holiday_pay > 0 && (
             <Row label="주휴수당" value={formatCurrency(p.weekly_holiday_pay)} />
@@ -78,16 +78,19 @@ export function PayslipModal({ record }: { record: WorkRecord }) {
         <div className="space-y-0 border-b pb-2">
           <h4 className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">공제 내역</h4>
           {p.national_pension > 0 && (
-            <Row label="국민연금 (4.5%)" value={`-${formatCurrency(p.national_pension)}`} />
+            <Row label="국민연금" value={`-${formatCurrency(p.national_pension)}`} />
           )}
           {p.health_insurance > 0 && (
-            <Row label="건강보험 (3.545%)" value={`-${formatCurrency(p.health_insurance)}`} />
+            <Row label="건강보험" value={`-${formatCurrency(p.health_insurance)}`} />
           )}
           {p.long_term_care > 0 && (
-            <Row label="장기요양 (12.81%)" value={`-${formatCurrency(p.long_term_care)}`} />
+            <Row label="장기요양" value={`-${formatCurrency(p.long_term_care)}`} />
           )}
           {p.employment_insurance > 0 && (
-            <Row label="고용보험 (0.9%)" value={`-${formatCurrency(p.employment_insurance)}`} />
+            <Row label="고용보험" value={`-${formatCurrency(p.employment_insurance)}`} />
+          )}
+          {p.income_tax > 0 && (
+            <Row label="소득세" value={`-${formatCurrency(p.income_tax)}`} />
           )}
           <div className="border-t pt-1">
             <Row label="공제 합계" value={`-${formatCurrency(p.total_deduction)}`} bold />
