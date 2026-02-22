@@ -9,6 +9,7 @@ import { formatDate, formatWage } from "@/lib/utils/format";
 import { Users, Building2, Handshake, ArrowRight, Zap, MapPin, Shield, Briefcase, Search } from "lucide-react";
 import { CountUp } from "@/components/ui/count-up";
 import HeroSection from "@/components/home/HeroSection";
+import KakaoFloatingButton from "@/components/home/KakaoFloatingButton";
 
 const stats = [
   { label: "등록 회원", value: 1200, suffix: "+", icon: Users, color: "text-blue-500" },
@@ -42,6 +43,8 @@ export default async function Home() {
 
   return (
     <div className="animate-in fade-in duration-500">
+      <KakaoFloatingButton />
+
       {/* Hero */}
       <HeroSection />
 
