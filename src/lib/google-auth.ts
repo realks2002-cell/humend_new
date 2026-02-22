@@ -22,27 +22,27 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleUser | null> {
 
     const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
 
-    // 플러그인 초기화 (웹에서만 필요하지만, 안전하게 호출)
-    await GoogleAuth.initialize();
+    // Android 네이티브에서는 initialize() 불필요, 웹에서만 호출
+    if (Capacitor.getPlatform() === 'web') {
+      await GoogleAuth.initialize();
+    }
 
     const result = await GoogleAuth.signIn();
 
-    if (!result.authentication?.idToken) {
-      throw new Error('Google 로그인에서 idToken을 받지 못했습니다.');
+    const idToken = result?.authentication?.idToken;
+    if (!idToken) {
+      console.error('[nativeGoogleSignIn] idToken 없음, result:', JSON.stringify(result));
+      return null; // 웹 PKCE로 fallback
     }
 
     return {
-      idToken: result.authentication.idToken,
+      idToken,
       email: result.email || '',
       name: result.name || result.givenName || '',
     };
-  } catch (err: unknown) {
-    // Capacitor 미설치 (웹 환경)
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('not implemented') || msg.includes('not available')) {
-      return null;
-    }
-    throw err;
+  } catch (err) {
+    console.error('[nativeGoogleSignIn] 에러:', err);
+    return null; // 에러 시 웹 PKCE로 fallback (re-throw 하지 않음)
   }
 }
 

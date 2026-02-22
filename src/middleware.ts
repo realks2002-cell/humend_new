@@ -12,6 +12,14 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  // OAuth PKCE: /?code=xxx → /auth/callback?code=xxx 리다이렉트
+  const code = request.nextUrl.searchParams.get('code');
+  if (pathname === '/' && code) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/auth/callback';
+    return NextResponse.redirect(url);
+  }
+
   // 항상 Supabase 세션 갱신 (토큰 refresh) 수행
   let supabaseResponse = NextResponse.next({ request });
 

@@ -49,7 +49,7 @@ export default function SignupPage() {
           token: nativeUser.idToken,
         });
         if (error) {
-          toast.error("구글 연결 실패", { description: error.message });
+          toast.error("구글 연결 실패", { description: error.message || "다시 시도해주세요." });
           setGoogleLoading(false);
           return;
         }
