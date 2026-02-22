@@ -63,6 +63,39 @@ export async function getPaymentsByMonth(month: string): Promise<PaymentRecord[]
   });
 }
 
+export async function getPaymentsByMonthPaginated(
+  month: string,
+  page: number,
+  pageSize: number
+): Promise<{ data: PaymentRecord[]; total: number }> {
+  const admin = createAdminClient();
+
+  const start = `${month}-01`;
+  const endDate = new Date(Number(month.split("-")[0]), Number(month.split("-")[1]), 0);
+  const end = `${month}-${String(endDate.getDate()).padStart(2, "0")}`;
+
+  const from = (page - 1) * pageSize;
+
+  const { data, count } = await admin
+    .from("payments")
+    .select(
+      "*, work_records!inner(client_name, work_date, start_time, end_time, wage_type, member_id, members(name, phone, bank_name, account_number))",
+      { count: "exact" }
+    )
+    .gte("work_records.work_date", start)
+    .lte("work_records.work_date", end)
+    .order("created_at", { ascending: false })
+    .range(from, from + pageSize - 1);
+
+  const results = ((data ?? []) as unknown[]).map((r: unknown) => {
+    const rec = r as Record<string, unknown>;
+    const wr = Array.isArray(rec.work_records) ? rec.work_records[0] ?? null : rec.work_records ?? null;
+    return { ...rec, work_record: wr } as PaymentRecord;
+  });
+
+  return { data: results, total: count ?? 0 };
+}
+
 export async function getPaymentsForCsvExport(startDate: string, endDate: string) {
   const admin = createAdminClient();
 

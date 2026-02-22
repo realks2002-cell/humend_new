@@ -13,11 +13,6 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
   },
   plugins: {
-    GoogleAuth: {
-      scopes: ['profile', 'email'],
-      serverClientId: '133410524921-94i1t8skrfkfggmrpdhnfkclh9h8o4bv.apps.googleusercontent.com',
-      forceCodeForRefreshToken: true,
-    },
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: true,

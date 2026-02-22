@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Download } from "lucide-react";
+import { CalendarIcon, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { formatDate, formatCurrency } from "@/lib/utils/format";
 import { type PaymentRecord, getPaymentsForCsvExport, getMemberDetail } from "./actions";
@@ -29,15 +30,29 @@ interface PaymentsTableProps {
   payments: PaymentRecord[];
   membersMap: Record<string, Member>;
   profileImageUrls: Record<string, string>;
+  currentMonth: string;
+  page: number;
+  pageSize: number;
+  total: number;
 }
 
-export function PaymentsTable({ payments, membersMap, profileImageUrls }: PaymentsTableProps) {
+export function PaymentsTable({ payments, membersMap, profileImageUrls, currentMonth, page, pageSize, total }: PaymentsTableProps) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [filterStartDate, setFilterStartDate] = useState("");
   const [filterEndDate, setFilterEndDate] = useState("");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedProfileUrl, setSelectedProfileUrl] = useState<string | null>(null);
   const [isLoadingProfile, startProfileTransition] = useTransition();
+
+  const totalPages = Math.ceil(total / pageSize);
+
+  function goToPage(p: number) {
+    const params = new URLSearchParams();
+    params.set("month", currentMonth);
+    params.set("page", String(p));
+    router.push(`/admin/payments?${params.toString()}`);
+  }
 
   function handleMemberClick(member: Member) {
     setSelectedMember(member);
@@ -306,6 +321,52 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls }: Paymen
           </tbody>
         </table>
       </div>
+
+      {/* 페이지네이션 */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1 border-t px-4 py-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => goToPage(page - 1)}
+            className="h-8 w-8 p-0"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1)
+            .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+            .reduce<(number | "ellipsis")[]>((acc, p, idx, arr) => {
+              if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("ellipsis");
+              acc.push(p);
+              return acc;
+            }, [])
+            .map((item, idx) =>
+              item === "ellipsis" ? (
+                <span key={`e-${idx}`} className="px-1 text-xs text-muted-foreground">...</span>
+              ) : (
+                <Button
+                  key={item}
+                  variant={item === page ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => goToPage(item)}
+                  className="h-8 w-8 p-0 text-xs"
+                >
+                  {item}
+                </Button>
+              )
+            )}
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => goToPage(page + 1)}
+            className="h-8 w-8 p-0"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       <MemberDetailModal
         member={selectedMember}

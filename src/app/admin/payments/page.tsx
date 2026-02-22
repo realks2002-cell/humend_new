@@ -4,19 +4,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MonthSelector } from "@/components/ui/month-selector";
 import type { Member } from "@/lib/supabase/queries";
 import { createAdminClient } from "@/lib/supabase/server";
-import { getPaymentsByMonth } from "./actions";
+import { getPaymentsByMonthPaginated } from "./actions";
 import { PaymentsTable } from "./payments-table";
 
+const PAGE_SIZE = 50;
+
 interface Props {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ month?: string; page?: string }>;
 }
 
 export default async function PaymentsPage({ searchParams }: Props) {
   const params = await searchParams;
   const now = new Date();
   const currentMonth = params.month ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const page = Math.max(1, Number(params.page) || 1);
 
-  const payments = await getPaymentsByMonth(currentMonth);
+  const { data: payments, total } = await getPaymentsByMonthPaginated(currentMonth, page, PAGE_SIZE);
 
   // payments에서 member_id 추출 → 필요한 회원만 조회
   const memberIds = [...new Set(
@@ -46,7 +49,15 @@ export default async function PaymentsPage({ searchParams }: Props) {
 
       <Card className="overflow-hidden py-0">
         <CardContent className="p-0 pt-4">
-          <PaymentsTable payments={payments} membersMap={membersMap} profileImageUrls={{}} />
+          <PaymentsTable
+            payments={payments}
+            membersMap={membersMap}
+            profileImageUrls={{}}
+            currentMonth={currentMonth}
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={total}
+          />
         </CardContent>
       </Card>
     </div>

@@ -85,7 +85,7 @@ export function MemberDetailModal({ member, profileImageUrl, workRecords, open, 
           <InfoRow icon={IdCard} label="주민번호" value={rrnDisplay} />
           <InfoRow icon={MapPin} label="지역" value={member.region ?? "-"} />
           <InfoRow icon={Calendar} label="생년월일" value={member.birth_date ?? "-"} />
-          <InfoRow icon={User} label="성별" value={member.gender ?? "-"} />
+          <InfoRow icon={User} label="성별" value={member.gender === "male" ? "남" : member.gender === "female" ? "여" : member.gender ?? "-"} />
           <InfoRow
             icon={Briefcase}
             label="경험"

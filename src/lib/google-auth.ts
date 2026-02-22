@@ -1,7 +1,7 @@
 /**
  * Capacitor 네이티브 Google Auth 헬퍼
  *
- * - 네이티브 (Android/iOS): GoogleAuth 플러그인으로 네이티브 로그인 → idToken 반환
+ * - 네이티브 (Android/iOS): @capgo/capacitor-social-login 으로 네이티브 로그인 → idToken 반환
  * - 웹: null 반환 (웹은 기존 signInWithOAuth PKCE 플로우 사용)
  */
 
@@ -20,29 +20,35 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleUser | null> {
     const { Capacitor } = await import('@capacitor/core');
     if (!Capacitor.isNativePlatform()) return null;
 
-    const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+    const { SocialLogin } = await import('@capgo/capacitor-social-login');
 
-    // Android 네이티브에서는 initialize() 불필요, 웹에서만 호출
-    if (Capacitor.getPlatform() === 'web') {
-      await GoogleAuth.initialize();
-    }
+    await SocialLogin.initialize({
+      google: {
+        webClientId: '133410524921-94i1t8skrfkfggmrpdhnfkclh9h8o4bv.apps.googleusercontent.com',
+      },
+    });
 
-    const result = await GoogleAuth.signIn();
+    const res = await SocialLogin.login({
+      provider: 'google',
+      options: {
+        scopes: ['email', 'profile'],
+      },
+    });
 
-    const idToken = result?.authentication?.idToken;
-    if (!idToken) {
-      console.error('[nativeGoogleSignIn] idToken 없음, result:', JSON.stringify(result));
-      return null; // 웹 PKCE로 fallback
-    }
+    const result = res?.result;
+    const idToken = (result as { idToken?: string })?.idToken;
+    if (!idToken) return null;
+
+    const profile = (result as { profile?: { email?: string; name?: string; givenName?: string } })?.profile;
 
     return {
       idToken,
-      email: result.email || '',
-      name: result.name || result.givenName || '',
+      email: profile?.email || '',
+      name: profile?.name || profile?.givenName || '',
     };
   } catch (err) {
     console.error('[nativeGoogleSignIn] 에러:', err);
-    return null; // 에러 시 웹 PKCE로 fallback (re-throw 하지 않음)
+    return null;
   }
 }
 

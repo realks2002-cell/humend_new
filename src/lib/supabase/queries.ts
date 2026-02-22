@@ -257,6 +257,61 @@ export async function updateMyProfile(updates: Partial<Member>) {
 
 // ========== 관리자 쿼리 ==========
 
+export async function getMembersPaginated({
+  page,
+  pageSize,
+  search,
+}: {
+  page: number;
+  pageSize: number;
+  search: string;
+}): Promise<{ data: MemberWithStats[]; total: number }> {
+  const admin = createAdminClient();
+  let query = admin.from("members").select("*", { count: "exact" });
+
+  if (search) {
+    query = query.or(
+      `name.ilike.%${search}%,phone.ilike.%${search}%,rrn_front.ilike.%${search}%`
+    );
+  }
+
+  const from = (page - 1) * pageSize;
+  const { data, count } = await query
+    .order("created_at", { ascending: false })
+    .range(from, from + pageSize - 1);
+
+  const members = (data ?? []) as Member[];
+
+  // 조회된 회원들의 근무 통계 계산
+  if (members.length === 0) {
+    return { data: [], total: count ?? 0 };
+  }
+
+  const memberIds = members.map((m) => m.id);
+  const { data: workRecords } = await admin
+    .from("work_records")
+    .select("member_id, work_date, work_hours")
+    .in("member_id", memberIds);
+
+  const statsMap = new Map<string, { days: Set<string>; hours: number }>();
+  for (const wr of workRecords ?? []) {
+    const r = wr as { member_id: string; work_date: string; work_hours: number };
+    if (!statsMap.has(r.member_id)) {
+      statsMap.set(r.member_id, { days: new Set(), hours: 0 });
+    }
+    const s = statsMap.get(r.member_id)!;
+    s.days.add(r.work_date);
+    s.hours += r.work_hours ?? 0;
+  }
+
+  const membersWithStats: MemberWithStats[] = members.map((m) => {
+    const s = statsMap.get(m.id);
+    return { ...m, work_days: s?.days.size ?? 0, work_hours: s?.hours ?? 0 };
+  });
+
+  return { data: membersWithStats, total: count ?? 0 };
+}
+
 export async function getAllMembers() {
   const admin = createAdminClient();
   const { data } = await admin
