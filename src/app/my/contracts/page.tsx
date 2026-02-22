@@ -3,11 +3,12 @@ export const dynamic = "force-dynamic";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, FileSignature } from "lucide-react";
-import { getMyProfile, getMyWorkRecords } from "@/lib/supabase/queries";
+import { Button } from "@/components/ui/button";
+import { FileText, FileSignature, Eye } from "lucide-react";
+import { getMyProfile, getMyWorkRecords, type SignedContract } from "@/lib/supabase/queries";
 import { createAdminClient } from "@/lib/supabase/server";
 import { formatDate, formatCurrency } from "@/lib/utils/format";
-import { ContractViewModal } from "./contract-view-modal";
+import { ContractViewModal } from "@/app/admin/contracts/contract-view-modal";
 
 export default async function ContractsPage() {
   const [profile, allRecords] = await Promise.all([
@@ -30,13 +31,27 @@ export default async function ContractsPage() {
     }
   }
 
-  const worker = {
-    name: profile?.name ?? "-",
-    phone: profile?.phone ?? "",
-    rrnFront: (profile as unknown as Record<string, unknown>)?.rrn_front as string ?? "",
-    rrnBack: (profile as unknown as Record<string, unknown>)?.rrn_back as string ?? "",
-    region: profile?.region ?? "",
-  };
+  function buildRecord(r: typeof signedRecords[number]): SignedContract {
+    return {
+      id: r.id,
+      work_date: r.work_date,
+      start_time: r.start_time,
+      end_time: r.end_time,
+      client_name: r.client_name,
+      hourly_wage: r.hourly_wage,
+      net_pay: r.net_pay,
+      signature_url: r.signature_url,
+      signed_at: r.signed_at,
+      payments: r.payments ?? null,
+      members: {
+        name: profile?.name ?? null,
+        phone: profile?.phone ?? "",
+        rrn_front: profile?.rrn_front ?? null,
+        rrn_back: profile?.rrn_back ?? null,
+        region: profile?.region ?? null,
+      },
+    };
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 space-y-6">
@@ -82,9 +97,14 @@ export default async function ContractsPage() {
                   </Badge>
                 </div>
                 <ContractViewModal
-                  record={r}
-                  worker={worker}
+                  record={buildRecord(r)}
                   signatureUrl={signatureUrls[r.id] ?? null}
+                  trigger={
+                    <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700">
+                      <Eye className="mr-1 h-3 w-3" />
+                      보기
+                    </Button>
+                  }
                 />
               </div>
             ))}

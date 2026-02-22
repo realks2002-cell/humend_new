@@ -146,6 +146,8 @@ export interface Payment {
   status: string;
   admin_memo: string | null;
   paid_at: string | null;
+  start_time: string | null;
+  end_time: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -587,6 +589,7 @@ export interface SignedContract {
   signature_url: string | null;
   signed_at: string | null;
   members: { name: string | null; phone: string; rrn_front: string | null; rrn_back: string | null; region: string | null } | null;
+  payments: Payment | null;
 }
 
 export async function getSignedContracts(page = 1, pageSize = 50) {
@@ -597,18 +600,19 @@ export async function getSignedContracts(page = 1, pageSize = 50) {
   const { data, count } = await admin
     .from("work_records")
     .select(
-      "id, work_date, start_time, end_time, client_name, hourly_wage, net_pay, signature_url, signed_at, members(name, phone, rrn_front, rrn_back, region)",
+      "id, work_date, start_time, end_time, client_name, hourly_wage, net_pay, signature_url, signed_at, members(name, phone, rrn_front, rrn_back, region), payments(*)",
       { count: "exact" }
     )
     .not("signature_url", "is", null)
     .order("work_date", { ascending: false })
     .range(from, to);
 
-  // Supabase returns members as array for joined tables, unwrap to single
+  // Supabase returns joined tables as arrays, unwrap to single
   const contracts = ((data ?? []) as unknown[]).map((r: unknown) => {
     const rec = r as Record<string, unknown>;
     const members = Array.isArray(rec.members) ? rec.members[0] ?? null : rec.members ?? null;
-    return { ...rec, members } as SignedContract;
+    const payments = Array.isArray(rec.payments) ? rec.payments[0] ?? null : rec.payments ?? null;
+    return { ...rec, members, payments } as SignedContract;
   });
 
   return { data: contracts, total: count ?? 0 };

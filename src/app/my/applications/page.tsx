@@ -7,11 +7,13 @@ import { ClipboardList, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { getMyApplications } from "@/lib/supabase/queries";
 import { formatDate } from "@/lib/utils/format";
 import type { Application } from "@/lib/supabase/queries";
+import { CancelButton } from "./cancel-button";
 
 const statusConfig: Record<string, { label: string; variant: "secondary" | "default" | "destructive"; color: string }> = {
   "대기": { label: "대기중", variant: "secondary", color: "bg-amber-500/10 text-amber-700" },
   "승인": { label: "승인", variant: "default", color: "bg-emerald-500/10 text-emerald-700" },
   "거절": { label: "거절", variant: "destructive", color: "bg-red-500/10 text-red-700" },
+  "취소": { label: "취소됨", variant: "secondary", color: "bg-gray-500/10 text-gray-500" },
 };
 
 function ApplicationItem({ app }: { app: Application }) {
@@ -28,9 +30,14 @@ function ApplicationItem({ app }: { app: Application }) {
           지원일: {new Date(app.applied_at).toLocaleDateString("ko-KR")}
         </p>
       </div>
-      <Badge className={`shrink-0 text-[11px] font-semibold border-0 ${config.color}`}>
-        {config.label}
-      </Badge>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <Badge className={`text-[11px] font-semibold border-0 ${config.color}`}>
+          {config.label}
+        </Badge>
+        {(app.status === "대기" || app.status === "승인") && (
+          <CancelButton applicationId={app.id} status={app.status} />
+        )}
+      </div>
     </div>
   );
 }

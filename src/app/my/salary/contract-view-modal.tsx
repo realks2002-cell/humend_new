@@ -102,7 +102,7 @@ export function ContractViewModal({ record, worker, signatureUrl }: { record: Wo
             <SectionHeader>근무 정보</SectionHeader>
             <TableRow label="근무장소" value={record.client_name} />
             <TableRow label="근무일" value={record.work_date} />
-            <TableRow label="근무시간" value={`${record.start_time.slice(0, 5)} ~ ${record.end_time.slice(0, 5)}`} />
+            <TableRow label="근무시간" value={`${(display.start_time ?? record.start_time).slice(0, 5)} ~ ${(display.end_time ?? record.end_time).slice(0, 5)}`} />
           </div>
 
           {/* 계약 조건 */}
@@ -122,13 +122,8 @@ export function ContractViewModal({ record, worker, signatureUrl }: { record: Wo
                 <p>사용자와 근로자가 사전에 협의한 업무. [ 홀서빙, 주방보조, 기물보조, 안내 등]</p>
               </div>
               <div>
-                <p className="font-semibold text-gray-900">4. 계약기간</p>
-
-                <p>근무일: {record.work_date}</p>
-                <p>근무시간: {record.start_time.slice(0, 5)} ~ {record.end_time.slice(0, 5)}</p>
-                <p>휴게시간: 8시간 미만시 30분제공 / 8시간 이상시 1시간 제공</p>
-                <p className="mt-1 text-xs text-gray-500">※ 단, 휴게시간은 행사 성격에 따라 변경될 수 있으며, 휴게시간은 임금에 산정하지 않는다.</p>
-                <p className="text-xs text-gray-500">※ 근무시간은 실제로 근무한 시간을 기입해주세요.</p>
+                <p className="font-semibold text-gray-900">4. 계약일</p>
+                <p>계약일시: {record.signed_at ? record.signed_at.slice(0, 10) : record.work_date}</p>
               </div>
               <div>
                 <p className="font-semibold text-gray-900">5. 근로임금</p>
@@ -141,10 +136,6 @@ export function ContractViewModal({ record, worker, signatureUrl }: { record: Wo
                     <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">기본시급</div>
                     <div className="px-2 py-1.5">{display.hourly_wage.toLocaleString()} 원</div>
                   </div>
-                  <div className="flex border-b text-xs">
-                    <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">인건비 구성</div>
-                    <div className="px-2 py-1.5">통상시급 {display.hourly_wage.toLocaleString()}원 기타수당 0원</div>
-                  </div>
                   <div className="flex text-xs">
                     <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">급여산정</div>
                     <div className="px-2 py-1.5">기본시급x(근무시간-공제시간)=1일임금</div>
@@ -152,32 +143,25 @@ export function ContractViewModal({ record, worker, signatureUrl }: { record: Wo
                 </div>
                 <p className="mt-2 text-xs text-gray-500">※ 기본시급은 홈페이지에 공지된 시급이며 별도의 안내를 받으신분은 따로 기입후 지급됨</p>
                 <p className="text-xs text-gray-500">※ 임금은 근무 후 익 주 월~수요일 19시 지급이며 근무업장 사정에 따라 최대 7일, 최소 2시간 지연 입금 될 수 있다.</p>
-                <p className="text-xs text-gray-500">※ 신한은행 외 타행으로 급여이체 받을 시 이체수수료 500원이 공제되어 지급됩니다</p>
               </div>
               <div>
                 <p className="font-semibold text-gray-900">6. 적용제외</p>
                 <p>근로기준법상 단기간 근로자는 근로기준법의 주휴일, 연차휴가, 퇴직금 규정을 적용하지 아니하며, 기타 관련 사항은 회사 규정에 따른다.</p>
               </div>
               <div>
-                <p className="font-semibold text-gray-900">7. 고용보험</p>
-                <p>임금지급 시 근로자부담금인 고용보험료[급여액의 0.65%]는 공제 후 입금된다.</p>
+                <p className="font-semibold text-gray-900">7. 사회보험료 및 소득세</p>
+                <p>임금 지급시 근로자 부담금 (사회보험료와 소득세) 은 원천징수 후 근무자가 지정한 예금통장으로 지급한다.</p>
                 <div className="mt-2 overflow-hidden rounded border">
                   <div className="flex border-b text-xs">
                     <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">기본시급</div>
                     <div className="px-2 py-1.5">{display.hourly_wage.toLocaleString()} 원</div>
-                  </div>
-                  <div className="flex border-b text-xs">
-                    <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">인건비 구성</div>
-                    <div className="px-2 py-1.5">통상시급 {display.hourly_wage.toLocaleString()}원 기타수당 0원</div>
                   </div>
                   <div className="flex text-xs">
                     <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">급여산정</div>
                     <div className="px-2 py-1.5">기본시급x(근무시간-공제시간)=1일임금</div>
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-gray-500">※ 임금지급 시 근로자부담분인 고용보험료(급여액의 0.65%)는 공제 후 지급 됩니다.</p>
-                <p className="text-xs text-gray-500">※ 임금은 근무 후 익 주 월~수요일 19시 지급이며 근무업장 사정에 따라 최대 7일, 최소 2시간 지연 입금 될 수 있다.</p>
-                <p className="text-xs text-gray-500">※ 신한은행 외 타행으로 급여이체 받을 시 이체수수료 500원이 공제되어 지급됩니다</p>
+                <p className="mt-2 text-xs text-gray-500">※ 임금 지급시 근로자 부담금 (사회보험료와 소득세) 은 원천징수 후 근무자가 지정한 예금통장으로 지급한다.</p>
               </div>
               <div>
                 <p className="font-semibold text-gray-900">8. 손해배상</p>

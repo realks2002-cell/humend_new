@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { XIcon } from "lucide-react";
 import { type SignedContract, type WorkRecord } from "@/lib/supabase/queries";
 
@@ -50,6 +51,9 @@ export function ContractViewModal({ record, signatureUrl, trigger, open: control
   const region = m?.region ?? "";
   const rrn = rrnFront && rrnBack ? `${rrnFront}-${rrnBack}` : "-";
 
+  const p = record.payments;
+  const display = p ?? record;
+
   function formatPhone(ph: string) {
     const nums = ph.replace(/\D/g, "");
     if (nums.length === 11) return `${nums.slice(0, 3)}-${nums.slice(3, 7)}-${nums.slice(7)}`;
@@ -68,6 +72,7 @@ export function ContractViewModal({ record, signatureUrl, trigger, open: control
         </DialogTrigger>
       )}
       <DialogContent showCloseButton={false} className="!max-w-4xl max-h-[90vh] overflow-y-auto p-0 gap-0">
+        <VisuallyHidden><DialogTitle>근로계약서</DialogTitle></VisuallyHidden>
         <button
           onClick={() => setOpen(false)}
           className="absolute top-4 right-4 z-10 text-white hover:opacity-80"
@@ -77,8 +82,8 @@ export function ContractViewModal({ record, signatureUrl, trigger, open: control
         <div>
           {/* 타이틀 */}
           <div className="bg-[#1e2a5a] py-6 text-center">
-            <h1 className="text-xl font-bold text-white">일일근로계약서</h1>
-            <p className="mt-1 text-sm text-blue-200">체결완료</p>
+            <h1 className="text-xl font-bold text-white">근로계약서</h1>
+            <p className="mt-1 text-sm text-blue-200">일일근로계약서</p>
           </div>
 
           <div className="p-5 space-y-5">
@@ -101,7 +106,7 @@ export function ContractViewModal({ record, signatureUrl, trigger, open: control
               <SectionHeader>근무 정보</SectionHeader>
               <TableRow label="근무장소" value={record.client_name} />
               <TableRow label="근무일" value={record.work_date} />
-              <TableRow label="근무시간" value={`${record.start_time.slice(0, 5)} ~ ${record.end_time.slice(0, 5)}`} />
+              <TableRow label="근무시간" value={`${(display.start_time ?? record.start_time).slice(0, 5)} ~ ${(display.end_time ?? record.end_time).slice(0, 5)}`} />
             </div>
 
             {/* 계약 조건 */}
@@ -121,13 +126,8 @@ export function ContractViewModal({ record, signatureUrl, trigger, open: control
                   <p>사용자와 근로자가 사전에 협의한 업무. [ 홀서빙, 주방보조, 기물보조, 안내 등]</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900">4. 계약기간</p>
-
-                  <p>근무일: {record.work_date}</p>
-                  <p>근무시간: {record.start_time.slice(0, 5)} ~ {record.end_time.slice(0, 5)}</p>
-                  <p>휴게시간: 8시간 미만시 30분제공 / 8시간 이상시 1시간 제공</p>
-                  <p className="mt-1 text-xs text-gray-500">※ 단, 휴게시간은 행사 성격에 따라 변경될 수 있으며, 휴게시간은 임금에 산정하지 않는다.</p>
-                  <p className="text-xs text-gray-500">※ 근무시간은 실제로 근무한 시간을 기입해주세요.</p>
+                  <p className="font-semibold text-gray-900">4. 계약일</p>
+                  <p>계약일시: {record.signed_at ? record.signed_at.slice(0, 10) : record.work_date}</p>
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">5. 근로임금</p>
@@ -138,11 +138,7 @@ export function ContractViewModal({ record, signatureUrl, trigger, open: control
                     </div>
                     <div className="flex border-b text-xs">
                       <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">기본시급</div>
-                      <div className="px-2 py-1.5">{record.hourly_wage.toLocaleString()} 원</div>
-                    </div>
-                    <div className="flex border-b text-xs">
-                      <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">인건비 구성</div>
-                      <div className="px-2 py-1.5">통상시급 {record.hourly_wage.toLocaleString()}원 기타수당 0원</div>
+                      <div className="px-2 py-1.5">{display.hourly_wage.toLocaleString()} 원</div>
                     </div>
                     <div className="flex text-xs">
                       <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">급여산정</div>
@@ -151,15 +147,25 @@ export function ContractViewModal({ record, signatureUrl, trigger, open: control
                   </div>
                   <p className="mt-2 text-xs text-gray-500">※ 기본시급은 홈페이지에 공지된 시급이며 별도의 안내를 받으신분은 따로 기입후 지급됨</p>
                   <p className="text-xs text-gray-500">※ 임금은 근무 후 익 주 월~수요일 19시 지급이며 근무업장 사정에 따라 최대 7일, 최소 2시간 지연 입금 될 수 있다.</p>
-                  <p className="text-xs text-gray-500">※ 신한은행 외 타행으로 급여이체 받을 시 이체수수료 500원이 공제되어 지급됩니다</p>
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">6. 적용제외</p>
                   <p>근로기준법상 단기간 근로자는 근로기준법의 주휴일, 연차휴가, 퇴직금 규정을 적용하지 아니하며, 기타 관련 사항은 회사 규정에 따른다.</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900">7. 고용보험</p>
-                  <p>임금지급 시 근로자부담금인 고용보험료[급여액의 0.65%]는 공제 후 입금된다.</p>
+                  <p className="font-semibold text-gray-900">7. 사회보험료 및 소득세</p>
+                  <p>임금 지급시 근로자 부담금 (사회보험료와 소득세) 은 원천징수 후 근무자가 지정한 예금통장으로 지급한다.</p>
+                  <div className="mt-2 overflow-hidden rounded border">
+                    <div className="flex border-b text-xs">
+                      <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">기본시급</div>
+                      <div className="px-2 py-1.5">{display.hourly_wage.toLocaleString()} 원</div>
+                    </div>
+                    <div className="flex text-xs">
+                      <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">급여산정</div>
+                      <div className="px-2 py-1.5">기본시급x(근무시간-공제시간)=1일임금</div>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500">※ 임금 지급시 근로자 부담금 (사회보험료와 소득세) 은 원천징수 후 근무자가 지정한 예금통장으로 지급한다.</p>
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">8. 손해배상</p>
@@ -191,16 +197,18 @@ export function ContractViewModal({ record, signatureUrl, trigger, open: control
               <SectionHeader>근로자</SectionHeader>
               <TableRow label="이름" value={name} />
               <TableRow label="주민등록번호" value={rrn} />
-              <div className="flex border-b text-sm">
-                <div className="w-28 shrink-0 bg-gray-100 px-3 py-2 font-medium text-gray-600 border-r">서명</div>
-                <div className="flex-1 px-3 py-2">
-                  {signatureUrl ? (
-                    <img src={signatureUrl} alt="서명" className="h-16" />
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
+              {record.signature_url && (
+                <div className="flex border-b text-sm">
+                  <div className="w-28 shrink-0 bg-gray-100 px-3 py-2 font-medium text-gray-600 border-r">서명</div>
+                  <div className="flex-1 px-3 py-2">
+                    {signatureUrl ? (
+                      <img src={signatureUrl} alt="서명" className="h-16" />
+                    ) : (
+                      <span className="text-sm text-green-700 font-medium">서명 완료</span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
               {record.signed_at && (
                 <TableRow label="서명일시" value={new Date(record.signed_at).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })} />
               )}

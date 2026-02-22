@@ -300,6 +300,8 @@ export async function importPayrollFromSheets(month: string) {
         employment_insurance: parseNum(row["고용보험"]),
         total_deduction: parseNum(row["공제합계"]),
         net_pay: parseNum(row["실수령액"]),
+        start_time: decimalToTime(row["시작시간"]),
+        end_time: decimalToTime(row["종료시간"]),
         admin_memo: row["메모"] || null,
         status: "지급",
       };

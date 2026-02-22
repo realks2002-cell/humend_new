@@ -20,6 +20,7 @@ const statusConfig: Record<string, { label: string; variant: "secondary" | "defa
   "대기": { label: "대기중", variant: "secondary" },
   "승인": { label: "승인", variant: "default" },
   "거절": { label: "거절", variant: "destructive" },
+  "취소": { label: "취소됨", variant: "secondary" },
 };
 
 interface AppItem {

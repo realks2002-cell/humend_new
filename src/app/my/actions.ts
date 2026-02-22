@@ -52,6 +52,66 @@ export async function changePassword(currentPassword: string, newPassword: strin
   return { success: true };
 }
 
+export async function cancelApplication(applicationId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "로그인이 필요합니다." };
+  }
+
+  const admin = createAdminClient();
+
+  // 본인의 지원인지 + 상태 확인
+  const { data: app, error: fetchError } = await admin
+    .from("applications")
+    .select("id, member_id, status")
+    .eq("id", applicationId)
+    .single();
+
+  if (fetchError || !app) {
+    return { error: "지원 내역을 찾을 수 없습니다." };
+  }
+
+  if (app.member_id !== user.id) {
+    return { error: "본인의 지원만 취소할 수 있습니다." };
+  }
+
+  if (app.status !== "대기" && app.status !== "승인") {
+    return { error: "대기 또는 승인 상태의 지원만 취소할 수 있습니다." };
+  }
+
+  // 승인 상태인 경우 연관된 work_records 삭제
+  if (app.status === "승인") {
+    const { data: workRecords } = await admin
+      .from("work_records")
+      .select("id")
+      .eq("application_id", applicationId);
+
+    if (workRecords && workRecords.length > 0) {
+      const wrIds = workRecords.map((r) => r.id);
+      await admin.from("payments").delete().in("work_record_id", wrIds);
+    }
+
+    await admin.from("work_records").delete().eq("application_id", applicationId);
+  }
+
+  // 상태를 취소로 변경
+  const { error: updateError } = await admin
+    .from("applications")
+    .update({ status: "취소" })
+    .eq("id", applicationId);
+
+  if (updateError) {
+    return { error: "취소 처리에 실패했습니다." };
+  }
+
+  revalidatePath("/my/applications");
+  return { success: true };
+}
+
 export async function deleteAccount() {
   const supabase = await createClient();
   const {
