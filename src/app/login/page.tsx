@@ -68,24 +68,33 @@ function LoginContent() {
           return;
         }
 
-        // members 테이블 확인
+        // members 테이블 확인 + fetch로 쿠키 설정
+        const { data: { session } } = await supabase.auth.getSession();
         const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
+
+        if (user && session) {
           const { data: member } = await supabase
             .from("members")
             .select("id")
             .eq("id", user.id)
             .maybeSingle();
 
-          if (member) {
-            toast.success("구글 로그인 성공!");
-            router.push(redirectPath);
-            router.refresh();
-          } else {
-            // 신규 구글 회원 → 추가 정보 입력
-            router.push("/signup/complete");
-            router.refresh();
+          const targetPath = member ? redirectPath : "/signup/complete";
+
+          // fetch()로 쿠키 설정 후 클라이언트에서 네비게이션
+          // form.submit()은 Capacitor WebView에서 시스템 브라우저를 여는 문제가 있음
+          const res = await fetch("/api/auth/set-session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              access_token: session.access_token,
+              refresh_token: session.refresh_token,
+            }),
+          });
+          if (res.ok) {
+            window.location.href = targetPath;
           }
+          return;
         }
         setGoogleLoading(false);
       } else {
