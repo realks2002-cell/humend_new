@@ -14,9 +14,16 @@ import {
 import { CalendarIcon, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { formatDate, formatCurrency } from "@/lib/utils/format";
-import { type PaymentRecord, getPaymentsForCsvExport, getMemberDetail } from "./actions";
-import { type Member } from "@/lib/supabase/queries";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { type PaymentRecord, getPaymentsForCsvExport, getMemberDetail, getConsentForMember } from "./actions";
+import { type Member, type Payment, type ParentalConsent } from "@/lib/supabase/queries";
 import { MemberDetailModal } from "../members/member-detail-modal";
+import { PayslipContent, type PayslipRecord } from "@/app/my/salary/payslip-modal";
 
 function toDateStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -29,6 +36,7 @@ function toDisplay(d: Date) {
 interface PaymentsTableProps {
   payments: PaymentRecord[];
   membersMap: Record<string, Member>;
+  consentsMap: Record<string, ParentalConsent>;
   profileImageUrls: Record<string, string>;
   currentMonth: string;
   page: number;
@@ -36,7 +44,7 @@ interface PaymentsTableProps {
   total: number;
 }
 
-export function PaymentsTable({ payments, membersMap, profileImageUrls, currentMonth, page, pageSize, total }: PaymentsTableProps) {
+export function PaymentsTable({ payments, membersMap, consentsMap, profileImageUrls, currentMonth, page, pageSize, total }: PaymentsTableProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [filterStartDate, setFilterStartDate] = useState("");
@@ -44,6 +52,17 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls, currentM
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedProfileUrl, setSelectedProfileUrl] = useState<string | null>(null);
   const [isLoadingProfile, startProfileTransition] = useTransition();
+  const [payslipData, setPayslipData] = useState<PayslipRecord | null>(null);
+  const [consentData, setConsentData] = useState<{ consent: ParentalConsent; member: Member } | null>(null);
+  const [isLoadingConsent, startConsentTransition] = useTransition();
+
+  function handleConsentClick(memberId: string) {
+    const consent = consentsMap[memberId];
+    const member = membersMap[memberId];
+    if (consent && member) {
+      setConsentData({ consent, member });
+    }
+  }
 
   const totalPages = Math.ceil(total / pageSize);
 
@@ -110,7 +129,7 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls, currentM
         return;
       }
 
-      const header = "이름,전화번호,근무지,근무일,급여타입,출근시간,퇴근시간,근무시간,연장시간,시급,기본급,연장수당,주휴수당,총지급액,국민연금,건강보험,장기요양,고용보험,공제합계,실수령액,은행명,계좌번호,상태,관리자메모,지급일,생성일,수정일";
+      const header = "이름,전화번호,근무지,근무일,급여타입,출근시간,퇴근시간,근무시간,연장시간,시급,기본급,연장수당,주휴수당,총지급액,국민연금,건강보험,장기요양,고용보험,소득세,공제합계,실수령액,은행명,계좌번호,상태,관리자메모,지급일,생성일,수정일";
       const rows = result.data.map((p) => {
         const wr = p.work_record;
         const paidAt = p.paid_at ? p.paid_at.split("T")[0] : "";
@@ -122,8 +141,8 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls, currentM
           wr?.client_name ?? "",
           wr?.work_date ?? "",
           wr?.wage_type ?? "",
-          wr?.start_time ?? "",
-          wr?.end_time ?? "",
+          p.start_time ?? wr?.start_time ?? "",
+          p.end_time ?? wr?.end_time ?? "",
           p.work_hours,
           p.overtime_hours,
           p.hourly_wage,
@@ -135,6 +154,7 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls, currentM
           p.health_insurance,
           p.long_term_care,
           p.employment_insurance,
+          p.income_tax,
           p.total_deduction,
           p.net_pay,
           wr?.members?.bank_name ?? "",
@@ -250,6 +270,10 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls, currentM
             <col className="w-[100px]" />
             <col className="w-[100px] hidden sm:table-column" />
             <col className="w-[80px] hidden md:table-column" />
+            <col className="w-[80px] hidden md:table-column" />
+            <col className="w-[70px] hidden md:table-column" />
+            <col className="w-[80px] hidden md:table-column" />
+            <col className="w-[100px] hidden lg:table-column" />
             <col className="w-[100px] hidden sm:table-column" />
             <col className="w-[100px]" />
             <col className="w-[80px] hidden sm:table-column" />
@@ -259,7 +283,11 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls, currentM
               <th className="pb-2 px-2">이름</th>
               <th className="pb-2 px-2">근무지</th>
               <th className="pb-2 px-2 hidden sm:table-cell">근무일</th>
+              <th className="pb-2 px-2 hidden md:table-cell">시작시간</th>
+              <th className="pb-2 px-2 hidden md:table-cell">종료시간</th>
+              <th className="pb-2 px-2 hidden md:table-cell">시급/일급</th>
               <th className="pb-2 px-2 hidden md:table-cell">근무시간</th>
+              <th className="pb-2 px-2 hidden lg:table-cell">공제내역</th>
               <th className="pb-2 px-2 hidden sm:table-cell">총지급액</th>
               <th className="pb-2 px-2">실수령액</th>
               <th className="pb-2 px-2 hidden sm:table-cell">상태</th>
@@ -268,7 +296,7 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls, currentM
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                <td colSpan={11} className="py-8 text-center text-muted-foreground">
                   급여지급 내역이 없습니다.
                 </td>
               </tr>
@@ -281,20 +309,39 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls, currentM
                 const phone = rawPhone.length === 11
                   ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 7)}-${rawPhone.slice(7)}`
                   : rawPhone;
+                const totalHours = p.work_hours + p.overtime_hours;
+                const deductions = [
+                  p.national_pension > 0 ? `국민연금 ${formatCurrency(p.national_pension)}` : null,
+                  p.health_insurance > 0 ? `건강보험 ${formatCurrency(p.health_insurance)}` : null,
+                  p.long_term_care > 0 ? `장기요양 ${formatCurrency(p.long_term_care)}` : null,
+                  p.employment_insurance > 0 ? `고용보험 ${formatCurrency(p.employment_insurance)}` : null,
+                  p.income_tax > 0 ? `소득세 ${formatCurrency(p.income_tax)}` : null,
+                ].filter(Boolean);
                 return (
                   <tr key={p.id} className="border-b hover:bg-muted/50">
                     <td className="py-2 px-2 text-center">
-                      {member ? (
-                        <button
-                          type="button"
-                          className="font-medium text-blue-600 hover:underline"
-                          onClick={() => handleMemberClick(member)}
-                        >
-                          {wr?.members?.name ?? "-"}
-                        </button>
-                      ) : (
-                        <div className="font-medium">{wr?.members?.name ?? "-"}</div>
-                      )}
+                      <div className="flex items-center justify-center gap-1 flex-wrap">
+                        {member ? (
+                          <button
+                            type="button"
+                            className="font-medium text-blue-600 hover:underline"
+                            onClick={() => handleMemberClick(member)}
+                          >
+                            {wr?.members?.name ?? "-"}
+                          </button>
+                        ) : (
+                          <span className="font-medium">{wr?.members?.name ?? "-"}</span>
+                        )}
+                        {memberId && consentsMap[memberId] && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1 py-0 border-amber-300 text-amber-600 cursor-pointer hover:bg-amber-50"
+                            onClick={() => handleConsentClick(memberId)}
+                          >
+                            동의서
+                          </Badge>
+                        )}
+                      </div>
                       {phone && (
                         <div className="text-xs text-muted-foreground">{phone}</div>
                       )}
@@ -303,13 +350,47 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls, currentM
                     <td className="py-2 px-2 hidden sm:table-cell text-center">
                       {wr?.work_date ? formatDate(wr.work_date) : "-"}
                     </td>
-                    <td className="py-2 px-2 hidden md:table-cell text-center">{p.work_hours + p.overtime_hours}h</td>
+                    <td className="py-2 px-2 hidden md:table-cell text-center">{(p.start_time ?? wr?.start_time) ? (p.start_time ?? wr?.start_time)!.slice(0, 5) : "-"}</td>
+                    <td className="py-2 px-2 hidden md:table-cell text-center">{(p.end_time ?? wr?.end_time) ? (p.end_time ?? wr?.end_time)!.slice(0, 5) : "-"}</td>
+                    <td className="py-2 px-2 hidden md:table-cell text-center">
+                      {wr?.wage_type ?? "-"}
+                    </td>
+                    <td className="py-2 px-2 hidden md:table-cell text-center">{totalHours}h</td>
+                    <td className="py-2 px-2 hidden lg:table-cell text-center">
+                      {p.total_deduction > 0 ? (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button type="button" className="hover:underline">
+                              {formatCurrency(p.total_deduction)}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-3 text-xs space-y-1" align="center">
+                            {deductions.map((d) => (
+                              <div key={d}>{d}</div>
+                            ))}
+                          </PopoverContent>
+                        </Popover>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </td>
                     <td className="py-2 px-2 hidden sm:table-cell text-center">{formatCurrency(p.gross_pay)}</td>
                     <td className="py-2 px-2 text-center font-medium">{formatCurrency(p.net_pay)}</td>
                     <td className="py-2 px-2 hidden sm:table-cell text-center">
                       <Badge
                         variant={p.status === "지급완료" ? "default" : "secondary"}
-                        className={p.status === "지급완료" ? "bg-emerald-600 hover:bg-emerald-600" : ""}
+                        className={`cursor-pointer ${p.status === "지급완료" ? "bg-emerald-600 hover:bg-emerald-500/80" : "hover:bg-secondary/80"}`}
+                        onClick={() => {
+                          setPayslipData({
+                            client_name: wr?.client_name ?? "-",
+                            work_date: wr?.work_date ?? "",
+                            start_time: p.start_time ?? wr?.start_time ?? "00:00",
+                            end_time: p.end_time ?? wr?.end_time ?? "00:00",
+                            hourly_wage: p.hourly_wage,
+                            net_pay: p.net_pay,
+                            payments: p as unknown as Payment,
+                          });
+                        }}
                       >
                         {p.status}
                       </Badge>
@@ -375,6 +456,57 @@ export function PaymentsTable({ payments, membersMap, profileImageUrls, currentM
         open={!!selectedMember}
         onOpenChange={(open) => { if (!open) setSelectedMember(null); }}
       />
+
+      <Dialog open={!!payslipData} onOpenChange={(open) => { if (!open) setPayslipData(null); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>급여지급 명세서</DialogTitle>
+          </DialogHeader>
+          {payslipData && <PayslipContent record={payslipData} />}
+        </DialogContent>
+      </Dialog>
+
+      {/* 친권자 동의서 보기 */}
+      <Dialog open={!!consentData} onOpenChange={(open) => { if (!open) setConsentData(null); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>친권자 (후견인) 동의서</DialogTitle>
+          </DialogHeader>
+          {consentData && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-semibold mb-2">■ 친권자 인적사항</h4>
+                <div className="space-y-1 text-sm">
+                  <div className="flex gap-2"><span className="text-muted-foreground w-20 shrink-0">성명</span><span>{consentData.consent.guardian_name}</span></div>
+                  <div className="flex gap-2"><span className="text-muted-foreground w-20 shrink-0">연락처</span><span>{consentData.consent.guardian_phone}</span></div>
+                  <div className="flex gap-2"><span className="text-muted-foreground w-20 shrink-0">관계</span><span>{consentData.consent.guardian_relationship}</span></div>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold mb-2">■ 연소근로자 인적사항</h4>
+                <div className="space-y-1 text-sm">
+                  <div className="flex gap-2"><span className="text-muted-foreground w-20 shrink-0">성명</span><span>{consentData.member.name ?? "-"}</span></div>
+                  <div className="flex gap-2"><span className="text-muted-foreground w-20 shrink-0">생년월일</span><span>{consentData.member.birth_date ?? "-"}</span></div>
+                  <div className="flex gap-2"><span className="text-muted-foreground w-20 shrink-0">연락처</span><span>{consentData.member.phone}</span></div>
+                </div>
+              </div>
+              <div className="rounded-lg border bg-slate-50 p-3 text-center text-sm">
+                본인은 위 연소근로자 <strong>{consentData.member.name ?? "___"}</strong>가
+                (주)휴멘드에서 제공하는 사업장에서 근로를 하는 것에 대하여 동의합니다.
+              </div>
+              <div className="text-center text-sm text-muted-foreground">
+                {new Date(consentData.consent.consented_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+              </div>
+              <div>
+                <p className="text-sm font-semibold mb-1">친권자 서명</p>
+                <div className="rounded-lg border bg-white p-2">
+                  <img src={consentData.consent.signature_url} alt="서명" className="h-20 mx-auto object-contain" />
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

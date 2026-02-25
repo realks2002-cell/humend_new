@@ -2,8 +2,7 @@
 
 export default function KakaoFloatingButton() {
   const handleClick = () => {
-    // TODO: 실제 카카오톡 채널 ID로 교체
-    window.open("https://pf.kakao.com/_placeholder", "_blank");
+    window.open("https://pf.kakao.com/_sPCKb/chat", "_blank");
   };
 
   return (

@@ -36,6 +36,7 @@ export interface SalaryResult {
   healthInsurance: number;
   longTermCare: number;
   employmentInsurance: number;
+  incomeTax: number;
   totalDeduction: number;
   netPay: number;
 }
@@ -91,7 +92,10 @@ export function calculateFullSalary(input: SalaryInput): SalaryResult {
   const longTermCare = Math.round(healthInsurance * RATES.longTermCare);
   const employmentInsurance = Math.round(grossPay * RATES.employmentInsurance);
 
-  const totalDeduction = nationalPension + healthInsurance + longTermCare + employmentInsurance;
+  // 소득세 3.3%
+  const incomeTax = Math.round(grossPay * 0.033);
+
+  const totalDeduction = nationalPension + healthInsurance + longTermCare + employmentInsurance + incomeTax;
   const netPay = grossPay - totalDeduction;
 
   return {
@@ -105,6 +109,7 @@ export function calculateFullSalary(input: SalaryInput): SalaryResult {
     healthInsurance,
     longTermCare,
     employmentInsurance,
+    incomeTax,
     totalDeduction,
     netPay,
   };

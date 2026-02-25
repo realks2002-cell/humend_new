@@ -161,7 +161,8 @@ export async function getClientsWithJobs() {
     .select(`*, job_postings(*)`)
     .eq("status", "active")
     .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("work_date", { referencedTable: "job_postings", ascending: true });
 
   if (error) {
     console.error("[getClientsWithJobs] error:", error.message);
@@ -185,6 +186,7 @@ export async function getClientDetail(clientId: string) {
     .from("clients")
     .select(`*, job_postings(*), client_photos(*)`)
     .eq("id", clientId)
+    .order("work_date", { referencedTable: "job_postings", ascending: true })
     .single();
 
   return data as ClientWithJobs | null;
@@ -398,7 +400,8 @@ export async function getAllClientsWithJobs() {
     .from("clients")
     .select(`*, job_postings(*)`)
     .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("work_date", { referencedTable: "job_postings", ascending: true });
 
   return (data ?? []) as ClientWithJobs[];
 }
@@ -585,7 +588,10 @@ export interface SignedContract {
   end_time: string;
   client_name: string;
   hourly_wage: number;
+  base_pay: number;
+  gross_pay: number;
   net_pay: number;
+  wage_type: string | null;
   signature_url: string | null;
   signed_at: string | null;
   members: { name: string | null; phone: string; rrn_front: string | null; rrn_back: string | null; region: string | null } | null;
@@ -600,7 +606,7 @@ export async function getSignedContracts(page = 1, pageSize = 50) {
   const { data, count } = await admin
     .from("work_records")
     .select(
-      "id, work_date, start_time, end_time, client_name, hourly_wage, net_pay, signature_url, signed_at, members(name, phone, rrn_front, rrn_back, region), payments(*)",
+      "id, work_date, start_time, end_time, client_name, hourly_wage, base_pay, gross_pay, net_pay, wage_type, signature_url, signed_at, members(name, phone, rrn_front, rrn_back, region), payments(*)",
       { count: "exact" }
     )
     .not("signature_url", "is", null)
@@ -725,4 +731,59 @@ export async function bulkUpdatePaymentStatus(ids: string[], status: string, pai
     .in("id", ids);
 
   return { error: error?.message ?? null };
+}
+
+// ========== 친권자 동의서 ==========
+
+export interface ParentalConsent {
+  id: string;
+  member_id: string;
+  guardian_name: string;
+  guardian_phone: string;
+  guardian_relationship: string;
+  signature_url: string;
+  status: string;
+  consented_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getMyParentalConsent(): Promise<ParentalConsent | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("parental_consents")
+    .select("*")
+    .eq("member_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (error) {
+    console.error("[getMyParentalConsent]", error.message);
+    return null;
+  }
+
+  return (data as ParentalConsent) ?? null;
+}
+
+export async function getParentalConsentsByMemberIds(memberIds: string[]): Promise<Record<string, ParentalConsent>> {
+  if (memberIds.length === 0) return {};
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("parental_consents")
+    .select("*")
+    .in("member_id", memberIds)
+    .eq("status", "active");
+
+  if (error) {
+    console.error("[getParentalConsentsByMemberIds]", error.message);
+    return {};
+  }
+
+  return Object.fromEntries(
+    ((data ?? []) as ParentalConsent[]).map((c) => [c.member_id, c])
+  );
 }

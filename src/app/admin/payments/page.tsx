@@ -2,9 +2,10 @@ export const dynamic = "force-dynamic";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { MonthSelector } from "@/components/ui/month-selector";
-import type { Member } from "@/lib/supabase/queries";
+import type { Member, ParentalConsent } from "@/lib/supabase/queries";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getPaymentsByMonthPaginated } from "./actions";
+import { getParentalConsentsByMemberIds } from "@/lib/supabase/queries";
 import { PaymentsTable } from "./payments-table";
 
 const PAGE_SIZE = 50;
@@ -27,13 +28,15 @@ export default async function PaymentsPage({ searchParams }: Props) {
   )];
 
   let membersMap: Record<string, Member> = {};
+  let consentsMap: Record<string, ParentalConsent> = {};
   if (memberIds.length > 0) {
     const admin = createAdminClient();
-    const { data } = await admin
-      .from("members")
-      .select("*")
-      .in("id", memberIds);
+    const [{ data }, consents] = await Promise.all([
+      admin.from("members").select("*").in("id", memberIds),
+      getParentalConsentsByMemberIds(memberIds),
+    ]);
     membersMap = Object.fromEntries((data ?? []).map((m: Member) => [m.id, m]));
+    consentsMap = consents;
   }
 
   return (
@@ -52,6 +55,7 @@ export default async function PaymentsPage({ searchParams }: Props) {
           <PaymentsTable
             payments={payments}
             membersMap={membersMap}
+            consentsMap={consentsMap}
             profileImageUrls={{}}
             currentMonth={currentMonth}
             page={page}

@@ -130,18 +130,18 @@ export function ContractViewModal({ record, worker, signatureUrl }: { record: Wo
                 <div className="mt-2 overflow-hidden rounded border">
                   <div className="flex border-b text-xs">
                     <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">급여 구분</div>
-                    <div className="px-2 py-1.5">시급</div>
+                    <div className="px-2 py-1.5">{record.wage_type === "일급" ? "일급" : "시급"}</div>
                   </div>
                   <div className="flex border-b text-xs">
-                    <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">기본시급</div>
-                    <div className="px-2 py-1.5">{display.hourly_wage.toLocaleString()} 원</div>
+                    <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">{record.wage_type === "일급" ? "기본일급" : "기본시급"}</div>
+                    <div className="px-2 py-1.5">{(record.wage_type === "일급" ? display.base_pay : display.hourly_wage).toLocaleString()} 원</div>
                   </div>
                   <div className="flex text-xs">
                     <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">급여산정</div>
-                    <div className="px-2 py-1.5">기본시급x(근무시간-공제시간)=1일임금</div>
+                    <div className="px-2 py-1.5">{record.wage_type === "일급" ? "기본일급=1일임금" : "기본시급x(근무시간-공제시간)=1일임금"}</div>
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-gray-500">※ 기본시급은 홈페이지에 공지된 시급이며 별도의 안내를 받으신분은 따로 기입후 지급됨</p>
+                <p className="mt-2 text-xs text-gray-500">※ {record.wage_type === "일급" ? "기본일급은 홈페이지에 공지된 일급이며" : "기본시급은 홈페이지에 공지된 시급이며"} 별도의 안내를 받으신분은 따로 기입후 지급됨</p>
                 <p className="text-xs text-gray-500">※ 임금은 근무 후 익 주 월~수요일 19시 지급이며 근무업장 사정에 따라 최대 7일, 최소 2시간 지연 입금 될 수 있다.</p>
               </div>
               <div>
@@ -151,17 +151,6 @@ export function ContractViewModal({ record, worker, signatureUrl }: { record: Wo
               <div>
                 <p className="font-semibold text-gray-900">7. 사회보험료 및 소득세</p>
                 <p>임금 지급시 근로자 부담금 (사회보험료와 소득세) 은 원천징수 후 근무자가 지정한 예금통장으로 지급한다.</p>
-                <div className="mt-2 overflow-hidden rounded border">
-                  <div className="flex border-b text-xs">
-                    <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">기본시급</div>
-                    <div className="px-2 py-1.5">{display.hourly_wage.toLocaleString()} 원</div>
-                  </div>
-                  <div className="flex text-xs">
-                    <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">급여산정</div>
-                    <div className="px-2 py-1.5">기본시급x(근무시간-공제시간)=1일임금</div>
-                  </div>
-                </div>
-                <p className="mt-2 text-xs text-gray-500">※ 임금 지급시 근로자 부담금 (사회보험료와 소득세) 은 원천징수 후 근무자가 지정한 예금통장으로 지급한다.</p>
               </div>
               <div>
                 <p className="font-semibold text-gray-900">8. 손해배상</p>

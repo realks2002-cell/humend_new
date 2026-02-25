@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/server";
-import type { Member } from "@/lib/supabase/queries";
+import type { Member, ParentalConsent } from "@/lib/supabase/queries";
 
 export interface PaymentRecord {
   id: string;
@@ -17,6 +17,7 @@ export interface PaymentRecord {
   health_insurance: number;
   long_term_care: number;
   employment_insurance: number;
+  income_tax: number;
   total_deduction: number;
   net_pay: number;
   status: string;
@@ -24,6 +25,8 @@ export interface PaymentRecord {
   paid_at: string | null;
   created_at: string;
   updated_at: string;
+  start_time: string | null;
+  end_time: string | null;
   // joined from work_records
   work_record?: {
     client_name: string;
@@ -136,4 +139,21 @@ export async function getMemberDetail(memberId: string): Promise<{ member: Membe
   }
 
   return { member, profileImageUrl };
+}
+
+export async function getConsentForMember(memberId: string): Promise<ParentalConsent | null> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("parental_consents")
+    .select("*")
+    .eq("member_id", memberId)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (error) {
+    console.error("[getConsentForMember]", error.message);
+    return null;
+  }
+
+  return (data as ParentalConsent) ?? null;
 }

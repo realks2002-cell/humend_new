@@ -1,7 +1,13 @@
+"use client";
+
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, Users, CheckCircle, Banknote, ArrowRight, Zap, Heart, Smartphone } from "lucide-react";
-import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { ClipboardList, Users, CheckCircle, Banknote, Zap, Heart, Smartphone, CheckCircle2, Loader2 } from "lucide-react";
+import { submitPartnerInquiry } from "./actions";
 
 const steps = [
   {
@@ -55,7 +61,37 @@ const values = [
   },
 ];
 
+function formatPhone(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
+
 export default function AboutPage() {
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [phone, setPhone] = useState("");
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const result = await submitPartnerInquiry(formData);
+
+    setLoading(false);
+
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setSubmitted(true);
+      setPhone("");
+    }
+  }
+
   return (
     <div className="animate-in fade-in duration-500">
       {/* Vision */}
@@ -123,24 +159,108 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="px-4 py-20 text-center">
-        <h2 className="text-2xl font-bold md:text-3xl">지금 시작하세요</h2>
-        <p className="mt-3 text-lg text-muted-foreground">
-          회원가입 후 바로 채용공고에 지원할 수 있습니다.
-        </p>
-        <div className="mt-8 flex justify-center gap-4">
-          <Link href="/signup">
-            <Button size="lg" className="h-12 px-8 text-base">
-              회원가입
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-          <Link href="/jobs">
-            <Button variant="outline" size="lg" className="h-12 px-8 text-base">
-              채용공고 보기
-            </Button>
-          </Link>
+      {/* Partner Inquiry Form */}
+      <section className="px-4 py-20">
+        <div className="mx-auto max-w-lg">
+          <h2 className="text-center text-2xl font-bold md:text-3xl">파트너 제휴문의</h2>
+          <p className="mt-3 text-center text-muted-foreground">
+            인력파견 서비스가 필요하신가요? 기업 맞춤형 인력 솔루션을 제안드립니다.
+          </p>
+
+          {submitted ? (
+            <div className="mt-10 flex flex-col items-center gap-3 rounded-2xl border bg-green-50 p-8 text-center">
+              <CheckCircle2 className="h-12 w-12 text-green-500" />
+              <p className="text-lg font-semibold">문의가 접수되었습니다</p>
+              <p className="text-sm text-muted-foreground">
+                담당자가 확인 후 빠르게 연락드리겠습니다.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => setSubmitted(false)}
+              >
+                추가 문의하기
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="company_name">
+                  회사명 <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="company_name"
+                  name="company_name"
+                  placeholder="회사명을 입력해주세요"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contact_person">
+                  담당자명 <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="contact_person"
+                  name="contact_person"
+                  placeholder="담당자명을 입력해주세요"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contact_phone">
+                  연락처 <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="contact_phone"
+                  name="contact_phone"
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="010-0000-0000"
+                  maxLength={13}
+                  value={phone}
+                  onChange={(e) => setPhone(formatPhone(e.target.value))}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contact_email">이메일</Label>
+                <Input
+                  id="contact_email"
+                  name="contact_email"
+                  type="email"
+                  placeholder="example@company.com"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="message">문의내용</Label>
+                <Textarea
+                  id="message"
+                  name="message"
+                  placeholder="문의내용을 입력해주세요"
+                  rows={4}
+                />
+              </div>
+
+              {error && (
+                <p className="text-sm text-red-500">{error}</p>
+              )}
+
+              <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    제출 중...
+                  </>
+                ) : (
+                  "제휴문의하기"
+                )}
+              </Button>
+            </form>
+          )}
         </div>
       </section>
     </div>

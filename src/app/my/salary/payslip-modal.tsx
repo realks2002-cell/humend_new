@@ -12,7 +12,18 @@ import {
 } from "@/components/ui/dialog";
 import { Receipt } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/utils/format";
-import { type WorkRecord } from "@/lib/supabase/queries";
+import { type Payment } from "@/lib/supabase/queries";
+
+/** PayslipModal이 필요로 하는 최소 필드 — WorkRecord, SignedContract 둘 다 호환 */
+export interface PayslipRecord {
+  client_name: string;
+  work_date: string;
+  start_time: string;
+  end_time: string;
+  hourly_wage: number;
+  net_pay: number;
+  payments?: Payment | null;
+}
 
 function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   return (
@@ -23,10 +34,97 @@ function Row({ label, value, bold }: { label: string; value: string; bold?: bool
   );
 }
 
-export function PayslipModal({ record }: { record: WorkRecord }) {
-  const [open, setOpen] = useState(false);
+/** 급여명세서 모달 내부 콘텐츠 (Dialog 없이) — 외부에서 제어할 때 사용 */
+export function PayslipContent({ record }: { record: PayslipRecord }) {
   const p = record.payments;
-  if (!p) return null;
+
+  return (
+    <>
+      {/* 근무 정보 */}
+      <div className="rounded-lg border bg-muted/30 p-3">
+        <p className="font-medium">{record.client_name}</p>
+        <p className="text-sm text-muted-foreground">
+          {formatDate(record.work_date)} {record.start_time.slice(0, 5)}~{record.end_time.slice(0, 5)}
+        </p>
+        {p && (
+          <div className="mt-1">
+            <Badge variant={p.status === "지급완료" ? "default" : "secondary"} className={`text-[10px] ${p.status === "지급완료" ? "bg-green-600 hover:bg-green-600" : ""}`}>
+              {p.status}
+            </Badge>
+          </div>
+        )}
+      </div>
+
+      {p ? (
+        <>
+          {/* 지급 내역 */}
+          <div className="space-y-0 border-b pb-2">
+            <h4 className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">지급 내역</h4>
+            <Row label="시급" value={formatCurrency(p.hourly_wage)} />
+            <Row label="근무시간" value={`${p.work_hours}시간`} />
+            {p.overtime_hours > 0 && (
+              <Row label="연장근무" value={`${p.overtime_hours}시간`} />
+            )}
+            <Row label="기본급" value={formatCurrency(p.base_pay)} />
+            {p.overtime_pay > 0 && (
+              <Row label="연장수당" value={formatCurrency(p.overtime_pay)} />
+            )}
+            {p.weekly_holiday_pay > 0 && (
+              <Row label="주휴수당" value={formatCurrency(p.weekly_holiday_pay)} />
+            )}
+            <div className="border-t pt-1">
+              <Row label="총 지급액" value={formatCurrency(p.gross_pay)} bold />
+            </div>
+          </div>
+
+          {/* 공제 내역 */}
+          <div className="space-y-0 border-b pb-2">
+            <h4 className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">공제 내역</h4>
+            {p.national_pension > 0 && <Row label="국민연금" value={`-${formatCurrency(p.national_pension)}`} />}
+            {p.health_insurance > 0 && <Row label="건강보험" value={`-${formatCurrency(p.health_insurance)}`} />}
+            {p.long_term_care > 0 && <Row label="장기요양" value={`-${formatCurrency(p.long_term_care)}`} />}
+            {p.employment_insurance > 0 && <Row label="고용보험" value={`-${formatCurrency(p.employment_insurance)}`} />}
+            {p.income_tax > 0 && <Row label="소득세" value={`-${formatCurrency(p.income_tax)}`} />}
+            <div className="border-t pt-1">
+              <Row label="공제 합계" value={`-${formatCurrency(p.total_deduction)}`} bold />
+            </div>
+          </div>
+
+          {/* 실수령액 */}
+          <div className="rounded-lg bg-primary/5 p-4 text-center">
+            <p className="text-sm text-muted-foreground">실수령액</p>
+            <p className="mt-1 text-2xl font-bold">{formatCurrency(p.net_pay)}</p>
+          </div>
+
+          {p.paid_at && (
+            <p className="text-center text-xs text-muted-foreground">
+              지급일: {formatDate(p.paid_at)}
+            </p>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="space-y-0 border-b pb-2">
+            <h4 className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">기본 정보</h4>
+            <Row label="시급" value={formatCurrency(record.hourly_wage)} />
+          </div>
+          <div className="rounded-lg bg-primary/5 p-4 text-center">
+            <p className="text-sm text-muted-foreground">실수령액</p>
+            <p className="mt-1 text-2xl font-bold">{formatCurrency(record.net_pay)}</p>
+          </div>
+          <p className="text-center text-xs text-muted-foreground">
+            상세 급여 내역이 아직 생성되지 않았습니다.
+          </p>
+        </>
+      )}
+    </>
+  );
+}
+
+/** 트리거 버튼 포함 급여명세서 모달 — 회원 급여 페이지에서 사용 */
+export function PayslipModal({ record }: { record: PayslipRecord }) {
+  const [open, setOpen] = useState(false);
+  if (!record.payments) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -40,74 +138,7 @@ export function PayslipModal({ record }: { record: WorkRecord }) {
         <DialogHeader>
           <DialogTitle>급여지급 명세서</DialogTitle>
         </DialogHeader>
-
-        {/* 근무 정보 */}
-        <div className="rounded-lg border bg-muted/30 p-3">
-          <p className="font-medium">{record.client_name}</p>
-          <p className="text-sm text-muted-foreground">
-            {formatDate(record.work_date)} {record.start_time.slice(0, 5)}~{record.end_time.slice(0, 5)}
-          </p>
-          <div className="mt-1">
-            <Badge variant={p.status === "지급완료" ? "default" : "secondary"} className={`text-[10px] ${p.status === "지급완료" ? "bg-green-600 hover:bg-green-600" : ""}`}>
-              {p.status}
-            </Badge>
-          </div>
-        </div>
-
-        {/* 지급 내역 */}
-        <div className="space-y-0 border-b pb-2">
-          <h4 className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">지급 내역</h4>
-          <Row label="시급" value={formatCurrency(p.hourly_wage)} />
-          <Row label="근무시간" value={`${p.work_hours}시간`} />
-          {p.overtime_hours > 0 && (
-            <Row label="연장근무" value={`${p.overtime_hours}시간`} />
-          )}
-          <Row label="기본급" value={formatCurrency(p.base_pay)} />
-          {p.overtime_pay > 0 && (
-            <Row label="연장수당" value={formatCurrency(p.overtime_pay)} />
-          )}
-          {p.weekly_holiday_pay > 0 && (
-            <Row label="주휴수당" value={formatCurrency(p.weekly_holiday_pay)} />
-          )}
-          <div className="border-t pt-1">
-            <Row label="총 지급액" value={formatCurrency(p.gross_pay)} bold />
-          </div>
-        </div>
-
-        {/* 공제 내역 */}
-        <div className="space-y-0 border-b pb-2">
-          <h4 className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">공제 내역</h4>
-          {p.national_pension > 0 && (
-            <Row label="국민연금" value={`-${formatCurrency(p.national_pension)}`} />
-          )}
-          {p.health_insurance > 0 && (
-            <Row label="건강보험" value={`-${formatCurrency(p.health_insurance)}`} />
-          )}
-          {p.long_term_care > 0 && (
-            <Row label="장기요양" value={`-${formatCurrency(p.long_term_care)}`} />
-          )}
-          {p.employment_insurance > 0 && (
-            <Row label="고용보험" value={`-${formatCurrency(p.employment_insurance)}`} />
-          )}
-          {p.income_tax > 0 && (
-            <Row label="소득세" value={`-${formatCurrency(p.income_tax)}`} />
-          )}
-          <div className="border-t pt-1">
-            <Row label="공제 합계" value={`-${formatCurrency(p.total_deduction)}`} bold />
-          </div>
-        </div>
-
-        {/* 실수령액 */}
-        <div className="rounded-lg bg-primary/5 p-4 text-center">
-          <p className="text-sm text-muted-foreground">실수령액</p>
-          <p className="mt-1 text-2xl font-bold">{formatCurrency(p.net_pay)}</p>
-        </div>
-
-        {p.paid_at && (
-          <p className="text-center text-xs text-muted-foreground">
-            지급일: {formatDate(p.paid_at)}
-          </p>
-        )}
+        <PayslipContent record={record} />
       </DialogContent>
     </Dialog>
   );

@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   ClipboardList, Calendar, ArrowRight,
-  Clock, Wallet, User,
+  Clock, Wallet, User, FileSignature,
 } from "lucide-react";
 import { ChangePasswordButton } from "./change-password-button";
 import { DeleteAccountButton } from "./delete-account-button";
-import { getMyProfile, getMyApplications } from "@/lib/supabase/queries";
+import { getMyProfile, getMyApplications, getMyParentalConsent } from "@/lib/supabase/queries";
 import { formatDate } from "@/lib/utils/format";
 
 const statusMap: Record<string, { label: string; variant: "secondary" | "default" | "destructive" }> = {
@@ -40,9 +40,10 @@ function getDdayColor(dateStr: string): string {
 }
 
 export default async function MyPage() {
-  const [profile, applications] = await Promise.all([
+  const [profile, applications, consent] = await Promise.all([
     getMyProfile(),
     getMyApplications(),
+    getMyParentalConsent(),
   ]);
 
   const profileImageUrl = profile?.profile_image_url ?? null;
@@ -66,10 +67,11 @@ export default async function MyPage() {
   const upcomingJobs = applications.filter((a) => a.status === "승인" && a.job_postings && a.job_postings.clients).slice(0, 3);
 
   const quickLinks = [
-    { href: "/my/resume", icon: User, label: "프로필 관리", desc: "회원정보 등록/수정", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
+    { href: "/my/resume", icon: User, label: "프로필관리", desc: "회원정보 등록/수정", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
+    { href: "/my/salary", icon: Wallet, label: "급여신청", desc: "계약체결 및 급여신청", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
     { href: "/my/applications", icon: ClipboardList, label: "근무신청 조회", desc: "내 지원 현황 확인", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
     { href: "/my/history", icon: Clock, label: "근무내역", desc: "월별 근무내역 조회", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
-    { href: "/my/salary", icon: Wallet, label: "급여신청", desc: "계약체결 및 급여신청", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
+    { href: "/my/consent", icon: FileSignature, label: "친권자 동의서/보건증", desc: consent ? "제출 완료" : "미성년자 동의서 작성", gradient: consent ? "from-emerald-500/5 to-green-500/5" : "from-amber-500/5 to-orange-500/5", iconBg: "", iconColor: consent ? "text-emerald-600" : "text-amber-600" },
   ];
 
   const statCards = [

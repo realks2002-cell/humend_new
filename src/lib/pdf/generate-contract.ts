@@ -43,9 +43,10 @@ export function generateContractPDF(record: WorkRecord) {
   // 급여 내역
   addSection(doc, "2. 급여 내역", y, left);
   y += 8;
-  addRow(doc, "시급", formatNum(record.hourly_wage) + "원", y, left);
+  const isDaily = record.wage_type === "일급";
+  addRow(doc, isDaily ? "일급" : "시급", formatNum(isDaily ? record.base_pay : record.hourly_wage) + "원", y, left);
   y += 6;
-  addRow(doc, "기본급", formatNum(record.base_pay) + "원", y, left);
+  addRow(doc, isDaily ? "기본일급" : "기본시급", formatNum(record.base_pay) + "원", y, left);
   y += 6;
   if (record.overtime_pay > 0) {
     addRow(doc, "연장수당 (1.5배)", formatNum(record.overtime_pay) + "원", y, left);

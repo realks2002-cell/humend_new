@@ -126,6 +126,7 @@ async function createWorkRecordFromApproval(applicationId: string) {
     health_insurance: salary.healthInsurance,
     long_term_care: salary.longTermCare,
     employment_insurance: salary.employmentInsurance,
+    income_tax: salary.incomeTax,
     total_deduction: salary.totalDeduction,
     net_pay: salary.netPay,
     status: "대기",

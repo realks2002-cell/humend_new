@@ -168,7 +168,7 @@ export default function HeroSection() {
 
         {/* Headline - per-character animation */}
         <h1
-          className="hero-headline mb-5 text-[clamp(2.6rem,6.5vw,5rem)] font-black leading-[1.2] text-indigo-950"
+          className="hero-headline mb-5 text-[clamp(2.34rem,6.5vw,5rem)] font-black leading-[1.2] text-indigo-950"
           style={{ letterSpacing: "-2px" }}
         >
           <span className="block overflow-hidden" ref={line1Ref} />

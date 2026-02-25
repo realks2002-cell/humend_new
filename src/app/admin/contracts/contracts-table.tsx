@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { PayslipContent } from "@/app/my/salary/payslip-modal";
 import { formatDate, formatCurrency } from "@/lib/utils/format";
 import { type SignedContract } from "@/lib/supabase/queries";
 import { ContractViewModal } from "./contract-view-modal";
@@ -25,6 +32,7 @@ export function ContractsTable({ records, page, pageSize, total }: ContractsTabl
   const [endDate, setEndDate] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<SignedContract | null>(null);
   const [selectedSignatureUrl, setSelectedSignatureUrl] = useState<string | null>(null);
+  const [payslipRecord, setPayslipRecord] = useState<SignedContract | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const totalPages = Math.ceil(total / pageSize);
@@ -98,6 +106,7 @@ export function ContractsTable({ records, page, pageSize, total }: ContractsTabl
             <col className="w-[120px] hidden sm:table-column" />
             <col className="w-[100px]" />
             <col className="w-[100px] hidden sm:table-column" />
+            <col className="w-[110px] hidden md:table-column" />
             <col className="w-[100px] hidden md:table-column" />
             <col className="w-[80px]" />
           </colgroup>
@@ -107,6 +116,7 @@ export function ContractsTable({ records, page, pageSize, total }: ContractsTabl
               <th className="px-2 py-3 hidden sm:table-cell">전화번호</th>
               <th className="px-2 py-3">고객사</th>
               <th className="px-2 py-3 hidden sm:table-cell">근무일</th>
+              <th className="px-2 py-3 hidden md:table-cell">시급/일급</th>
               <th className="px-2 py-3 hidden md:table-cell">실수령액</th>
               <th className="px-2 py-3">상태</th>
             </tr>
@@ -114,7 +124,7 @@ export function ContractsTable({ records, page, pageSize, total }: ContractsTabl
           <tbody className="divide-y">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
                   검색 결과가 없습니다.
                 </td>
               </tr>
@@ -141,9 +151,19 @@ export function ContractsTable({ records, page, pageSize, total }: ContractsTabl
                     <td className="px-2 py-3 hidden sm:table-cell text-center text-muted-foreground">{phone || "-"}</td>
                     <td className="px-2 py-3 text-center font-medium">{r.client_name}</td>
                     <td className="px-2 py-3 hidden sm:table-cell text-center text-muted-foreground">{formatDate(r.work_date)}</td>
+                    <td className="px-2 py-3 hidden md:table-cell text-center">
+                      <Badge variant="outline" className="text-xs font-medium">
+                        {r.wage_type ?? "-"}
+                      </Badge>
+                    </td>
                     <td className="px-2 py-3 hidden md:table-cell text-center font-semibold">{formatCurrency(r.net_pay)}</td>
                     <td className="px-2 py-3 text-center">
-                      <Badge className="bg-emerald-500/10 text-emerald-700 border-0 text-[10px] font-semibold">체결완료</Badge>
+                      <Badge
+                        className="bg-emerald-500/10 text-emerald-700 border-0 text-[10px] font-semibold cursor-pointer hover:bg-emerald-500/20 transition-colors"
+                        onClick={() => setPayslipRecord(r)}
+                      >
+                        체결완료
+                      </Badge>
                     </td>
                   </tr>
                 );
@@ -207,6 +227,16 @@ export function ContractsTable({ records, page, pageSize, total }: ContractsTabl
           onOpenChange={(open) => { if (!open) { setSelectedRecord(null); setSelectedSignatureUrl(null); } }}
         />
       )}
+
+      {/* 급여명세서 모달 */}
+      <Dialog open={!!payslipRecord} onOpenChange={(open) => { if (!open) setPayslipRecord(null); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>급여지급 명세서</DialogTitle>
+          </DialogHeader>
+          {payslipRecord && <PayslipContent record={payslipRecord} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

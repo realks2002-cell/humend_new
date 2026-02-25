@@ -176,7 +176,7 @@ export function DirectSalaryModal({ clients, worker, hasProfile }: { clients: Cl
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
-          className="w-full bg-[#1e2a5a] hover:bg-[#2a3a7a]"
+          className="w-full h-12 bg-[#1e2a5a] hover:bg-[#2a3a7a]"
           onClick={(e) => {
             if (!hasProfile) {
               e.preventDefault();
@@ -185,7 +185,7 @@ export function DirectSalaryModal({ clients, worker, hasProfile }: { clients: Cl
           }}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
-          별도 근무 급여신청
+          계약서/급여신청
         </Button>
       </DialogTrigger>
       <DialogContent showCloseButton={false} className={`${step === "form" ? "max-w-md" : "!max-w-4xl"} max-h-[90vh] overflow-y-auto p-0 gap-0`}>

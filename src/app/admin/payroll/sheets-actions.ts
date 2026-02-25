@@ -28,6 +28,16 @@ function decimalToTime(value: string): string {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
+// 시작/종료시간으로 휴게시간 자동 계산
+// 총 근무시간(종료-시작) >= 9시간 → 1시간, < 9시간 → 0.5시간
+function calculateBreakHours(startTime: string, endTime: string): number {
+  const start = parseFloat(timeToDecimal(startTime));
+  const end = parseFloat(timeToDecimal(endTime));
+  let total = end - start;
+  if (total < 0) total += 24; // 야간근무
+  return total >= 9 ? 1 : 0.5;
+}
+
 // RLS 우회용 admin 클라이언트
 function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -115,17 +125,17 @@ export async function exportPayrollToSheets(month: string) {
         r.work_date, // 근무일
         timeToDecimal(r.start_time as string), // 시작시간
         timeToDecimal(r.end_time as string), // 종료시간
-        Number(r.break_hours ?? 0), // 휴게시간
-        Number(r.work_hours ?? 0) + Number(r.overtime_hours ?? 0), // 근무시간
+        calculateBreakHours(r.start_time as string, r.end_time as string), // 휴게시간 (자동계산)
+        `=H${rowIdx}-G${rowIdx}-I${rowIdx}`, // 근무시간 (수식: 종료-시작-휴게)
         r.overtime_pay, // 초과수당
         r.weekly_holiday_pay, // 주휴수당
         r.hourly_wage, // 시급
         r.base_pay, // 기본급
         grossPay, // 총지급액
-        r.national_pension, // 국민연금
-        r.health_insurance, // 건강보험
-        r.long_term_care, // 장기요양
-        r.employment_insurance, // 고용보험
+        `=ROUND(O${rowIdx}*0.045)`, // 국민연금 (4.5%) - 수식
+        `=ROUND(O${rowIdx}*0.03545)`, // 건강보험 (3.545%) - 수식
+        `=ROUND(Q${rowIdx}*0.1281)`, // 장기요양 (건강보험의 12.81%) - 수식
+        `=ROUND(O${rowIdx}*0.009)`, // 고용보험 (0.9%) - 수식
         `=ROUND(O${rowIdx}*0.033)`, // 소득세 (3.3%) - 수식
         `=SUM(P${rowIdx}:T${rowIdx})`, // 공제합계 - 수식
         `=O${rowIdx}-U${rowIdx}`, // 실수령액 - 수식
@@ -133,7 +143,7 @@ export async function exportPayrollToSheets(month: string) {
         members?.account_number ?? "", // 계좌(번호)
         r.hourly_wage, // 원본_시급
         r.base_pay, // 원본_기본급
-        Number(r.work_hours ?? 0) + Number(r.overtime_hours ?? 0), // 원본_근무시간
+        Number(r.work_hours ?? 0) + Number(r.overtime_hours ?? 0), // 원본_근무시간 (DB값)
         r.overtime_pay, // 원본_초과수당
         r.weekly_holiday_pay, // 원본_주휴수당
         r.gross_pay, // 원본_총지급액
@@ -146,7 +156,7 @@ export async function exportPayrollToSheets(month: string) {
         r.net_pay, // 원본_실수령액
         timeToDecimal(r.start_time as string), // 원본_시작시간
         timeToDecimal(r.end_time as string), // 원본_종료시간
-        Number(r.break_hours ?? 0), // 원본_휴게시간
+        calculateBreakHours(r.start_time as string, r.end_time as string), // 원본_휴게시간 (자동계산)
         "N", // 확정여부 (항상 미확정으로 시작)
         (r.admin_memo ?? "") as string, // 메모
         r.wage_type ?? "시급", // 급여유형
@@ -298,6 +308,7 @@ export async function importPayrollFromSheets(month: string) {
         health_insurance: parseNum(row["건강보험"]),
         long_term_care: parseNum(row["장기요양"]),
         employment_insurance: parseNum(row["고용보험"]),
+        income_tax: parseNum(row["소득세"]),
         total_deduction: parseNum(row["공제합계"]),
         net_pay: parseNum(row["실수령액"]),
         start_time: decimalToTime(row["시작시간"]),
@@ -350,6 +361,7 @@ export async function importPayrollFromSheets(month: string) {
           health_insurance: paymentData.health_insurance,
           long_term_care: paymentData.long_term_care,
           employment_insurance: paymentData.employment_insurance,
+          income_tax: paymentData.income_tax,
           total_deduction: paymentData.total_deduction,
           net_pay: paymentData.net_pay,
           status: "대기",

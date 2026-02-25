@@ -379,6 +379,11 @@ export const PREPARATION_GUIDE_HTML = `<style>
           <div class="item-name">스타킹</div>
           <div class="item-sub">Stockings</div>
         </div>
+        <div class="item-card">
+          <span class="item-icon">💇‍♀️</span>
+          <div class="item-name">머리망 · 머리핀</div>
+          <div class="item-sub">Hair Net & Pins</div>
+        </div>
       </div>
     </div>
 
