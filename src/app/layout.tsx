@@ -6,6 +6,7 @@ import Footer from "@/components/layout/Footer";
 import NativeAppProvider from "@/components/layout/NativeAppProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,6 +53,7 @@ export default function RootLayout({
             <Toaster position="top-center" richColors />
           </TooltipProvider>
         </NativeAppProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
