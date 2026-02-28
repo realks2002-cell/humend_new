@@ -300,3 +300,10 @@
 .hero-cta-primary:hover {
   box-shadow: 0 12px 40px rgba(79,70,229,0.4) !important;
 }
+
+/* ── Mobile font size adjustment ── */
+@media (max-width: 640px) {
+  html {
+    font-size: calc(100% + 0.5pt);
+  }
+}
