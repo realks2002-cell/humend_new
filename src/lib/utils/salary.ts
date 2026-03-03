@@ -86,14 +86,17 @@ export function calculateFullSalary(input: SalaryInput): SalaryResult {
   // 총 급여
   const grossPay = basePay + overtimePay + weeklyHolidayPay;
 
+  // 10원 미만 절삭
+  const truncTen = (n: number) => Math.trunc(n / 10) * 10;
+
   // 4대보험 공제 계산
-  const nationalPension = Math.round(grossPay * RATES.nationalPension);
-  const healthInsurance = Math.round(grossPay * RATES.healthInsurance);
-  const longTermCare = Math.round(healthInsurance * RATES.longTermCare);
-  const employmentInsurance = Math.round(grossPay * RATES.employmentInsurance);
+  const nationalPension = truncTen(grossPay * RATES.nationalPension);
+  const healthInsurance = truncTen(grossPay * RATES.healthInsurance);
+  const longTermCare = truncTen(healthInsurance * RATES.longTermCare);
+  const employmentInsurance = truncTen(grossPay * RATES.employmentInsurance);
 
   // 소득세 3.3%
-  const incomeTax = Math.round(grossPay * 0.033);
+  const incomeTax = truncTen(grossPay * 0.033);
 
   const totalDeduction = nationalPension + healthInsurance + longTermCare + employmentInsurance + incomeTax;
   const netPay = grossPay - totalDeduction;

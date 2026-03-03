@@ -65,7 +65,7 @@ export async function exportPayrollToSheets(month: string) {
 
     const { data: records } = await supabase
       .from("work_records")
-      .select("*, members(name, phone, rrn_front, rrn_back, bank_name, account_number), payments(id)")
+      .select("*, members(name, phone, rrn_front, rrn_back, bank_name, account_number, account_holder), payments(id)")
       .gte("work_date", start)
       .lte("work_date", end)
       .not("signature_url", "is", null)
@@ -81,9 +81,9 @@ export async function exportPayrollToSheets(month: string) {
 
     const headers = [
       "상태", "이름", "전화번호", "주민번호", "고객사", "근무일",
-      "시작시간", "종료시간", "휴게시간", "근무시간", "초과수당", "주휴수당", "시급",
+      "시작시간", "종료시간", "휴게시간", "근무시간", "시급", "초과수당", "주휴수당",
       "기본급", "총지급액", "국민연금", "건강보험", "장기요양", "고용보험", "소득세", "공제합계",
-      "실수령액", "계좌(은행)", "계좌(번호)",
+      "실수령액", "계좌(은행)", "계좌(번호)", "예금주",
       "원본_시급", "원본_기본급", "원본_근무시간", "원본_초과수당", "원본_주휴수당",
       "원본_총지급액",
       "원본_국민연금", "원본_건강보험", "원본_장기요양", "원본_고용보험", "원본_소득세", "원본_공제합계",
@@ -96,7 +96,7 @@ export async function exportPayrollToSheets(month: string) {
       const rowIdx = i + 2; // 헤더=1행, 데이터는 2행부터
       const members = r.members as Record<string, unknown> | null;
       const grossPay = Number(r.gross_pay ?? 0);
-      const incomeTax = Math.round(grossPay * 0.033); // 소득세 3.3% (원본용)
+      const incomeTax = Math.trunc(grossPay * 0.033 / 10) * 10; // 소득세 3.3% (원본용, 10원 미만 절삭)
       const rawPhone = members?.phone ? String(members.phone).replace(/\D/g, "") : "";
       const phone = rawPhone.length === 11
         ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 7)}-${rawPhone.slice(7)}`
@@ -117,61 +117,62 @@ export async function exportPayrollToSheets(month: string) {
       const rrn = rrnFront && rrnBack ? `${rrnFront}-${rrnBack}` : rrnFront || "";
 
       return [
-        r.status, // 상태
-        members?.name ?? "", // 이름
-        `'${phone}`, // 전화번호 (텍스트 형식)
-        rrn ? `'${rrn}` : "", // 주민번호 (텍스트 형식)
-        r.client_name, // 고객사
-        r.work_date, // 근무일
-        timeToDecimal(r.start_time as string), // 시작시간
-        timeToDecimal(r.end_time as string), // 종료시간
-        calculateBreakHours(r.start_time as string, r.end_time as string), // 휴게시간 (자동계산)
-        `=H${rowIdx}-G${rowIdx}-I${rowIdx}`, // 근무시간 (수식: 종료-시작-휴게)
-        r.overtime_pay, // 초과수당
-        r.weekly_holiday_pay, // 주휴수당
-        r.hourly_wage, // 시급
-        r.base_pay, // 기본급
-        grossPay, // 총지급액
-        `=ROUND(O${rowIdx}*0.045)`, // 국민연금 (4.5%) - 수식
-        `=ROUND(O${rowIdx}*0.03545)`, // 건강보험 (3.545%) - 수식
-        `=ROUND(Q${rowIdx}*0.1281)`, // 장기요양 (건강보험의 12.81%) - 수식
-        `=ROUND(O${rowIdx}*0.009)`, // 고용보험 (0.9%) - 수식
-        `=ROUND(O${rowIdx}*0.033)`, // 소득세 (3.3%) - 수식
-        `=SUM(P${rowIdx}:T${rowIdx})`, // 공제합계 - 수식
-        `=O${rowIdx}-U${rowIdx}`, // 실수령액 - 수식
-        members?.bank_name ?? "", // 계좌(은행)
-        members?.account_number ?? "", // 계좌(번호)
-        r.hourly_wage, // 원본_시급
-        r.base_pay, // 원본_기본급
-        Number(r.work_hours ?? 0) + Number(r.overtime_hours ?? 0), // 원본_근무시간 (DB값)
-        r.overtime_pay, // 원본_초과수당
-        r.weekly_holiday_pay, // 원본_주휴수당
-        r.gross_pay, // 원본_총지급액
-        r.national_pension, // 원본_국민연금
-        r.health_insurance, // 원본_건강보험
-        r.long_term_care, // 원본_장기요양
-        r.employment_insurance, // 원본_고용보험
-        incomeTax, // 원본_소득세
-        totalDeduction, // 원본_공제합계
-        r.net_pay, // 원본_실수령액
-        timeToDecimal(r.start_time as string), // 원본_시작시간
-        timeToDecimal(r.end_time as string), // 원본_종료시간
-        calculateBreakHours(r.start_time as string, r.end_time as string), // 원본_휴게시간 (자동계산)
-        "N", // 확정여부 (항상 미확정으로 시작)
-        (r.admin_memo ?? "") as string, // 메모
-        r.wage_type ?? "시급", // 급여유형
+        r.status, // A: 상태
+        members?.name ?? "", // B: 이름
+        `'${phone}`, // C: 전화번호 (텍스트 형식)
+        rrn ? `'${rrn}` : "", // D: 주민번호 (텍스트 형식)
+        r.client_name, // E: 고객사
+        r.work_date, // F: 근무일
+        timeToDecimal(r.start_time as string), // G: 시작시간
+        timeToDecimal(r.end_time as string), // H: 종료시간
+        calculateBreakHours(r.start_time as string, r.end_time as string), // I: 휴게시간 (자동계산)
+        `=H${rowIdx}-G${rowIdx}-I${rowIdx}`, // J: 근무시간 (수식)
+        r.hourly_wage, // K: 시급 (이동: 편집 가능)
+        `=IF(J${rowIdx}>8,ROUND((J${rowIdx}-8)*K${rowIdx}*1.5),0)`, // L: 초과수당 (수식)
+        r.weekly_holiday_pay, // M: 주휴수당 (편집 가능)
+        `=ROUND(MIN(J${rowIdx},8)*K${rowIdx})`, // N: 기본급 (수식)
+        `=N${rowIdx}+L${rowIdx}+M${rowIdx}`, // O: 총지급액 (수식)
+        `=ROUNDDOWN(O${rowIdx}*0.045,-1)`, // P: 국민연금 (4.5%) - 수식
+        `=ROUNDDOWN(O${rowIdx}*0.03545,-1)`, // Q: 건강보험 (3.545%) - 수식
+        `=ROUNDDOWN(Q${rowIdx}*0.1281,-1)`, // R: 장기요양 (건강보험의 12.81%) - 수식
+        `=ROUNDDOWN(O${rowIdx}*0.009,-1)`, // S: 고용보험 (0.9%) - 수식
+        `=ROUNDDOWN(O${rowIdx}*0.033,-1)`, // T: 소득세 (3.3%) - 수식
+        `=SUM(P${rowIdx}:T${rowIdx})`, // U: 공제합계 - 수식
+        `=O${rowIdx}-U${rowIdx}`, // V: 실수령액 - 수식
+        members?.bank_name ?? "", // W: 계좌(은행)
+        members?.account_number ?? "", // X: 계좌(번호)
+        members?.account_holder ?? "", // Y: 예금주 (NEW)
+        r.hourly_wage, // Z: 원본_시급
+        r.base_pay, // AA: 원본_기본급
+        Number(r.work_hours ?? 0) + Number(r.overtime_hours ?? 0), // AB: 원본_근무시간 (DB값)
+        r.overtime_pay, // AC: 원본_초과수당
+        r.weekly_holiday_pay, // AD: 원본_주휴수당
+        r.gross_pay, // AE: 원본_총지급액
+        r.national_pension, // AF: 원본_국민연금
+        r.health_insurance, // AG: 원본_건강보험
+        r.long_term_care, // AH: 원본_장기요양
+        r.employment_insurance, // AI: 원본_고용보험
+        incomeTax, // AJ: 원본_소득세
+        totalDeduction, // AK: 원본_공제합계
+        r.net_pay, // AL: 원본_실수령액
+        timeToDecimal(r.start_time as string), // AM: 원본_시작시간
+        timeToDecimal(r.end_time as string), // AN: 원본_종료시간
+        calculateBreakHours(r.start_time as string, r.end_time as string), // AO: 원본_휴게시간 (자동계산)
+        "N", // AP: 확정여부 (항상 미확정으로 시작)
+        (r.admin_memo ?? "") as string, // AQ: 메모
+        r.wage_type ?? "시급", // AR: 급여유형
       ];
     });
 
     const result = await exportToSheets(sheetName, headers, rows as (string | number)[][]);
 
-    // 이름(B=1), 전화번호(C=2), 주민번호(D=3), 원본 컬럼(24~39) 편집 보호
-    await protectColumns(result.sheetId, [1, 2, 3, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39], rows.length);
+    // 이름(B=1), 전화번호(C=2), 주민번호(D=3), 예금주(Y=24), 원본 컬럼(25~40) 편집 보호
+    await protectColumns(result.sheetId, [1, 2, 3, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40], rows.length);
 
     // 급여 숫자 컬럼에 세자릿수 콤마 포맷 적용
     const salaryColumns = [
-      10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,  // 급여 항목
-      24, 25, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,   // 원본 급여 항목
+      10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,  // 급여 항목 (K~V)
+      25, 26, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,   // 원본 급여 항목 (Z~, +1 shift)
     ];
     await formatNumberColumns(result.sheetId, salaryColumns, rows.length);
 

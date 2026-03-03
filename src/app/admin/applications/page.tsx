@@ -53,14 +53,14 @@ export default async function AdminApplicationsPage() {
         <TabsContent value="approved" className="mt-4">
           <Card className="overflow-hidden py-0">
             <CardContent className="p-0">
-              <ApplicationTable apps={approved} membersMap={membersMap} profileImageUrls={{}} />
+              <ApplicationTable apps={approved} showActions membersMap={membersMap} profileImageUrls={{}} />
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="rejected" className="mt-4">
           <Card className="overflow-hidden py-0">
             <CardContent className="p-0">
-              <ApplicationTable apps={rejected} membersMap={membersMap} profileImageUrls={{}} />
+              <ApplicationTable apps={rejected} showActions membersMap={membersMap} profileImageUrls={{}} />
             </CardContent>
           </Card>
         </TabsContent>

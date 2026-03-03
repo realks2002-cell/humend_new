@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 export async function applyToJob(postingId: string) {
@@ -27,12 +27,26 @@ export async function applyToJob(postingId: string) {
   // 중복 지원 체크
   const { data: existing } = await supabase
     .from("applications")
-    .select("id")
+    .select("id, status")
     .eq("posting_id", postingId)
     .eq("member_id", user.id)
     .maybeSingle();
 
   if (existing) {
+    // 취소된 지원이면 → 상태를 "대기"로 되돌려 재지원 처리
+    if (existing.status === "취소") {
+      const admin = createAdminClient();
+      const { data: updated, error } = await admin
+        .from("applications")
+        .update({ status: "대기", applied_at: new Date().toISOString(), reviewed_at: null, admin_memo: null })
+        .eq("id", existing.id)
+        .select("id")
+        .single();
+      if (error || !updated) return { error: "지원 실패" };
+      revalidatePath("/jobs");
+      revalidatePath("/my/applications");
+      return { success: true };
+    }
     return { error: "이미 지원한 공고입니다." };
   }
 

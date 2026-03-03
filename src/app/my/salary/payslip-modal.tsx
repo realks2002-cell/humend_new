@@ -44,7 +44,7 @@ export function PayslipContent({ record }: { record: PayslipRecord }) {
       <div className="rounded-lg border bg-muted/30 p-3">
         <p className="font-medium">{record.client_name}</p>
         <p className="text-sm text-muted-foreground">
-          {formatDate(record.work_date)} {record.start_time.slice(0, 5)}~{record.end_time.slice(0, 5)}
+          {formatDate(record.work_date)} {(p?.start_time ?? record.start_time).slice(0, 5)}~{(p?.end_time ?? record.end_time).slice(0, 5)}
         </p>
         {p && (
           <div className="mt-1">

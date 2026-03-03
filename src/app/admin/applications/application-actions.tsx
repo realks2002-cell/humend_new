@@ -1,9 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Check, X, Loader2 } from "lucide-react";
+import { Check, X, Loader2, Undo2 } from "lucide-react";
 import { useState } from "react";
-import { approveApplication, rejectApplication } from "./actions";
+import { approveApplication, rejectApplication, revertApplicationToPending } from "./actions";
 
 export function ApplicationActions({ applicationId }: { applicationId: string }) {
   const [loading, setLoading] = useState(false);
@@ -53,5 +53,35 @@ export function ApplicationActions({ applicationId }: { applicationId: string })
         거절
       </Button>
     </div>
+  );
+}
+
+export function RevertAction({ applicationId }: { applicationId: string }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleRevert = async () => {
+    setLoading(true);
+    try {
+      await revertApplicationToPending(applicationId);
+    } catch (e) {
+      console.error("대기 복귀 실패:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
+  }
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={handleRevert}
+    >
+      <Undo2 className="mr-1 h-4 w-4" />
+      대기로
+    </Button>
   );
 }

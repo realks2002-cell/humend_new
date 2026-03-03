@@ -39,12 +39,25 @@ export async function applyToJob(postingId: string) {
 
   const { data: existing } = await supabase
     .from("applications")
-    .select("id")
+    .select("id, status")
     .eq("posting_id", postingId)
     .eq("member_id", user.id)
     .maybeSingle();
 
-  if (existing) return { error: "이미 지원한 공고입니다." };
+  if (existing) {
+    if (existing.status === "취소") {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/api/native/jobs/reapply`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ applicationId: existing.id }),
+      });
+      const result = await res.json();
+      if (result.error) return { error: result.error };
+      return { success: true };
+    }
+    return { error: "이미 지원한 공고입니다." };
+  }
 
   const { error } = await supabase.from("applications").insert({
     posting_id: postingId,

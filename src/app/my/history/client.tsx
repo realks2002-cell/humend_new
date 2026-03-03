@@ -95,10 +95,10 @@ function HistoryContent() {
       (profile as unknown as Record<string, unknown>)?.region as string ?? "",
   };
 
-  const totalGross = records.reduce((s, r) => s + r.gross_pay, 0);
-  const totalNet = records.reduce((s, r) => s + r.net_pay, 0);
+  const totalGross = records.reduce((s, r) => r.payments ? s + r.payments.gross_pay : s, 0);
+  const totalNet = records.reduce((s, r) => r.payments ? s + r.payments.net_pay : s, 0);
   const totalHours = records.reduce(
-    (s, r) => s + r.work_hours + r.overtime_hours,
+    (s, r) => r.payments ? s + r.payments.work_hours + r.payments.overtime_hours : s,
     0
   );
 
@@ -208,8 +208,8 @@ function HistoryContent() {
                         {r.client_name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDate(r.work_date)} {r.start_time.slice(0, 5)}~
-                        {r.end_time.slice(0, 5)}
+                        {formatDate(r.work_date)} {(p?.start_time ?? r.start_time).slice(0, 5)}~
+                        {(p?.end_time ?? r.end_time).slice(0, 5)}
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5">
                         <Badge

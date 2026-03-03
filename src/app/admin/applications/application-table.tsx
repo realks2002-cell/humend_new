@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDate, formatPhone, formatWage } from "@/lib/utils/format";
-import { ApplicationActions } from "./application-actions";
+import { ApplicationActions, RevertAction } from "./application-actions";
 import { MemberDetailModal } from "../members/member-detail-modal";
 import { batchApproveApplications } from "./actions";
 import { toast } from "sonner";
@@ -277,6 +277,7 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                   {showActions && (
                     <td className="px-2 py-3 text-center">
                       {app.status === "대기" && <ApplicationActions applicationId={app.id} />}
+                      {(app.status === "승인" || app.status === "거절") && <RevertAction applicationId={app.id} />}
                     </td>
                   )}
                 </tr>

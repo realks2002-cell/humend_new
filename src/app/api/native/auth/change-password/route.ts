@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { createClient as createBareClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
     error: authError,
   } = await admin.auth.getUser(token);
 
-  if (authError || !user) {
+  if (authError || !user || !user.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -31,24 +32,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // members 테이블에서 phone 조회
-  const { data: member } = await admin
-    .from("members")
-    .select("phone")
-    .eq("id", user.id)
-    .single();
+  // 현재 비밀번호 검증 (별도 클라이언트로 세션 충돌 방지)
+  const verifyClient = createBareClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
 
-  if (!member?.phone) {
-    return NextResponse.json(
-      { error: "회원 정보를 찾을 수 없습니다." },
-      { status: 404 },
-    );
-  }
-
-  // 현재 비밀번호 검증 (phone → email 변환 후 signInWithPassword)
-  const email = `${member.phone.replace(/[^0-9]/g, "")}@member.humend.hr`;
-  const { error: signInError } = await admin.auth.signInWithPassword({
-    email,
+  const { error: signInError } = await verifyClient.auth.signInWithPassword({
+    email: user.email,
     password: currentPassword || "",
   });
 

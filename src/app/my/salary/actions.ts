@@ -110,7 +110,7 @@ export async function submitDirectSalary(input: DirectSalaryInput) {
   const grossPay = basePay + overtimePay + weeklyHolidayPay;
 
   // 4대보험 공제
-  const employmentInsurance = Math.round(grossPay * 0.009);
+  const employmentInsurance = Math.trunc(grossPay * 0.009 / 10) * 10;
   const nationalPension = 0;
   const healthInsurance = 0;
   const longTermCare = 0;

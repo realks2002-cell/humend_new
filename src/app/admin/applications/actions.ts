@@ -137,6 +137,29 @@ async function createWorkRecordFromApproval(applicationId: string) {
   });
 }
 
+export async function revertApplicationToPending(applicationId: string) {
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from("applications")
+    .update({ status: "대기", reviewed_at: null })
+    .eq("id", applicationId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  // 승인 시 생성된 work_record 삭제
+  await supabase
+    .from("work_records")
+    .delete()
+    .eq("application_id", applicationId);
+
+  revalidatePath("/admin/applications");
+  revalidatePath("/admin/payroll");
+  return { error: null };
+}
+
 export async function batchApproveApplications(applicationIds: string[]) {
   let success = 0;
   let failed = 0;

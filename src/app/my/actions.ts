@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createClient as createBareClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 
 export async function changePassword(currentPassword: string, newPassword: string) {
@@ -13,26 +14,18 @@ export async function changePassword(currentPassword: string, newPassword: strin
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (!user || !user.email) {
     return { error: "로그인이 필요합니다." };
   }
 
-  // members 테이블에서 phone 조회
-  const admin = createAdminClient();
-  const { data: member } = await admin
-    .from("members")
-    .select("phone")
-    .eq("id", user.id)
-    .single();
+  // 현재 비밀번호 검증 (별도 클라이언트로 세션 쿠키 충돌 방지)
+  const verifyClient = createBareClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
 
-  if (!member?.phone) {
-    return { error: "회원 정보를 찾을 수 없습니다." };
-  }
-
-  // 현재 비밀번호 검증 (phone → email 변환 후 signInWithPassword)
-  const email = `${member.phone.replace(/[^0-9]/g, "")}@member.humend.hr`;
-  const { error: signInError } = await supabase.auth.signInWithPassword({
-    email,
+  const { error: signInError } = await verifyClient.auth.signInWithPassword({
+    email: user.email,
     password: currentPassword,
   });
 
@@ -41,6 +34,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
   }
 
   // 새 비밀번호 설정
+  const admin = createAdminClient();
   const { error: updateError } = await admin.auth.admin.updateUserById(user.id, {
     password: newPassword,
   });
