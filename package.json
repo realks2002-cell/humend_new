@@ -11,7 +11,9 @@
     "cap:open": "npx cap open android",
     "cap:run": "npx cap run android",
     "cap:build": "cd android && ./gradlew assembleDebug",
-    "cap:build:release": "cd android && ./gradlew bundleRelease"
+    "cap:build:release": "cd android && ./gradlew bundleRelease",
+    "build:capacitor": "bash scripts/build-capacitor.sh",
+    "cap:release": "npm run build:capacitor && cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.1.0",

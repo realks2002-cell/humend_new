@@ -8,9 +8,10 @@ import { formatMonth } from "@/lib/utils/format";
 interface Props {
   currentMonth: string;
   basePath: string;
+  compact?: boolean;
 }
 
-export function MonthSelector({ currentMonth, basePath }: Props) {
+export function MonthSelector({ currentMonth, basePath, compact }: Props) {
   const router = useRouter();
   const [year, month] = currentMonth.split("-").map(Number);
 
@@ -18,6 +19,22 @@ export function MonthSelector({ currentMonth, basePath }: Props) {
     const d = new Date(year, month - 1 + offset, 1);
     const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     router.push(`${basePath}?month=${m}`);
+  }
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-0.5">
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => navigate(-1)}>
+          <ChevronLeft className="h-3.5 w-3.5" />
+        </Button>
+        <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+          {`${month}월`}
+        </span>
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => navigate(1)}>
+          <ChevronRight className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    );
   }
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, Cell, Pie, PieChart, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, Cell, LabelList, Pie, PieChart, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -81,11 +81,20 @@ export function PayrollBarChart({ data }: PayrollBarChartProps) {
 
   return (
     <ChartContainer config={payrollChartConfig} className="h-[200px] w-full">
-      <BarChart data={data}>
+      <BarChart data={data} margin={{ top: 20 }}>
         <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
         <YAxis hide />
         <ChartTooltip content={<ChartTooltipContent />} />
-        <Bar dataKey="amount" fill="hsl(262, 83%, 58%)" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="amount" fill="hsl(262, 83%, 58%)" radius={[4, 4, 0, 0]}>
+          <LabelList
+            dataKey="amount"
+            position="top"
+            fontSize={13}
+            fill="hsl(262, 83%, 58%)"
+            fontWeight={600}
+            formatter={(v: number) => (v === 0 ? "" : `${Math.round(v / 10000)}만`)}
+          />
+        </Bar>
       </BarChart>
     </ChartContainer>
   );

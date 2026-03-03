@@ -27,8 +27,13 @@ export function usePushNotifications() {
 
       const platform = getPlatform();
 
+      // 네이티브 번들에서는 Bearer 토큰이 필요
+      const supabase = createClient();
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const accessToken = currentSession?.access_token;
+
       // 토큰 전송 — 401(인증 실패)이면 재시도
-      let result = await sendTokenToServer(token, platform);
+      let result = await sendTokenToServer(token, platform, accessToken);
       let retries = 0;
 
       while (result === 401 && retries < MAX_RETRIES && !cleanup) {
@@ -38,7 +43,7 @@ export function usePushNotifications() {
         );
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
         if (cleanup) return;
-        result = await sendTokenToServer(token, platform);
+        result = await sendTokenToServer(token, platform, accessToken);
       }
 
       if (result === true) {

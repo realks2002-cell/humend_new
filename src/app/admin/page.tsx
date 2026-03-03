@@ -10,10 +10,13 @@ import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { ApplicationPieChart, PayrollBarChart } from "./dashboard-charts";
 import { CollapsibleSection } from "./collapsible-section";
 import { getDashboardStats } from "./actions";
+import { MonthSelector } from "@/components/ui/month-selector";
 
-export default async function AdminDashboard() {
+export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
+  const { month: monthParam } = await searchParams;
   const now = new Date();
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const currentMonth = monthParam && /^\d{4}-\d{2}$/.test(monthParam) ? monthParam : defaultMonth;
 
   const [dashStats, applications] = await Promise.all([
     getDashboardStats(currentMonth),
@@ -23,20 +26,23 @@ export default async function AdminDashboard() {
   const pendingApps = applications.filter((a) => a.status === "대기");
   const recentActivity = applications.slice(0, 8);
 
+  const [selYear, selMonthNum] = currentMonth.split("-").map(Number);
   const barData = [];
-  for (let i = 3; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(selYear, selMonthNum - 1 - i, 1);
     const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const label = `${d.getMonth() + 1}월`;
-    barData.push({ label, amount: month === currentMonth ? dashStats.totalNet : 0 });
+    barData.push({ label, amount: dashStats.monthlyPayroll[month] ?? 0 });
   }
+
+  const payrollLabel = currentMonth === defaultMonth ? "이번 달 급여" : `${selMonthNum}월 급여`;
 
   const stats = [
     { label: "확정 근무", value: dashStats.workRecordCount, icon: CalendarCheck, gradient: "from-blue-600 to-indigo-600", lightBg: "from-blue-50 to-indigo-50" },
     { label: "미처리 지원", value: dashStats.pendingAppCount, icon: ClipboardList, gradient: "from-amber-500 to-orange-500", lightBg: "from-amber-50 to-orange-50" },
     { label: "등록 회원", value: dashStats.memberCount, icon: Users, gradient: "from-violet-500 to-purple-500", lightBg: "from-violet-50 to-purple-50" },
     { label: "제휴 고객사", value: dashStats.clientCount, icon: Building2, gradient: "from-emerald-500 to-teal-500", lightBg: "from-emerald-50 to-teal-50" },
-    { label: "이번 달 급여", value: formatCurrency(dashStats.totalNet), icon: Wallet, gradient: "from-rose-500 to-pink-500", lightBg: "from-rose-50 to-pink-50" },
+    { label: payrollLabel, value: formatCurrency(dashStats.totalNet), icon: Wallet, gradient: "from-rose-500 to-pink-500", lightBg: "from-rose-50 to-pink-50", hasMonthSelector: true },
   ];
 
   return (
@@ -53,8 +59,13 @@ export default async function AdminDashboard() {
             <div key={stat.label} className="group relative overflow-hidden rounded-2xl border bg-card p-4 transition-all duration-300 hover:shadow-md">
               <div className={`absolute inset-0 bg-gradient-to-br ${stat.lightBg} opacity-40`} />
               <div className="relative">
-                <div className={`inline-flex rounded-xl bg-gradient-to-br ${stat.gradient} p-2 shadow-sm`}>
-                  <stat.icon className="h-4 w-4 text-white" />
+                <div className="flex items-center justify-between">
+                  <div className={`inline-flex rounded-xl bg-gradient-to-br ${stat.gradient} p-2 shadow-sm`}>
+                    <stat.icon className="h-4 w-4 text-white" />
+                  </div>
+                  {"hasMonthSelector" in stat && stat.hasMonthSelector && (
+                    <MonthSelector currentMonth={currentMonth} basePath="/admin" compact />
+                  )}
                 </div>
                 <p className="mt-3 text-2xl font-bold tracking-tight">{stat.value}</p>
                 <p className="text-xs font-semibold text-foreground">{stat.label}</p>

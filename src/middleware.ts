@@ -20,6 +20,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Auth callback은 PKCE 간섭 방지를 위해 미들웨어 세션 처리 스킵
+  if (pathname.startsWith("/auth/callback")) {
+    return NextResponse.next();
+  }
+
   // 항상 Supabase 세션 갱신 (토큰 refresh) 수행
   let supabaseResponse = NextResponse.next({ request });
 

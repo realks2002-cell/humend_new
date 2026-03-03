@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -64,7 +65,7 @@ export default function Header() {
     >
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <Link href="/" className="flex items-center">
-          <span className="text-xl font-bold tracking-tight">Humend</span>
+          <Image src="/logo.png" alt="HUMAN:D" width={120} height={32} className="h-[16px] w-auto" priority />
         </Link>
 
         {/* Desktop Nav */}
@@ -113,7 +114,7 @@ export default function Header() {
           </SheetTrigger>
           <SheetContent side="right" className="w-64">
             <div className="flex items-center justify-between pb-4">
-              <span className="text-xl font-bold tracking-tight">Humend</span>
+              <Image src="/logo.png" alt="HUMAN:D" width={120} height={32} className="h-[16px] w-auto" />
               <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
                 <X className="h-5 w-5" />
               </Button>

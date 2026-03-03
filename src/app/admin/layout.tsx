@@ -54,7 +54,7 @@ export default function AdminLayout({
       <aside
         className={cn(
           "hidden shrink-0 border-r bg-gradient-to-b from-slate-50/80 to-white transition-all duration-200 md:block",
-          collapsed ? "w-16" : "w-56"
+          collapsed ? "w-16" : "w-44"
         )}
       >
         <div className="flex items-center justify-between px-4 py-4">

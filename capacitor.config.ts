@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Humend HR',
   webDir: 'out',
   server: {
-    url: 'https://humendhr.com',
+    // url 제거 — 로컬 번들에서 로드 (Google Play 심사 대응)
     allowNavigation: ['https://humendhr.com/*', 'https://*.supabase.co/*', 'https://accounts.google.com/*'],
   },
   android: {

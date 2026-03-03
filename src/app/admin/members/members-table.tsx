@@ -85,7 +85,7 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
     <>
       <div className="p-4 border-b">
         <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
           <Input
             placeholder="이름, 전화번호, 주민번호 검색"
             className="pl-9 rounded-xl"
@@ -112,7 +112,7 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
           <tbody>
             {members.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-2 py-8 text-center text-muted-foreground">
+                <td colSpan={8} className="px-2 py-8 text-center">
                   {search ? "검색 결과가 없습니다." : "등록된 회원이 없습니다."}
                 </td>
               </tr>
@@ -128,17 +128,17 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
                       {m.name ?? "-"}
                     </button>
                   </td>
-                  <td className="px-2 py-3 text-center text-muted-foreground">{formatPhone(m.phone)}</td>
-                  <td className="hidden px-2 py-3 text-center text-muted-foreground md:table-cell">
+                  <td className="px-2 py-3 text-center">{formatPhone(m.phone)}</td>
+                  <td className="hidden px-2 py-3 text-center md:table-cell">
                     {m.rrn_front ? `${m.rrn_front}-${m.rrn_back ?? ""}` : "-"}
                   </td>
-                  <td className="hidden px-2 py-3 text-center text-muted-foreground md:table-cell">
+                  <td className="hidden px-2 py-3 text-center md:table-cell">
                     {m.gender === "male" ? "남" : m.gender === "female" ? "여" : m.gender ?? "-"}
                   </td>
-                  <td className="hidden px-2 py-3 text-center text-muted-foreground md:table-cell">
+                  <td className="hidden px-2 py-3 text-center md:table-cell">
                     {m.work_days}일
                   </td>
-                  <td className="hidden px-2 py-3 text-center text-muted-foreground md:table-cell">
+                  <td className="hidden px-2 py-3 text-center md:table-cell">
                     {Math.round(m.work_hours * 10) / 10}시간
                   </td>
                   <td className="px-2 py-3 text-center">
@@ -185,7 +185,7 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
             }, [])
             .map((item, idx) =>
               item === "ellipsis" ? (
-                <span key={`e-${idx}`} className="px-1 text-xs text-muted-foreground">...</span>
+                <span key={`e-${idx}`} className="px-1 text-xs">...</span>
               ) : (
                 <Button
                   key={item}

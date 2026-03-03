@@ -137,6 +137,46 @@ async function createWorkRecordFromApproval(applicationId: string) {
   });
 }
 
+export async function batchApproveApplications(applicationIds: string[]) {
+  let success = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  const supabase = createAdminClient();
+
+  for (const id of applicationIds) {
+    try {
+      const { error } = await supabase
+        .from("applications")
+        .update({ status: "승인", reviewed_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) {
+        failed++;
+        errors.push(`${id}: ${error.message}`);
+        continue;
+      }
+
+      await createWorkRecordFromApproval(id);
+
+      getApprovalInfo(id)
+        .then((info) => {
+          if (info) notifyApplicationApproved(info.memberId, info.companyName, info.workDate);
+        })
+        .catch(console.error);
+
+      success++;
+    } catch (e) {
+      failed++;
+      errors.push(`${id}: ${e instanceof Error ? e.message : "unknown error"}`);
+    }
+  }
+
+  revalidatePath("/admin/applications");
+  revalidatePath("/admin/payroll");
+  return { success, failed, errors };
+}
+
 /** 푸시 알림용: 지원 정보 조회 */
 async function getApprovalInfo(applicationId: string) {
   const supabase = createAdminClient();

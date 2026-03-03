@@ -1,0 +1,262 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  ClipboardList, Calendar, ArrowRight,
+  Clock, Wallet, User, FileSignature, Loader2,
+} from "lucide-react";
+import { ChangePasswordButton } from "./change-password-button";
+import { DeleteAccountButton } from "./delete-account-button";
+import { getMyProfile, getMyApplications, getMyParentalConsent } from "@/lib/native-api/queries";
+import type { Member, Application, ParentalConsent } from "@/lib/native-api/queries";
+import { formatDate } from "@/lib/utils/format";
+import { AuthGuard } from "@/lib/native-api/auth-guard";
+
+const statusMap: Record<string, { label: string; variant: "secondary" | "default" | "destructive" }> = {
+  "대기": { label: "대기중", variant: "secondary" },
+  "승인": { label: "승인", variant: "default" },
+  "거절": { label: "거절", variant: "destructive" },
+};
+
+function getDday(dateStr: string): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const date = new Date(dateStr);
+  const diff = Math.floor((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff === 0) return "TODAY";
+  if (diff > 0) return `D-${diff}`;
+  return `D+${Math.abs(diff)}`;
+}
+
+function getDdayColor(dateStr: string): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const date = new Date(dateStr);
+  const diff = Math.floor((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff === 0) return "bg-emerald-500 text-white";
+  if (diff <= 3 && diff > 0) return "bg-amber-500 text-white";
+  return "bg-muted text-muted-foreground";
+}
+
+function MyPageContent() {
+  const [profile, setProfile] = useState<Member | null>(null);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [consent, setConsent] = useState<ParentalConsent | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      getMyProfile(),
+      getMyApplications(),
+      getMyParentalConsent(),
+    ])
+      .then(([p, a, c]) => {
+        setProfile(p);
+        setApplications(a);
+        setConsent(c);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const profileImageUrl = profile?.profile_image_url ?? null;
+
+  const pendingCount = applications.filter((a) => a.status === "대기").length;
+  const approvedCount = applications.filter((a) => a.status === "승인").length;
+  const hasResume = !!(profile?.name && profile?.bank_name);
+
+  const profileFields = [
+    profile?.name,
+    profile?.phone,
+    profile?.birth_date,
+    profile?.gender,
+    profile?.region,
+    profile?.bank_name,
+    profile?.account_holder,
+    profile?.account_number,
+  ];
+  const filledCount = profileFields.filter(Boolean).length;
+  const profilePercent = Math.round((filledCount / profileFields.length) * 100);
+  const upcomingJobs = applications.filter((a) => a.status === "승인" && a.job_postings && a.job_postings.clients).slice(0, 3);
+
+  const quickLinks = [
+    { href: "/my/resume", icon: User, label: "프로필관리", desc: "회원정보 등록/수정", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
+    { href: "/my/salary", icon: Wallet, label: "급여신청", desc: "계약체결 및 급여신청", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
+    { href: "/my/applications", icon: ClipboardList, label: "근무신청 조회", desc: "내 지원 현황 확인", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
+    { href: "/my/history", icon: Clock, label: "근무내역", desc: "월별 근무내역 조회", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
+    { href: "/my/consent", icon: FileSignature, label: "친권자 동의서/보건증", desc: consent ? "제출 완료" : "미성년자 동의서 작성", gradient: consent ? "from-emerald-500/5 to-green-500/5" : "from-amber-500/5 to-orange-500/5", iconBg: "", iconColor: consent ? "text-emerald-600" : "text-amber-600" },
+  ];
+
+  const statCards = [
+    { label: "근무지원 승인 대기중", value: pendingCount, icon: ClipboardList, gradient: "from-slate-600 to-gray-600" },
+    { label: "근무지원 승인됨", value: approvedCount, icon: Calendar, gradient: "from-slate-600 to-gray-600" },
+  ];
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8 space-y-8">
+      {/* Profile Hero Section */}
+      <div className="relative overflow-hidden rounded-[13px] border border-slate-300 bg-slate-50 p-6">
+        <div className="flex items-start gap-5">
+          {/* Avatar */}
+          <div className="relative">
+            <div className="flex h-[94px] w-[94px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white bg-gradient-to-br from-blue-100 to-indigo-100">
+              {profileImageUrl ? (
+                <img src={profileImageUrl} alt="프로필" className="h-full w-full object-cover" />
+              ) : (
+                <User className="h-8 w-8 text-blue-600" />
+              )}
+            </div>
+            {profilePercent === 100 && (
+              <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-emerald-500 shadow-sm">
+                <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <h1 className="mt-[10px] text-xl font-bold tracking-tight sm:text-2xl">
+              {profile?.name ? `${profile.name}님, 환영합니다` : "환영합니다"}
+            </h1>
+            <p className="mt-[10px] text-[15px] text-muted-foreground">오늘도 좋은 하루 되세요.</p>
+
+          </div>
+        </div>
+
+        {/* Profile Action Badges */}
+        <div className="relative mt-4 flex flex-wrap gap-2">
+          <ChangePasswordButton />
+          <DeleteAccountButton />
+        </div>
+      </div>
+
+      {/* Stat Cards */}
+      <Card className="overflow-hidden border-slate-300 shadow-none py-0">
+        <CardContent className="flex flex-col divide-y p-0 md:flex-row md:items-center md:divide-x md:divide-y-0">
+          {statCards.map((stat) => (
+            <div key={stat.label} className="flex flex-1 items-center gap-2.5 px-4 py-3">
+              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${stat.gradient}`}>
+                <stat.icon className="h-3.5 w-3.5 text-white" />
+              </div>
+              <p className="text-[12px] font-medium text-foreground/80 md:hidden">{stat.label}</p>
+              <p className="ml-auto text-[17px] font-bold leading-tight md:hidden">{stat.value}</p>
+              <div className="hidden md:block">
+                <p className="text-[17px] font-bold leading-tight">{stat.value}</p>
+                <p className="text-[12px] font-medium text-foreground/80">{stat.label}</p>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Quick Links */}
+      <div className="space-y-3">
+        <h2 className="text-[15px] font-semibold text-muted-foreground uppercase tracking-wider px-1">바로가기</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {quickLinks.map((link) => (
+            <Link key={link.href} href={link.href}>
+              <Card className="group relative overflow-hidden border border-slate-300 shadow-none transition-all duration-300 hover:-translate-y-0.5 py-0">
+                <div className={`absolute inset-0 bg-gradient-to-br ${link.gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
+                <CardContent className="relative flex items-center gap-4 p-4">
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${link.iconBg} transition-transform duration-300 group-hover:scale-110`}>
+                    <link.icon className={`h-5 w-5 ${link.iconColor}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-[15px]">{link.label}</p>
+                    <p className="text-[13px] text-muted-foreground truncate">{link.desc}</p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-all duration-300 group-hover:translate-x-1 group-hover:text-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Upcoming Jobs */}
+      {upcomingJobs.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-[15px] font-semibold text-muted-foreground uppercase tracking-wider">다가오는 근무</h2>
+            <Link href="/my/applications" className="text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors">
+              전체보기
+            </Link>
+
+          </div>
+          <Card className="overflow-hidden border-slate-300 shadow-none py-0">
+            <CardContent className="p-0 divide-y">
+              {upcomingJobs.map((app) => {
+                const s = statusMap[app.status] ?? statusMap["대기"];
+                return (
+                  <div
+                    key={app.id}
+                    className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-muted/30"
+                  >
+                    <span className={`shrink-0 rounded-lg px-2 py-1 text-[12px] font-bold ${getDdayColor(app.job_postings?.work_date ?? "")}`}>
+                      {getDday(app.job_postings?.work_date ?? "")}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[15px] font-semibold truncate">
+                        {app.job_postings?.clients?.company_name ?? "정보 없음"}
+                      </p>
+                      <p className="text-[13px] text-muted-foreground">
+                        {formatDate(app.job_postings?.work_date ?? "")}{" "}
+                        {app.job_postings?.start_time?.slice(0, 5) ?? ""}~{app.job_postings?.end_time?.slice(0, 5) ?? ""}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={s.variant}
+                      className={`shrink-0 text-[12px] ${s.variant === "default" ? "bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10" : ""}`}
+                    >
+                      {s.label}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Resume CTA */}
+      {!hasResume && (
+        <Card className="relative overflow-hidden border-slate-300 shadow-none py-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-orange-50/50 to-yellow-50/30" />
+          <CardContent className="relative py-8 text-center">
+            <p className="text-[19px] font-bold">회원정보를 등록해 주세요</p>
+            <p className="mx-auto mt-2 max-w-xs text-[15px] text-muted-foreground">
+              회원정보 등록 후 채용공고에 지원할 수 있습니다.
+            </p>
+            <Link href="/my/resume">
+              <Button className="mt-5 rounded-none bg-red-400 px-6 hover:bg-red-500 transition-all duration-300">
+                회원정보 등록하기
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+export default function MyPage() {
+  return (
+    <AuthGuard>
+      <MyPageContent />
+    </AuthGuard>
+  );
+}

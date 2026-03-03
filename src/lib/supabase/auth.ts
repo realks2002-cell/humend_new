@@ -124,6 +124,30 @@ export async function memberLogin(formData: FormData) {
   });
 
   if (error) {
+    // 구글 가입 회원 폴백: Auth 이메일이 @member.humend.hr이 아닌 경우
+    const { createAdminClient } = await import("@/lib/supabase/server");
+    const admin = createAdminClient();
+
+    const cleaned = phone.replace(/[^0-9]/g, "");
+    const { data: member } = await admin
+      .from("members")
+      .select("id")
+      .eq("phone", cleaned)
+      .maybeSingle();
+
+    if (member) {
+      const { data: authUser } = await admin.auth.admin.getUserById(member.id);
+      if (authUser?.user?.email && authUser.user.email !== email) {
+        const { error: retryError } = await supabase.auth.signInWithPassword({
+          email: authUser.user.email,
+          password,
+        });
+        if (!retryError) {
+          return { success: true };
+        }
+      }
+    }
+
     return { error: "전화번호 또는 비밀번호가 올바르지 않습니다." };
   }
 
@@ -168,12 +192,36 @@ export async function createGoogleMember(formData: FormData) {
   const cleanedPhone = phone.replace(/[^0-9]/g, "");
   const { data: phoneExists } = await admin
     .from("members")
-    .select("id")
+    .select("*")
     .eq("phone", cleanedPhone)
     .maybeSingle();
 
   if (phoneExists) {
-    return { error: "이미 등록된 전화번호입니다." };
+    const oldId = phoneExists.id;
+    const newId = user.id;
+
+    // 1. 새 member 먼저 생성 (FK 참조 대상 확보)
+    const { id: _, created_at: __, updated_at: ___, ...rest } = phoneExists;
+    await admin.from("members").insert({
+      ...rest,
+      id: newId,
+      name: name || phoneExists.name,
+    });
+
+    // 2. FK 테이블 마이그레이션 (member_id를 구글 user ID로 이전)
+    // payments는 work_records.member_id를 통해 자동 연결되므로 제외
+    await Promise.all([
+      admin.from("applications").update({ member_id: newId }).eq("member_id", oldId),
+      admin.from("work_records").update({ member_id: newId }).eq("member_id", oldId),
+      admin.from("device_tokens").update({ member_id: newId }).eq("member_id", oldId),
+      admin.from("parental_consents").update({ member_id: newId }).eq("member_id", oldId),
+    ]);
+
+    // 3. 기존 member 삭제 + auth user 삭제
+    await admin.from("members").delete().eq("id", oldId);
+    await admin.auth.admin.deleteUser(oldId);
+
+    return { success: true };
   }
 
   // members 테이블에 레코드 생성
