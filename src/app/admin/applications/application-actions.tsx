@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Check, X, Loader2, Undo2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { approveApplication, rejectApplication, revertApplicationToPending } from "./actions";
 
 export function ApplicationActions({ applicationId }: { applicationId: string }) {
@@ -11,7 +12,12 @@ export function ApplicationActions({ applicationId }: { applicationId: string })
   const handleApprove = async () => {
     setLoading(true);
     try {
-      await approveApplication(applicationId);
+      const result = await approveApplication(applicationId);
+      if (result?.headcountFull) {
+        toast.error("모집인원이 모두 차서 더 이상 승인할 수 없습니다.");
+      } else if (result?.error) {
+        toast.error(result.error);
+      }
     } catch (e) {
       console.error("승인 처리 실패:", e);
     } finally {

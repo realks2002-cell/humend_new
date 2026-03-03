@@ -20,6 +20,10 @@ export interface Client {
   gender_requirement: string | null;
   application_method: string | null;
   work_category: string | null;
+  client_type: 'daily' | 'fixed_term';
+  wage_type: string;
+  daily_wage: number;
+  monthly_wage: number;
   status: string;
 }
 
@@ -38,6 +42,11 @@ export interface JobPosting {
   end_time: string;
   headcount: number;
   status: string;
+  posting_type: 'daily' | 'fixed_term';
+  start_date: string | null;
+  end_date: string | null;
+  work_days: number[] | null;
+  title: string | null;
 }
 
 export interface ClientWithJobs extends Client {
@@ -59,10 +68,18 @@ export interface Application {
     start_time: string;
     end_time: string;
     headcount: number;
+    posting_type: 'daily' | 'fixed_term';
+    start_date: string | null;
+    end_date: string | null;
+    work_days: number[] | null;
+    title: string | null;
     clients: {
       company_name: string;
       location: string;
       hourly_wage: number;
+      wage_type?: string;
+      daily_wage?: number;
+      monthly_wage?: number;
     };
   };
 }
@@ -83,6 +100,11 @@ export interface Member {
   rrn_front: string | null;
   rrn_back: string | null;
   email: string | null;
+  height: number | null;
+  password: string | null;
+  health_cert_date: string | null;
+  health_cert_image_url: string | null;
+  admin_memo: string | null;
   status: string;
   created_at: string;
 }
@@ -240,7 +262,7 @@ export async function getMyApplications() {
 
   const { data } = await supabase
     .from("applications")
-    .select(`*, job_postings(*, clients(company_name, location, hourly_wage))`)
+    .select(`*, job_postings(*, clients(company_name, location, hourly_wage, wage_type, daily_wage, monthly_wage))`)
     .eq("member_id", user.id)
     .order("applied_at", { ascending: false });
 
@@ -378,7 +400,7 @@ export async function getAllApplications() {
   const admin = createAdminClient();
   const { data } = await admin
     .from("applications")
-    .select(`*, job_postings(*, clients(company_name, location, hourly_wage)), members(name, phone)`)
+    .select(`*, job_postings(*, clients(company_name, location, hourly_wage, wage_type, daily_wage, monthly_wage)), members(name, phone)`)
     .order("applied_at", { ascending: false });
 
   return (data ?? []) as (Application & { members: { name: string; phone: string } })[];
@@ -480,13 +502,14 @@ export async function getAllWorkRecords(filters?: { month?: string; status?: str
   let query = admin
     .from("work_records")
     .select("*, members(name, phone, bank_name, account_number, rrn_front, rrn_back, region), payments(*)")
-    .order("work_date", { ascending: false });
+    .order("signed_at", { ascending: false });
 
   if (filters?.month) {
-    const start = `${filters.month}-01`;
-    const endDate = new Date(Number(filters.month.split("-")[0]), Number(filters.month.split("-")[1]), 0);
-    const end = `${filters.month}-${String(endDate.getDate()).padStart(2, "0")}`;
-    query = query.gte("work_date", start).lte("work_date", end);
+    const [yearStr, monthStr] = filters.month.split("-");
+    const startTs = `${filters.month}-01T00:00:00`;
+    const nextMonth = new Date(Number(yearStr), Number(monthStr), 1);
+    const endTs = nextMonth.toISOString();
+    query = query.gte("signed_at", startTs).lt("signed_at", endTs);
   }
 
   if (filters?.status) {
@@ -540,10 +563,11 @@ export async function getWorkRecordStats(month?: string, pendingOnly?: boolean) 
   let query = supabase.from("work_records").select("status, gross_pay, net_pay, signature_url, payments(gross_pay, net_pay, status)");
 
   if (month) {
-    const start = `${month}-01`;
-    const endDate = new Date(Number(month.split("-")[0]), Number(month.split("-")[1]), 0);
-    const end = `${month}-${String(endDate.getDate()).padStart(2, "0")}`;
-    query = query.gte("work_date", start).lte("work_date", end);
+    const [yearStr, monthStr] = month.split("-");
+    const startTs = `${month}-01T00:00:00`;
+    const nextMonth = new Date(Number(yearStr), Number(monthStr), 1);
+    const endTs = nextMonth.toISOString();
+    query = query.gte("signed_at", startTs).lt("signed_at", endTs);
   }
 
   // 서명 완료된 건만

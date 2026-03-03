@@ -5,6 +5,7 @@ import { Building2 } from "lucide-react";
 import { CreateClientButton } from "./client-form";
 import { DraggableClientList } from "./client-list";
 import { createAdminClient } from "@/lib/supabase/server";
+import { ClientTabs } from "./client-tabs";
 
 async function getAllClientsWithPhotos() {
   const admin = createAdminClient();
@@ -18,6 +19,9 @@ async function getAllClientsWithPhotos() {
 
 export default async function AdminClientsPage() {
   const clients = await getAllClientsWithPhotos();
+
+  const dailyClients = clients.filter((c) => c.client_type !== "fixed_term");
+  const fixedTermClients = clients.filter((c) => c.client_type === "fixed_term");
 
   return (
     <div className="p-6 space-y-6">
@@ -37,17 +41,12 @@ export default async function AdminClientsPage() {
         </div>
       </div>
 
-      {clients.length === 0 ? (
-        <div className="rounded-2xl border bg-card py-20 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-            <Building2 className="h-7 w-7 text-muted-foreground/50" />
-          </div>
-          <p className="font-medium">등록된 고객사가 없습니다.</p>
-          <p className="mt-1 text-xs text-muted-foreground">위의 버튼으로 고객사를 등록하세요.</p>
-        </div>
-      ) : (
-        <DraggableClientList clients={clients} />
-      )}
+      <ClientTabs
+        dailyClients={dailyClients}
+        fixedTermClients={fixedTermClients}
+        dailyCount={dailyClients.length}
+        fixedTermCount={fixedTermClients.length}
+      />
     </div>
   );
 }

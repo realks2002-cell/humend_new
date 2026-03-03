@@ -32,7 +32,7 @@ export function PayrollTable({ records, month }: PayrollTableProps) {
 
   const filtered = useMemo(() => {
     const list = records.filter((r) => {
-      const d = r.work_date;
+      const d = r.signed_at?.slice(0, 10) ?? "";
       if (startDate && d < startDate) return false;
       if (endDate && d > endDate) return false;
       if (!search) return true;
@@ -45,8 +45,8 @@ export function PayrollTable({ records, month }: PayrollTableProps) {
         r.client_name.includes(search)
       );
     });
-    // 근무일(work_date) 최신순 정렬
-    list.sort((a, b) => (b.work_date ?? "").localeCompare(a.work_date ?? ""));
+    // 서명일(signed_at) 최신순 정렬
+    list.sort((a, b) => (b.signed_at ?? "").localeCompare(a.signed_at ?? ""));
     return list;
   }, [records, search, startDate, endDate]);
 
@@ -179,11 +179,11 @@ export function PayrollTable({ records, month }: PayrollTableProps) {
                         </div>
                       </button>
                       {phone && (
-                        <div className="text-xs text-muted-foreground">{phone}</div>
+                        <div className="text-xs">{phone}</div>
                       )}
                     </td>
                     <td className="py-2 px-2 text-center">{r.client_name}</td>
-                    <td className="py-2 px-2 hidden sm:table-cell text-center whitespace-nowrap text-xs text-muted-foreground">
+                    <td className="py-2 px-2 hidden sm:table-cell text-center whitespace-nowrap text-xs">
                       {r.work_date ? r.work_date.slice(0, 10) : "-"}
                     </td>
                     <td className="py-2 px-2 hidden sm:table-cell text-center whitespace-nowrap">{r.start_time?.slice(0, 5)}</td>
@@ -195,7 +195,7 @@ export function PayrollTable({ records, month }: PayrollTableProps) {
                     </td>
                     <td className="py-2 px-2 hidden sm:table-cell text-center">{formatCurrency(r.hourly_wage)}</td>
                     <td className="py-2 px-2 hidden md:table-cell text-center">{r.work_hours + r.overtime_hours}h</td>
-                    <td className="py-2 px-2 hidden sm:table-cell text-center text-xs text-muted-foreground whitespace-nowrap">
+                    <td className="py-2 px-2 hidden sm:table-cell text-center text-xs whitespace-nowrap">
                       {r.total_deduction > 0 ? formatCurrency(r.total_deduction) : "-"}
                     </td>
                     <td className="py-2 px-2 hidden sm:table-cell text-center">

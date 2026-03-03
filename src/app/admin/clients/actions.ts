@@ -27,6 +27,10 @@ export async function createClientAction(formData: FormData) {
     gender_requirement: (formData.get("gender_requirement") as string) || null,
     application_method: (formData.get("application_method") as string) || null,
     work_category: (formData.get("work_category") as string) || null,
+    client_type: (formData.get("client_type") as string) || "daily",
+    wage_type: (formData.get("wage_type") as string) || "시급",
+    daily_wage: Number(formData.get("daily_wage")) || 0,
+    monthly_wage: Number(formData.get("monthly_wage")) || 0,
   };
 
   const { data, error } = await supabase
@@ -112,6 +116,10 @@ export async function updateClientAction(clientId: string, formData: FormData) {
     gender_requirement: (formData.get("gender_requirement") as string) || null,
     application_method: (formData.get("application_method") as string) || null,
     work_category: (formData.get("work_category") as string) || null,
+    client_type: (formData.get("client_type") as string) || "daily",
+    wage_type: (formData.get("wage_type") as string) || "시급",
+    daily_wage: Number(formData.get("daily_wage")) || 0,
+    monthly_wage: Number(formData.get("monthly_wage")) || 0,
   };
 
   const { error } = await admin

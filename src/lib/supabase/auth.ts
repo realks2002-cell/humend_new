@@ -76,6 +76,7 @@ export async function memberSignup(formData: FormData) {
         id: signInData.user.id,
         phone: phone.replace(/[^0-9]/g, ""),
         name,
+        password,
       });
 
       if (recoverError) {
@@ -98,6 +99,7 @@ export async function memberSignup(formData: FormData) {
     id: data.user.id,
     phone: phone.replace(/[^0-9]/g, ""),
     name,
+    password,
   });
 
   if (memberError) {
@@ -310,6 +312,9 @@ export async function resetPasswordByEmail(email: string) {
     console.error("[resetPasswordByEmail] error:", error.message);
     return { error: "비밀번호 재설정에 실패했습니다." };
   }
+
+  // members 테이블에도 임시 비밀번호 저장 (관리자 조회용)
+  await admin.from("members").update({ password: tempPassword }).eq("id", member.id);
 
   // 이메일로 임시 비밀번호 발송
   try {

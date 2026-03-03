@@ -63,5 +63,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // members 테이블에도 평문 비밀번호 저장 (관리자 조회용)
+  await admin.from("members").update({ password: newPassword }).eq("id", user.id);
+
   return NextResponse.json({ success: true });
 }

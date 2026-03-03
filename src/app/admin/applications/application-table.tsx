@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatDate, formatPhone, formatWage } from "@/lib/utils/format";
+import { formatDate, formatDateRange, formatWorkDays, formatPhone, formatClientWage } from "@/lib/utils/format";
 import { ApplicationActions, RevertAction } from "./application-actions";
 import { MemberDetailModal } from "../members/member-detail-modal";
 import { batchApproveApplications } from "./actions";
@@ -39,9 +39,17 @@ interface AppItem {
     work_date: string;
     start_time: string;
     end_time: string;
+    posting_type?: 'daily' | 'fixed_term';
+    start_date?: string | null;
+    end_date?: string | null;
+    work_days?: number[] | null;
+    title?: string | null;
     clients: {
       company_name: string;
       hourly_wage: number;
+      wage_type?: string;
+      daily_wage?: number;
+      monthly_wage?: number;
     };
   };
 }
@@ -119,7 +127,9 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
     setBatchLoading(true);
     try {
       const result = await batchApproveApplications(ids);
-      if (result.failed === 0) {
+      if (result.skippedFull > 0) {
+        toast.warning(`성공 ${result.success}건 / 모집인원 초과 ${result.skippedFull}건`);
+      } else if (result.failed === 0) {
         toast.success(`${result.success}건 일괄 승인 완료`);
       } else {
         toast.warning(`성공 ${result.success}건 / 실패 ${result.failed}건`);
@@ -197,9 +207,9 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
             {showActions && <col className="w-[40px]" />}
             <col className="w-[90px]" />
             <col className="w-[90px]" />
+            <col className="w-[90px]" />
             <col className="w-[70px]" />
             <col className="w-[120px] hidden md:table-column" />
-            <col className="w-[90px]" />
             <col className="w-[80px] hidden md:table-column" />
             <col className="w-[70px]" />
             {showActions && <col className="w-[80px]" />}
@@ -215,12 +225,12 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                   />
                 </th>
               )}
+              <th className="px-2 py-3 font-medium">근무지</th>
               <th className="px-2 py-3 font-medium">근무일</th>
               <th className="px-2 py-3 font-medium">근무시간</th>
               <th className="px-2 py-3 font-medium">이름</th>
               <th className="hidden px-2 py-3 font-medium md:table-cell">전화번호</th>
-              <th className="px-2 py-3 font-medium">근무지</th>
-              <th className="hidden px-2 py-3 font-medium md:table-cell">시급</th>
+              <th className="hidden px-2 py-3 font-medium md:table-cell">급여</th>
               <th className="px-2 py-3 font-medium">상태</th>
               {showActions && <th className="px-2 py-3 font-medium">처리</th>}
             </tr>
@@ -245,7 +255,17 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                       ) : null}
                     </td>
                   )}
-                  <td className="px-2 py-3 text-center whitespace-nowrap">{formatDate(app.job_postings.work_date)}</td>
+                  <td className="px-2 py-3 text-center">{app.job_postings.clients.company_name}</td>
+                  <td className="px-2 py-3 text-center whitespace-nowrap">
+                    {app.job_postings.posting_type === "fixed_term" && app.job_postings.start_date && app.job_postings.end_date ? (
+                      <span className="flex flex-col items-center gap-0.5">
+                        <Badge className="bg-violet-500/15 text-violet-700 border-0 text-[9px] font-semibold">기간제</Badge>
+                        <span className="text-[11px]">{formatDateRange(app.job_postings.start_date, app.job_postings.end_date)}</span>
+                      </span>
+                    ) : (
+                      formatDate(app.job_postings.work_date)
+                    )}
+                  </td>
                   <td className="px-2 py-3 text-center whitespace-nowrap">
                     {app.job_postings.start_time?.slice(0, 5)}~{app.job_postings.end_time?.slice(0, 5)}
                   </td>
@@ -265,9 +285,8 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                   <td className="hidden px-2 py-3 text-center text-muted-foreground md:table-cell">
                     {app.members ? formatPhone(app.members.phone) : "-"}
                   </td>
-                  <td className="px-2 py-3 text-center">{app.job_postings.clients.company_name}</td>
                   <td className="hidden px-2 py-3 text-center text-muted-foreground md:table-cell">
-                    {formatWage(app.job_postings.clients.hourly_wage)}
+                    {formatClientWage(app.job_postings.clients)}
                   </td>
                   <td className="px-2 py-3 text-center">
                     <Badge variant={config.variant} className="text-xs">

@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getClientsWithJobs } from "@/lib/supabase/queries";
-import { formatDate, formatWage } from "@/lib/utils/format";
-import { Users, Building2, Handshake, ArrowRight, Zap, MapPin, Shield, Briefcase, Search } from "lucide-react";
+import { formatDate, formatDateRange, formatWorkDays, formatTime, formatClientWage } from "@/lib/utils/format";
+import { Users, Building2, Handshake, ArrowRight, Zap, MapPin, Shield, Briefcase, Search, Calendar, Clock } from "lucide-react";
 import { CountUp } from "@/components/ui/count-up";
 import HeroSection from "@/components/home/HeroSection";
 import KakaoFloatingButton from "@/components/home/KakaoFloatingButton";
@@ -41,6 +41,22 @@ const services = [
 export default async function Home() {
   const clientsWithJobs = await getClientsWithJobs();
 
+  // 일반(daily) 공고가 있는 고객사
+  const dailyClients = clientsWithJobs
+    .map((c) => ({
+      ...c,
+      job_postings: c.job_postings.filter((j) => j.posting_type !== "fixed_term"),
+    }))
+    .filter((c) => c.job_postings.length > 0);
+
+  // 기간제(fixed_term) 공고가 있는 고객사
+  const fixedTermClients = clientsWithJobs
+    .map((c) => ({
+      ...c,
+      job_postings: c.job_postings.filter((j) => j.posting_type === "fixed_term"),
+    }))
+    .filter((c) => c.job_postings.length > 0);
+
   return (
     <div className="animate-in fade-in duration-500">
       <KakaoFloatingButton />
@@ -48,12 +64,12 @@ export default async function Home() {
       {/* Hero */}
       <HeroSection />
 
-      {/* Recent Jobs Preview */}
+      {/* 알바공고 (일별) */}
       <section className="bg-muted/20 px-4 py-20">
         <div className="mx-auto max-w-5xl">
           <div className="mb-10 flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold md:text-3xl">최근 알바공고</h2>
+              <h2 className="text-2xl font-bold md:text-3xl">알바공고</h2>
               <p className="mt-1 text-muted-foreground">지금 바로 지원할 수 있는 공고</p>
             </div>
             <Link href="/jobs">
@@ -63,12 +79,12 @@ export default async function Home() {
               </Button>
             </Link>
           </div>
-          {clientsWithJobs.length === 0 ? (
+          {dailyClients.length === 0 ? (
             <Card className="py-16 text-center">
               <CardContent>
                 <Search className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
                 <p className="text-lg font-medium text-muted-foreground">
-                  현재 등록된 채용공고가 없습니다
+                  현재 등록된 알바공고가 없습니다
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground/70">
                   새로운 공고가 등록되면 여기에 표시됩니다
@@ -77,7 +93,7 @@ export default async function Home() {
             </Card>
           ) : (
             <div className="grid gap-6 grid-cols-2 md:grid-cols-4">
-              {clientsWithJobs.map((client) => (
+              {dailyClients.map((client) => (
                 <Link key={client.id} href={`/jobs/${client.id}`}>
                   <Card className="group overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg py-0 rounded-[10px]">
                     <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/5 to-primary/15">
@@ -101,7 +117,7 @@ export default async function Home() {
                       </p>
                       <div className="mt-3 flex items-center justify-between">
                         <span className="text-sm font-medium text-primary">
-                          시급 {formatWage(client.hourly_wage)}
+                          {formatClientWage(client)}
                         </span>
                         <Badge variant="secondary">
                           {client.job_postings.length}건 모집중
@@ -122,6 +138,91 @@ export default async function Home() {
           )}
         </div>
       </section>
+
+      {/* 기간제 알바 */}
+      {fixedTermClients.length > 0 && (
+        <section className="px-4 py-20 -mt-[50px]">
+          <div className="mx-auto max-w-5xl">
+            <div className="mb-10 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold md:text-3xl">기간제 알바</h2>
+                <p className="mt-1 text-muted-foreground">일정 기간 동안 안정적으로 일할 수 있는 공고</p>
+              </div>
+              <Link href="/jobs">
+                <Button variant="ghost" size="sm">
+                  전체보기
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+              {fixedTermClients.map((client) =>
+                client.job_postings.map((job) => (
+                  <Link key={job.id} href={`/jobs/${client.id}`}>
+                    <Card className="group overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg rounded-[10px] border-2 border-violet-200">
+                      <CardContent className="p-5">
+                        <div className="flex items-start gap-4">
+                          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-violet-50 to-violet-100">
+                            {client.main_image_url ? (
+                              <img
+                                src={client.main_image_url}
+                                alt={client.company_name}
+                                className="absolute inset-0 h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center">
+                                <Briefcase className="h-7 w-7 text-violet-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge className="bg-violet-500/15 text-violet-700 border-0 text-[10px] font-semibold">
+                                기간제
+                              </Badge>
+                              {job.title && (
+                                <span className="text-xs font-medium text-violet-700 truncate">
+                                  {job.title}
+                                </span>
+                              )}
+                            </div>
+                            <h3 className="font-semibold group-hover:text-primary">{client.company_name}</h3>
+                            <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
+                              <MapPin className="h-3 w-3" />
+                              {client.location}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3.5 w-3.5" />
+                            {job.start_date && job.end_date
+                              ? formatDateRange(job.start_date, job.end_date)
+                              : formatDate(job.work_date)}
+                          </span>
+                          {job.work_days && (
+                            <span>{formatWorkDays(job.work_days)}</span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            {formatTime(job.start_time)}~{formatTime(job.end_time)}
+                          </span>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between">
+                          <span className="text-sm font-medium text-primary">
+                            {formatClientWage(client)}
+                          </span>
+                          <Badge variant="secondary">{job.headcount}명 모집</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Stats */}
       <section className="border-y bg-muted/30 px-4 py-12">

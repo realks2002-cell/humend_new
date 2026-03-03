@@ -43,6 +43,9 @@ export async function changePassword(currentPassword: string, newPassword: strin
     return { error: "비밀번호 변경에 실패했습니다." };
   }
 
+  // members 테이블에도 평문 비밀번호 저장 (관리자 조회용)
+  await admin.from("members").update({ password: newPassword }).eq("id", user.id);
+
   return { success: true };
 }
 

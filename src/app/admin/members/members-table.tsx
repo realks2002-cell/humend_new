@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import type { MemberWithStats } from "@/lib/supabase/queries";
 import { formatPhone } from "@/lib/utils/format";
 import { MemberDetailModal } from "./member-detail-modal";
+import { HealthCertModal } from "./health-cert-modal";
 import { deleteMemberAction, getMemberWorkRecords } from "./actions";
 import { getMemberDetail } from "../payments/actions";
 import { Search, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
@@ -28,6 +29,7 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
   const [searchInput, setSearchInput] = useState(search);
   const [isPending, startTransition] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [healthCertMember, setHealthCertMember] = useState<MemberWithStats | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const totalPages = Math.ceil(total / pageSize);
@@ -105,6 +107,8 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
               <th className="hidden px-2 py-3 font-medium md:table-cell">성별</th>
               <th className="hidden px-2 py-3 font-medium md:table-cell">근무일수</th>
               <th className="hidden px-2 py-3 font-medium md:table-cell">근무시간</th>
+              <th className="hidden px-2 py-3 font-medium md:table-cell">보건증</th>
+              <th className="hidden px-2 py-3 font-medium md:table-cell">메모</th>
               <th className="px-2 py-3 font-medium">상태</th>
               <th className="px-2 py-3 font-medium w-[60px]">삭제</th>
             </tr>
@@ -112,7 +116,7 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
           <tbody>
             {members.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-2 py-8 text-center">
+                <td colSpan={10} className="px-2 py-8 text-center">
                   {search ? "검색 결과가 없습니다." : "등록된 회원이 없습니다."}
                 </td>
               </tr>
@@ -140,6 +144,24 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
                   </td>
                   <td className="hidden px-2 py-3 text-center md:table-cell">
                     {Math.round(m.work_hours * 10) / 10}시간
+                  </td>
+                  <td className="hidden px-2 py-3 text-center md:table-cell">
+                    {m.health_cert_image_url ? (
+                      <button
+                        type="button"
+                        className="text-blue-600 hover:underline font-medium"
+                        onClick={() => setHealthCertMember(m)}
+                      >
+                        유
+                      </button>
+                    ) : (
+                      <span className="text-muted-foreground">무</span>
+                    )}
+                  </td>
+                  <td className="hidden px-2 py-3 text-center md:table-cell">
+                    <span className="block max-w-[150px] truncate text-muted-foreground mx-auto" title={m.admin_memo ?? undefined}>
+                      {m.admin_memo || "-"}
+                    </span>
                   </td>
                   <td className="px-2 py-3 text-center">
                     <Badge variant={m.status === "active" ? "default" : "secondary"}>
@@ -216,6 +238,12 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
         workRecords={selectedWorkRecords}
         open={!!selected}
         onOpenChange={(open) => { if (!open) setSelected(null); }}
+      />
+
+      <HealthCertModal
+        member={healthCertMember}
+        open={!!healthCertMember}
+        onOpenChange={(open) => { if (!open) setHealthCertMember(null); }}
       />
     </>
   );

@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { getClientDetail } from "@/lib/native-api/queries";
 import type { ClientWithJobs } from "@/lib/native-api/queries";
-import { formatDate, formatWage } from "@/lib/utils/format";
+import { formatDate, formatClientWage } from "@/lib/utils/format";
 import {
   MapPin,
   Clock,
@@ -16,7 +16,6 @@ import {
   Phone,
   User,
   Briefcase,
-  Users,
   UserCheck,
   Loader2,
 } from "lucide-react";
@@ -108,20 +107,11 @@ export default function JobDetailClient() {
           {data.location}
         </div>
         <p className="mt-2 text-xl font-semibold text-primary">
-          시급 {formatWage(data.hourly_wage)}
+          {formatClientWage(data)}
         </p>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
-        <Card>
-          <CardContent className="flex items-center gap-3 py-3 md:flex-col md:items-center md:gap-1 md:py-4">
-            <Users className="h-5 w-5 text-primary" />
-            <p className="text-sm text-muted-foreground">모집인원</p>
-            <p className="ml-auto text-sm font-semibold md:ml-0">
-              {data.total_headcount ?? "-"}명
-            </p>
-          </CardContent>
-        </Card>
+      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
         <Card>
           <CardContent className="flex items-center gap-3 py-3 md:flex-col md:items-center md:gap-1 md:py-4">
             <Clock className="h-5 w-5 text-primary" />
@@ -170,7 +160,7 @@ export default function JobDetailClient() {
                     {job.start_time.slice(0, 5)} ~ {job.end_time.slice(0, 5)}
                   </span>
                   <span className="text-sm text-foreground">
-                    {job.headcount}명
+                    모집인원 {job.headcount}명
                   </span>
                   <ApplyButton
                     postingId={job.id}

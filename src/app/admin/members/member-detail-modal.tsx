@@ -1,8 +1,11 @@
 "use client";
 
+import { useState, useEffect, useTransition } from "react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -10,9 +13,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, Phone, MapPin, Calendar, Briefcase, CreditCard, Mail, IdCard } from "lucide-react";
+import { User, Phone, MapPin, Calendar, Briefcase, CreditCard, Mail, IdCard, Ruler, Lock, StickyNote, Save, Loader2 } from "lucide-react";
 import type { Member } from "@/lib/supabase/queries";
 import { formatPhone, formatDate } from "@/lib/utils/format";
+import { updateMemberMemo } from "./actions";
 
 interface MemberDetailModalProps {
   member: Member | null;
@@ -35,6 +39,28 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
 }
 
 export function MemberDetailModal({ member, profileImageUrl, workRecords, open, onOpenChange }: MemberDetailModalProps) {
+  const [memo, setMemo] = useState(member?.admin_memo ?? "");
+  const [isPending, startTransition] = useTransition();
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setMemo(member?.admin_memo ?? "");
+    setSaved(false);
+  }, [member]);
+
+  function handleSaveMemo() {
+    if (!member) return;
+    startTransition(async () => {
+      const result = await updateMemberMemo(member.id, memo);
+      if (result.error) {
+        alert(result.error);
+      } else {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    });
+  }
+
   if (!member) return null;
 
   const rrnDisplay = member.rrn_front
@@ -89,6 +115,8 @@ export function MemberDetailModal({ member, profileImageUrl, workRecords, open, 
             label="경험"
             value={member.has_experience ? (member.experience_detail ?? "있음") : "없음"}
           />
+          <InfoRow icon={Ruler} label="키" value={member.height ? `${member.height}cm` : "-"} />
+          <InfoRow icon={Lock} label="비밀번호" value={member.password ?? "-"} />
           <InfoRow
             icon={Calendar}
             label="가입일"
@@ -135,6 +163,37 @@ export function MemberDetailModal({ member, profileImageUrl, workRecords, open, 
             </div>
           </>
         )}
+
+        {/* Admin memo */}
+        <Separator />
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <StickyNote className="h-4 w-4 text-muted-foreground" />
+            <p className="text-sm font-semibold">관리자 메모</p>
+          </div>
+          <Textarea
+            placeholder="메모를 입력하세요..."
+            value={memo}
+            onChange={(e) => setMemo(e.target.value)}
+            rows={3}
+            className="resize-none"
+          />
+          <div className="flex items-center justify-end gap-2 mt-2">
+            {saved && <span className="text-xs text-green-600">저장되었습니다</span>}
+            <Button
+              size="sm"
+              onClick={handleSaveMemo}
+              disabled={isPending}
+            >
+              {isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              ) : (
+                <Save className="h-4 w-4 mr-1" />
+              )}
+              저장
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

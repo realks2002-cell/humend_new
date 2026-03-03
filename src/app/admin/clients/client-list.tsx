@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Briefcase, GripVertical, Trash2 } from "lucide-react";
-import { formatWage } from "@/lib/utils/format";
+import { formatClientWage } from "@/lib/utils/format";
 import { EditClientButton } from "./client-form";
 import { updateClientSortOrder, deleteClientAction } from "./actions";
 import { toast } from "sonner";
@@ -111,7 +111,7 @@ function SortableCard({ client, onDelete }: { client: ClientItem; onDelete: (id:
           </div>
           <div className="mt-3 flex items-center gap-2">
             <Badge variant="outline">
-              시급 {formatWage(client.hourly_wage)}
+              {formatClientWage(client)}
             </Badge>
             {client.contact_person && (
               <Badge variant="secondary">

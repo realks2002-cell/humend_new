@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { getClientDetail } from "@/lib/supabase/queries";
-import { formatDate, formatWage } from "@/lib/utils/format";
-import { MapPin, Clock, Shirt, BookOpen, Phone, User, Briefcase, Users, UserCheck, Send, ClipboardList } from "lucide-react";
+import { formatDate, formatClientWage, formatDateRange, formatWorkDays, formatTime } from "@/lib/utils/format";
+import { MapPin, Clock, Shirt, BookOpen, Phone, User, Briefcase, UserCheck, Send, ClipboardList, Calendar } from "lucide-react";
 import { ApplyButton } from "@/components/jobs/ApplyButton";
 import { JobDetailMap } from "./job-detail-map";
 import { GuideIframe } from "./guide-iframe";
@@ -71,20 +71,13 @@ export default async function JobDetailPage({
           {data.location}
         </div>
         <p className="mt-2 text-xl font-semibold text-primary">
-          시급 {formatWage(data.hourly_wage)}
+          {formatClientWage(data)}
         </p>
 
       </div>
 
       {/* 추가 정보 카드 */}
-      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
-        <Card>
-          <CardContent className="flex items-center gap-3 py-3 md:flex-col md:items-center md:gap-1 md:py-4">
-            <Users className="h-5 w-5 text-primary" />
-            <p className="text-sm text-muted-foreground">모집인원</p>
-            <p className="ml-auto text-sm font-semibold md:ml-0">{data.total_headcount ?? "-"}명</p>
-          </CardContent>
-        </Card>
+      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
         <Card>
           <CardContent className="flex items-center gap-3 py-3 md:flex-col md:items-center md:gap-1 md:py-4">
             <Clock className="h-5 w-5 text-primary" />
@@ -116,27 +109,87 @@ export default async function JobDetailPage({
             현재 모집 중인 일정이 없습니다.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {data.job_postings.map((job) => (
-              <Card key={job.id}>
-                <CardContent className="flex flex-col items-center gap-2 py-4 text-center">
-                  <span className="text-sm font-semibold text-foreground">{formatDate(job.work_date)}</span>
-                  <span className="flex items-center gap-1 text-sm text-foreground">
-                    <Clock className="h-3.5 w-3.5" />
-                    {job.start_time.slice(0, 5)} ~ {job.end_time.slice(0, 5)}
-                  </span>
-                  <span className="text-sm text-foreground">{job.headcount}명</span>
-                  <ApplyButton
-                    postingId={job.id}
-                    clientName={data.company_name}
-                    workDate={formatDate(job.work_date)}
-                    startTime={job.start_time}
-                    endTime={job.end_time}
-                  />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <>
+            {/* 일별 공고 */}
+            {data.job_postings.filter((j) => j.posting_type !== "fixed_term").length > 0 && (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {data.job_postings
+                  .filter((j) => j.posting_type !== "fixed_term")
+                  .map((job) => (
+                    <Card key={job.id}>
+                      <CardContent className="flex flex-col items-center gap-2 py-4 text-center">
+                        <span className="text-sm font-semibold text-foreground">{formatDate(job.work_date)}</span>
+                        <span className="flex items-center gap-1 text-sm text-foreground">
+                          <Clock className="h-3.5 w-3.5" />
+                          {job.start_time.slice(0, 5)} ~ {job.end_time.slice(0, 5)}
+                        </span>
+                        <span className="text-sm text-foreground">모집인원 {job.headcount}명</span>
+                        <ApplyButton
+                          postingId={job.id}
+                          clientName={data.company_name}
+                          workDate={formatDate(job.work_date)}
+                          startTime={job.start_time}
+                          endTime={job.end_time}
+                        />
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
+            )}
+
+            {/* 기간제 공고 */}
+            {data.job_postings.filter((j) => j.posting_type === "fixed_term").length > 0 && (
+              <div className="mt-4 space-y-3">
+                {data.job_postings
+                  .filter((j) => j.posting_type === "fixed_term")
+                  .map((job) => (
+                    <Card key={job.id} className="border-2 border-violet-200 bg-violet-50/30">
+                      <CardContent className="flex flex-col gap-2 py-4">
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-violet-500/15 text-violet-700 border-0 text-xs font-semibold">
+                            기간제
+                          </Badge>
+                          {job.title && (
+                            <span className="text-sm font-medium text-violet-700">{job.title}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-violet-700">
+                          <Calendar className="h-4 w-4" />
+                          {job.start_date && job.end_date
+                            ? formatDateRange(job.start_date, job.end_date)
+                            : formatDate(job.work_date)}
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                          {job.work_days && (
+                            <span>매주 {formatWorkDays(job.work_days)}</span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            {formatTime(job.start_time)} ~ {formatTime(job.end_time)}
+                          </span>
+                          <span>모집인원 {job.headcount}명</span>
+                        </div>
+                        <div className="mt-1">
+                          <ApplyButton
+                            postingId={job.id}
+                            clientName={data.company_name}
+                            workDate={
+                              job.start_date && job.end_date
+                                ? formatDateRange(job.start_date, job.end_date)
+                                : formatDate(job.work_date)
+                            }
+                            startTime={job.start_time}
+                            endTime={job.end_time}
+                            isFixedTerm
+                            workDays={job.work_days ?? undefined}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 

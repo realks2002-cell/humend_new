@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Briefcase, Search, Loader2 } from "lucide-react";
-import { formatDate, formatWage, formatTime } from "@/lib/utils/format";
+import { formatDate, formatTime, formatClientWage } from "@/lib/utils/format";
 import { ApplyButton } from "@/components/jobs/ApplyButton";
 import { getClientsWithJobs } from "@/lib/native-api/queries";
 import type { ClientWithJobs } from "@/lib/native-api/queries";
@@ -115,7 +115,7 @@ export default function JobsClient() {
                 </div>
                 <div className="mt-3 flex items-center justify-between">
                   <span className="font-medium text-primary">
-                    시급 {formatWage(client.hourly_wage)}
+                    {formatClientWage(client)}
                   </span>
                   <Badge variant="secondary">
                     {client.job_postings.length}건 모집중

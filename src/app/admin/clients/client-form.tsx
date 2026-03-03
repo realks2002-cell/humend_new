@@ -37,6 +37,10 @@ interface ClientData {
   gender_requirement?: string | null;
   application_method?: string | null;
   work_category?: string | null;
+  client_type?: 'daily' | 'fixed_term';
+  wage_type?: string;
+  daily_wage?: number;
+  monthly_wage?: number;
   client_photos?: { id: string; image_url: string; sort_order: number }[];
 }
 
@@ -71,6 +75,8 @@ function ClientFormDialog({
   const [description, setDescription] = useState(client?.description ?? "");
   const [latitude, setLatitude] = useState<number | null>(client?.latitude ?? null);
   const [longitude, setLongitude] = useState<number | null>(client?.longitude ?? null);
+  const [clientType, setClientType] = useState<'daily' | 'fixed_term'>(client?.client_type ?? 'daily');
+  const [wageType, setWageType] = useState(client?.wage_type ?? '시급');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -86,6 +92,8 @@ function ClientFormDialog({
     }
     if (latitude !== null) formData.set("latitude", String(latitude));
     if (longitude !== null) formData.set("longitude", String(longitude));
+    formData.set("client_type", clientType);
+    formData.set("wage_type", wageType);
 
     const result =
       mode === "create"
@@ -116,6 +124,8 @@ function ClientFormDialog({
         setUseDefaultGuide(client?.work_guidelines === PREPARATION_GUIDE_HTML);
         setLatitude(client?.latitude ?? null);
         setLongitude(client?.longitude ?? null);
+        setClientType(client?.client_type ?? 'daily');
+        setWageType(client?.wage_type ?? '시급');
       }
     }
   };
@@ -189,17 +199,98 @@ function ClientFormDialog({
             </div>
           </div>
 
+          {/* 고객사 타입 */}
           <div>
-            <Label htmlFor="hourly_wage">시급 (원) *</Label>
-            <Input
-              id="hourly_wage"
-              name="hourly_wage"
-              type="number"
-              required
-              defaultValue={client?.hourly_wage}
-              placeholder="12000"
-            />
+            <Label>고객사 타입</Label>
+            <div className="mt-1.5 flex rounded-lg border p-1">
+              <button
+                type="button"
+                onClick={() => setClientType("daily")}
+                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  clientType === "daily"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                일별
+              </button>
+              <button
+                type="button"
+                onClick={() => setClientType("fixed_term")}
+                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  clientType === "fixed_term"
+                    ? "bg-violet-600 text-white"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                기간제
+              </button>
+            </div>
+            <input type="hidden" name="client_type" value={clientType} />
           </div>
+
+          {/* 급여 타입 */}
+          <div>
+            <Label>급여 타입</Label>
+            <div className="mt-1.5 flex rounded-lg border p-1">
+              {(["시급", "일급", "월급"] as const).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setWageType(type)}
+                  className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    wageType === type
+                      ? "bg-blue-600 text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+            <input type="hidden" name="wage_type" value={wageType} />
+          </div>
+
+          {/* 급여 입력 - wage_type에 따라 */}
+          {wageType === "시급" && (
+            <div>
+              <Label htmlFor="hourly_wage">시급 (원) *</Label>
+              <Input
+                id="hourly_wage"
+                name="hourly_wage"
+                type="number"
+                required
+                defaultValue={client?.hourly_wage}
+                placeholder="12000"
+              />
+            </div>
+          )}
+          {wageType === "일급" && (
+            <div>
+              <Label htmlFor="daily_wage">일급 (원) *</Label>
+              <Input
+                id="daily_wage"
+                name="daily_wage"
+                type="number"
+                required
+                defaultValue={client?.daily_wage}
+                placeholder="120000"
+              />
+            </div>
+          )}
+          {wageType === "월급" && (
+            <div>
+              <Label htmlFor="monthly_wage">월급 (원) *</Label>
+              <Input
+                id="monthly_wage"
+                name="monthly_wage"
+                type="number"
+                required
+                defaultValue={client?.monthly_wage}
+                placeholder="2500000"
+              />
+            </div>
+          )}
           <div>
             <Label htmlFor="work_type">근무타입</Label>
             <Input

@@ -56,7 +56,7 @@ export async function getPaymentsByMonth(month: string): Promise<PaymentRecord[]
     .select("*, work_records!inner(client_name, work_date, start_time, end_time, wage_type, member_id, members(name, phone, bank_name, account_number))")
     .gte("work_records.work_date", start)
     .lte("work_records.work_date", end)
-    .order("created_at", { ascending: false });
+    .order("work_records(work_date)", { ascending: false });
 
   // unwrap work_records join (1:1)
   return ((data ?? []) as unknown[]).map((r: unknown) => {
@@ -87,7 +87,7 @@ export async function getPaymentsByMonthPaginated(
     )
     .gte("work_records.work_date", start)
     .lte("work_records.work_date", end)
-    .order("created_at", { ascending: false })
+    .order("work_records(work_date)", { ascending: false })
     .range(from, from + pageSize - 1);
 
   const results = ((data ?? []) as unknown[]).map((r: unknown) => {

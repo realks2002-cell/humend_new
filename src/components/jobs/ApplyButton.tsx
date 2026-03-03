@@ -15,6 +15,7 @@ import {
 import { Loader2, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { applyToJob } from "@/app/jobs/actions";
+import { formatWorkDays } from "@/lib/utils/format";
 
 const MEMBER_NOT_FOUND_ERROR = "회원정보를 먼저 등록해주세요.";
 
@@ -24,6 +25,8 @@ interface ApplyButtonProps {
   workDate: string;
   startTime: string;
   endTime: string;
+  isFixedTerm?: boolean;
+  workDays?: number[];
   size?: "sm" | "default";
   className?: string;
 }
@@ -34,6 +37,8 @@ export function ApplyButton({
   workDate,
   startTime,
   endTime,
+  isFixedTerm,
+  workDays,
   size = "sm",
   className,
 }: ApplyButtonProps) {
@@ -113,6 +118,14 @@ export function ApplyButton({
               <DialogTitle>지원하시겠습니까?</DialogTitle>
               <DialogDescription>
                 {clientName} {workDate} {startTime}~{endTime}
+                {isFixedTerm && (
+                  <>
+                    <br />
+                    <span className="text-violet-600 font-medium">
+                      기간제 공고 — {workDays ? formatWorkDays(workDays) : ""} 전 기간 근무
+                    </span>
+                  </>
+                )}
               </DialogDescription>
             </DialogHeader>
             {result?.error && (

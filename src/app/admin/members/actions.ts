@@ -26,3 +26,19 @@ export async function deleteMemberAction(memberId: string) {
 export async function getMemberWorkRecords(memberId: string) {
   return getWorkRecordsByMemberId(memberId);
 }
+
+export async function updateMemberMemo(memberId: string, memo: string) {
+  const admin = createAdminClient();
+
+  const { error } = await admin
+    .from("members")
+    .update({ admin_memo: memo || null })
+    .eq("id", memberId);
+
+  if (error) {
+    return { error: `메모 저장에 실패했습니다: ${error.message}` };
+  }
+
+  revalidatePath("/admin/members");
+  return { success: true };
+}

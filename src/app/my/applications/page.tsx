@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClipboardList, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { getMyApplications } from "@/lib/supabase/queries";
-import { formatDate } from "@/lib/utils/format";
+import { formatDate, formatDateRange, formatWorkDays } from "@/lib/utils/format";
 import type { Application } from "@/lib/supabase/queries";
 import { CancelButton } from "./cancel-button";
 
@@ -19,12 +19,25 @@ const statusConfig: Record<string, { label: string; variant: "secondary" | "defa
 function ApplicationItem({ app }: { app: Application }) {
   if (!app.job_postings) return null;
   const config = statusConfig[app.status] ?? statusConfig["대기"];
+  const isFixedTerm = app.job_postings.posting_type === "fixed_term";
+
   return (
     <div className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-muted/30">
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm truncate">{app.job_postings.clients?.company_name ?? "정보 없음"}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="font-semibold text-sm truncate">{app.job_postings.clients?.company_name ?? "정보 없음"}</p>
+          {isFixedTerm && (
+            <Badge className="bg-violet-500/15 text-violet-700 border-0 text-[9px] font-semibold shrink-0">
+              기간제
+            </Badge>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground">
-          {formatDate(app.job_postings.work_date)} {app.job_postings.start_time.slice(0, 5)}~{app.job_postings.end_time.slice(0, 5)}
+          {isFixedTerm && app.job_postings.start_date && app.job_postings.end_date
+            ? `${formatDateRange(app.job_postings.start_date, app.job_postings.end_date)}${app.job_postings.work_days ? ` ${formatWorkDays(app.job_postings.work_days)}` : ""}`
+            : formatDate(app.job_postings.work_date)
+          }{" "}
+          {app.job_postings.start_time.slice(0, 5)}~{app.job_postings.end_time.slice(0, 5)}
         </p>
         <p className="mt-0.5 text-[11px] text-muted-foreground">
           지원일: {new Date(app.applied_at).toLocaleDateString("ko-KR")}
