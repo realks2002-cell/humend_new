@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useMemo, useRef, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -16,10 +16,11 @@ import {
 import { formatDate, formatDateRange, formatWorkDays, formatPhone, formatClientWage } from "@/lib/utils/format";
 import { ApplicationActions, RevertAction } from "./application-actions";
 import { MemberDetailModal } from "../members/member-detail-modal";
-import { batchApproveApplications } from "./actions";
+import { batchApproveApplications, deleteApplication, updateApplicationMemo } from "./actions";
 import { toast } from "sonner";
 import type { Member } from "@/lib/supabase/queries";
 import { getMemberDetail } from "../payments/actions";
+import { getMemberWorkRecords } from "../members/actions";
 
 const PAGE_SIZE = 20;
 
@@ -34,6 +35,7 @@ interface AppItem {
   id: string;
   member_id: string;
   status: string;
+  admin_memo?: string | null;
   members: { name: string; phone: string } | null;
   job_postings: {
     work_date: string;
@@ -64,22 +66,47 @@ interface ApplicationTableProps {
 export function ApplicationTable({ apps, showActions, membersMap, profileImageUrls }: ApplicationTableProps) {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedProfileUrl, setSelectedProfileUrl] = useState<string | null>(null);
+  const [selectedWorkRecords, setSelectedWorkRecords] = useState<Awaited<ReturnType<typeof getMemberWorkRecords>>>([]);
   const [isLoadingProfile, startProfileTransition] = useTransition();
+  const [search, setSearch] = useState("");
   const [filterStartDate, setFilterStartDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   function handleMemberClick(member: Member) {
     setSelectedMember(member);
     setSelectedProfileUrl(null);
+    setSelectedWorkRecords([]);
     startProfileTransition(async () => {
-      const { profileImageUrl } = await getMemberDetail(member.id);
+      const [{ profileImageUrl }, workRecords] = await Promise.all([
+        getMemberDetail(member.id),
+        getMemberWorkRecords(member.id),
+      ]);
       setSelectedProfileUrl(profileImageUrl);
+      setSelectedWorkRecords(workRecords);
     });
   }
   const [filterEndDate, setFilterEndDate] = useState("");
   const [filterClient, setFilterClient] = useState("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchLoading, setBatchLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`${name}님의 지원 내역을 삭제하시겠습니까?`)) return;
+    setDeletingId(id);
+    try {
+      const result = await deleteApplication(id);
+      if (result.error) {
+        toast.error(`삭제 실패: ${result.error}`);
+      } else {
+        toast.success("지원 내역이 삭제되었습니다.");
+      }
+    } catch {
+      toast.error("삭제 중 오류가 발생했습니다.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   const clientNames = useMemo(() => {
     const names = Array.from(new Set(apps.map((a) => a.job_postings.clients.company_name)));
@@ -93,9 +120,15 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
       if (filterStartDate && d < filterStartDate) return false;
       if (filterEndDate && d > filterEndDate) return false;
       if (filterClient !== "all" && a.job_postings.clients.company_name !== filterClient) return false;
+      if (search) {
+        const s = search.replace(/-/g, "");
+        const name = a.members?.name ?? "";
+        const phone = (a.members?.phone ?? "").replace(/-/g, "");
+        if (!name.includes(search) && !phone.includes(s)) return false;
+      }
       return true;
     });
-  }, [apps, filterStartDate, filterEndDate, filterClient]);
+  }, [apps, filterStartDate, filterEndDate, filterClient, search]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginatedApps = useMemo(
@@ -154,6 +187,12 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
     <>
       <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
         <Input
+          placeholder="이름, 전화번호 검색..."
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+          className="w-[170px] h-9 text-sm"
+        />
+        <Input
           type="date"
           value={filterStartDate}
           onChange={(e) => { setFilterStartDate(e.target.value); setCurrentPage(1); }}
@@ -177,11 +216,11 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
             ))}
           </SelectContent>
         </Select>
-        {(filterStartDate || filterEndDate || filterClient !== "all") && (
+        {(search || filterStartDate || filterEndDate || filterClient !== "all") && (
           <button
             type="button"
             className="text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => { setFilterStartDate(""); setFilterEndDate(""); setFilterClient("all"); setCurrentPage(1); }}
+            onClick={() => { setSearch(""); setFilterStartDate(""); setFilterEndDate(""); setFilterClient("all"); setCurrentPage(1); }}
           >
             초기화
           </button>
@@ -204,15 +243,18 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
       <div className="overflow-x-auto">
         <table className="w-full text-sm table-fixed">
           <colgroup>
-            {showActions && <col className="w-[40px]" />}
-            <col className="w-[90px]" />
-            <col className="w-[90px]" />
-            <col className="w-[90px]" />
-            <col className="w-[70px]" />
-            <col className="w-[120px] hidden md:table-column" />
+            {showActions && <col className="w-[34px]" />}
+            <col className="w-[77px]" />
+            <col className="w-[77px]" />
+            <col className="w-[77px]" />
+            <col className="w-[40px]" />
+            <col className="w-[60px]" />
+            <col className="w-[40px] hidden md:table-column" />
             <col className="w-[80px] hidden md:table-column" />
-            <col className="w-[70px]" />
-            {showActions && <col className="w-[80px]" />}
+            <col className="w-[102px] hidden md:table-column" />
+            <col className="w-[68px] hidden md:table-column" />
+            <col className="w-[42px]" />
+            {showActions && <col className="w-[68px]" />}
           </colgroup>
           <thead>
             <tr className="border-b bg-muted/50 text-center">
@@ -228,7 +270,10 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
               <th className="px-2 py-3 font-medium">근무지</th>
               <th className="px-2 py-3 font-medium">근무일</th>
               <th className="px-2 py-3 font-medium">근무시간</th>
+              <th className="px-2 py-3 font-medium">성별</th>
               <th className="px-2 py-3 font-medium">이름</th>
+              <th className="hidden px-2 py-3 font-medium md:table-cell">키</th>
+              <th className="hidden px-2 py-3 font-medium md:table-cell">간단 메모</th>
               <th className="hidden px-2 py-3 font-medium md:table-cell">전화번호</th>
               <th className="hidden px-2 py-3 font-medium md:table-cell">급여</th>
               <th className="px-2 py-3 font-medium">상태</th>
@@ -237,7 +282,7 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={showActions ? 9 : 7} className="py-8 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</td></tr>
+              <tr><td colSpan={showActions ? 12 : 10} className="py-8 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</td></tr>
             ) : null}
             {paginatedApps.map((app) => {
               const config = statusConfig[app.status] ?? statusConfig["대기"];
@@ -270,6 +315,9 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                     {app.job_postings.start_time?.slice(0, 5)}~{app.job_postings.end_time?.slice(0, 5)}
                   </td>
                   <td className="px-2 py-3 text-center">
+                    {member?.gender === "male" ? "남" : member?.gender === "female" ? "여" : "-"}
+                  </td>
+                  <td className="px-2 py-3 text-center">
                     {member ? (
                       <button
                         type="button"
@@ -282,10 +330,16 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                       <span className="font-medium">{app.members?.name ?? "-"}</span>
                     )}
                   </td>
-                  <td className="hidden px-2 py-3 text-center text-muted-foreground md:table-cell">
+                  <td className="hidden px-2 py-3 text-center md:table-cell">
+                    {member?.height ? `${member.height}cm` : "-"}
+                  </td>
+                  <td className="hidden px-2 py-3 text-center md:table-cell">
+                    <MemoInput applicationId={app.id} initialValue={app.admin_memo ?? ""} />
+                  </td>
+                  <td className="hidden px-2 py-3 text-center md:table-cell">
                     {app.members ? formatPhone(app.members.phone) : "-"}
                   </td>
-                  <td className="hidden px-2 py-3 text-center text-muted-foreground md:table-cell">
+                  <td className="hidden px-2 py-3 text-center md:table-cell">
                     {formatClientWage(app.job_postings.clients)}
                   </td>
                   <td className="px-2 py-3 text-center">
@@ -295,8 +349,23 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                   </td>
                   {showActions && (
                     <td className="px-2 py-3 text-center">
-                      {app.status === "대기" && <ApplicationActions applicationId={app.id} />}
-                      {(app.status === "승인" || app.status === "거절") && <RevertAction applicationId={app.id} />}
+                      <div className="flex items-center justify-center gap-1">
+                        {app.status === "대기" && <ApplicationActions applicationId={app.id} />}
+                        {(app.status === "승인" || app.status === "거절") && <RevertAction applicationId={app.id} />}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600"
+                          disabled={deletingId === app.id}
+                          onClick={() => handleDelete(app.id, app.members?.name ?? "알 수 없음")}
+                        >
+                          {deletingId === app.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -355,10 +424,36 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
       <MemberDetailModal
         member={selectedMember}
         profileImageUrl={selectedProfileUrl}
-        workRecords={[]}
+        workRecords={selectedWorkRecords}
         open={!!selectedMember}
         onOpenChange={(open) => { if (!open) setSelectedMember(null); }}
       />
     </>
+  );
+}
+
+function MemoInput({ applicationId, initialValue }: { applicationId: string; initialValue: string }) {
+  const [value, setValue] = useState(initialValue);
+  const savedRef = useRef(initialValue);
+
+  const save = useCallback(async () => {
+    const trimmed = value.trim();
+    if (trimmed === savedRef.current) return;
+    savedRef.current = trimmed;
+    setValue(trimmed);
+    const result = await updateApplicationMemo(applicationId, trimmed);
+    if (result.error) toast.error("메모 저장 실패");
+  }, [applicationId, value]);
+
+  return (
+    <input
+      type="text"
+      className="w-full max-w-[80px] mx-auto block rounded border border-transparent bg-transparent px-1 py-0.5 text-center text-xs hover:border-border focus:border-ring focus:outline-none"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={save}
+      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+      placeholder="-"
+    />
   );
 }
