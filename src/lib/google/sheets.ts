@@ -162,17 +162,18 @@ export async function protectColumns(
 }
 
 /**
- * 특정 컬럼들에 숫자 콤마 포맷(#,##0) 적용
+ * 숫자 콤마 포맷 + 텍스트 포맷을 단일 batchUpdate로 적용
  */
-export async function formatNumberColumns(
+export async function formatColumns(
   sheetId: number,
-  columns: number[],
+  numberColumns: number[],
+  textColumns: number[],
   rowCount: number
 ) {
   const sheets = getSheets();
   const spreadsheetId = getSpreadsheetId();
 
-  const requests = columns.map((col) => ({
+  const numberRequests = numberColumns.map((col) => ({
     repeatCell: {
       range: {
         sheetId,
@@ -190,9 +191,27 @@ export async function formatNumberColumns(
     },
   }));
 
+  const textRequests = textColumns.map((col) => ({
+    repeatCell: {
+      range: {
+        sheetId,
+        startRowIndex: 1,
+        endRowIndex: rowCount + 1,
+        startColumnIndex: col,
+        endColumnIndex: col + 1,
+      },
+      cell: {
+        userEnteredFormat: {
+          numberFormat: { type: "TEXT" as const },
+        },
+      },
+      fields: "userEnteredFormat.numberFormat",
+    },
+  }));
+
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
-    requestBody: { requests },
+    requestBody: { requests: [...numberRequests, ...textRequests] },
   });
 }
 

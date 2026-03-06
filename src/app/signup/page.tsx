@@ -117,7 +117,7 @@ export default function SignupPage() {
             <Input
               id="name"
               type="text"
-              placeholder="홍길동"
+              placeholder="반드시 실명으로 입력"
               className="pl-10"
               value={name}
               onChange={(e) => setName(e.target.value)}

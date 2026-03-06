@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { exportToSheets, importFromSheets, protectColumns, formatNumberColumns } from "@/lib/google/sheets";
+import { exportToSheets, importFromSheets, protectColumns, formatColumns } from "@/lib/google/sheets";
 import { revalidatePath } from "next/cache";
 
 function toSheetName(month: string) {
@@ -55,23 +55,30 @@ function createAdminClient() {
   return createSupabaseClient(url, key);
 }
 
-export async function exportPayrollToSheets(month: string) {
+export async function exportPayrollToSheets(month: string, recordIds?: string[]) {
   try {
     const supabase = createAdminClient();
 
-    const start = `${month}-01`;
-    const endDate = new Date(Number(month.split("-")[0]), Number(month.split("-")[1]), 0);
-    const end = `${month}-${String(endDate.getDate()).padStart(2, "0")}`;
-
-    const { data: records } = await supabase
+    let query = supabase
       .from("work_records")
       .select("*, members(name, phone, rrn_front, rrn_back, bank_name, account_number, account_holder), payments(id)")
-      .gte("work_date", start)
-      .lte("work_date", end)
-      .not("signature_url", "is", null)
-      .order("work_date", { ascending: false });
+      .order("signed_at", { ascending: false });
 
-    // 서명 완료 + payment 없는 건만 (미처리 급여요청)
+    if (recordIds && recordIds.length > 0) {
+      query = query.in("id", recordIds);
+    } else {
+      // fallback: signed_at 기준 월별 필터
+      const [yearStr, monthStr] = month.split("-");
+      const startTs = `${month}-01T00:00:00`;
+      const nextMonth = new Date(Number(yearStr), Number(monthStr), 1);
+      const endTs = nextMonth.toISOString();
+      query = query.gte("signed_at", startTs).lt("signed_at", endTs)
+        .not("signature_url", "is", null);
+    }
+
+    const { data: records } = await query;
+
+    // payment 없는 건만 (미처리 급여요청)
     const recs = ((records ?? []) as Array<Record<string, unknown>>).filter((r) => {
       const payments = r.payments as Array<unknown> | null;
       return !payments || payments.length === 0;
@@ -119,8 +126,8 @@ export async function exportPayrollToSheets(month: string) {
       return [
         r.status, // A: 상태
         members?.name ?? "", // B: 이름
-        `'${phone}`, // C: 전화번호 (텍스트 형식)
-        rrn ? `'${rrn}` : "", // D: 주민번호 (텍스트 형식)
+        `'${phone}`, // C: 전화번호 (텍스트 강제)
+        `'${rrn}`, // D: 주민번호 (텍스트 강제)
         r.client_name, // E: 고객사
         r.work_date, // F: 근무일
         timeToDecimal(r.start_time as string), // G: 시작시간
@@ -140,7 +147,7 @@ export async function exportPayrollToSheets(month: string) {
         `=SUM(P${rowIdx}:T${rowIdx})`, // U: 공제합계 - 수식
         `=O${rowIdx}-U${rowIdx}`, // V: 실수령액 - 수식
         members?.bank_name ?? "", // W: 계좌(은행)
-        members?.account_number ?? "", // X: 계좌(번호)
+        members?.account_number ? `'${String(members.account_number)}` : "", // X: 계좌(번호) (텍스트 강제)
         members?.account_holder ?? "", // Y: 예금주 (NEW)
         r.hourly_wage, // Z: 원본_시급
         r.base_pay, // AA: 원본_기본급
@@ -169,12 +176,13 @@ export async function exportPayrollToSheets(month: string) {
     // 이름(B=1), 전화번호(C=2), 주민번호(D=3), 예금주(Y=24), 원본 컬럼(25~40) 편집 보호
     await protectColumns(result.sheetId, [1, 2, 3, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40], rows.length);
 
-    // 급여 숫자 컬럼에 세자릿수 콤마 포맷 적용
-    const salaryColumns = [
+    // 숫자 콤마 포맷 + 텍스트 포맷을 단일 batchUpdate로 적용
+    const numberColumns = [
       10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,  // 급여 항목 (K~V)
       25, 26, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,   // 원본 급여 항목 (Z~, +1 shift)
     ];
-    await formatNumberColumns(result.sheetId, salaryColumns, rows.length);
+    const textColumns = [2, 3, 23]; // 전화번호(C), 주민번호(D), 계좌번호(X)
+    await formatColumns(result.sheetId, numberColumns, textColumns, rows.length);
 
     const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID ?? "";
     const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
@@ -189,46 +197,6 @@ function parseNum(value: string | undefined): number {
   if (!value) return 0;
   const n = Number(String(value).replace(/,/g, ""));
   return isNaN(n) ? 0 : n;
-}
-
-// 숫자 컬럼의 현재 값과 원본 값을 비교하여 수정 여부를 감지
-function detectModification(row: Record<string, string>, debugLabel?: string): boolean {
-  const comparisons = [
-    ["시급", "원본_시급"],
-    ["기본급", "원본_기본급"],
-    ["근무시간", "원본_근무시간"],
-    ["초과수당", "원본_초과수당"],
-    ["주휴수당", "원본_주휴수당"],
-    ["총지급액", "원본_총지급액"],
-    ["국민연금", "원본_국민연금"],
-    ["건강보험", "원본_건강보험"],
-    ["장기요양", "원본_장기요양"],
-    ["고용보험", "원본_고용보험"],
-    ["소득세", "원본_소득세"],
-    // 공제합계, 실수령액 제거 — 종속 수식 컬럼이라 원본과 구조적으로 불일치
-    ["시작시간", "원본_시작시간"],
-    ["종료시간", "원본_종료시간"],
-    ["휴게시간", "원본_휴게시간"],
-  ];
-
-  if (debugLabel) {
-    console.log(`🔍 [detectModification] ${debugLabel} — 비교 시작`);
-    for (const [current, original] of comparisons) {
-      const rawCurr = row[current];
-      const rawOrig = row[original];
-      const curr = parseNum(row[current]);
-      const orig = parseNum(row[original]);
-      if (curr !== orig) {
-        console.log(`  ✏️ 차이 발견: ${current}="${rawCurr}"(${curr}) vs ${original}="${rawOrig}"(${orig})`);
-      }
-    }
-  }
-
-  return comparisons.some(([current, original]) => {
-    const curr = parseNum(row[current]);
-    const orig = parseNum(row[original]);
-    return curr !== orig;
-  });
 }
 
 export async function importPayrollFromSheets(month: string) {
@@ -272,16 +240,12 @@ export async function importPayrollFromSheets(month: string) {
         continue;
       }
 
-      // 상태와 무관하게 숫자 변경 여부만으로 import 결정
-      const debugLabel = skipped === 0 && updated === 0 && created === 0
-        ? `${sheetName2} (${sheetDate})` : undefined; // 첫 번째 행만 디버깅
-      const isModified = detectModification(row, debugLabel);
-      if (!isModified) {
-        console.log("⏭️ 변경 없음, 스킵:", { 이름: sheetName2, 근무일: sheetDate });
+      // 상태 컬럼이 비어있는 행만 import (대기 등 상태값이 있으면 스킵)
+      const sheetStatus = row["상태"]?.trim();
+      if (sheetStatus) {
         skipped++;
         continue;
       }
-      console.log("🔄 수정 감지, import 처리:", { 이름: sheetName2, 근무일: sheetDate });
 
       // 2. DB에서 매칭되는 work_record 찾기
       const matched = dbRecords.find((wr) => {
