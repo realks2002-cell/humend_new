@@ -2,6 +2,17 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { notifyArrivalConfirmed } from "@/lib/push/location-notify";
 
+function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const MOVING_THRESHOLD_METERS = 50;
+
 /**
  * POST /api/native/location/log
  * 위치 로그 저장 + 자동 도착 판별 (10m 지오펜스)
@@ -41,7 +52,7 @@ export async function POST(req: NextRequest) {
   // shift 소유권 확인
   const { data: shift, error: shiftError } = await admin
     .from("daily_shifts")
-    .select("id, member_id, client_id, arrival_status")
+    .select("id, member_id, client_id, arrival_status, last_known_lat, last_known_lng")
     .eq("id", shiftId)
     .single();
 
@@ -118,7 +129,11 @@ export async function POST(req: NextRequest) {
       await notifyArrivalConfirmed(user.id, companyName);
     }
   } else if (shift.arrival_status === "pending" || shift.arrival_status === "tracking") {
-    updateData.arrival_status = "moving";
+    const prevLat = shift.last_known_lat as number | null;
+    const prevLng = shift.last_known_lng as number | null;
+    if (prevLat != null && prevLng != null && haversineMeters(prevLat, prevLng, lat, lng) >= MOVING_THRESHOLD_METERS) {
+      updateData.arrival_status = "moving";
+    }
   }
 
   await admin

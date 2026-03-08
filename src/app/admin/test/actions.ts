@@ -2,6 +2,17 @@
 
 import { createAdminClient } from "@/lib/supabase/server";
 
+function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const MOVING_THRESHOLD_METERS = 50;
+
 const TEST_PHONE = "01034061921";
 const TEST_NAME = "이강석";
 
@@ -143,7 +154,7 @@ export async function sendTestLocation(
   // shift 정보 확인
   const { data: shift, error: shiftError } = await supabase
     .from("daily_shifts")
-    .select("id, member_id, client_id, arrival_status, start_time, work_date")
+    .select("id, member_id, client_id, arrival_status, start_time, work_date, last_known_lat, last_known_lng")
     .eq("id", shiftId)
     .single();
 
@@ -155,7 +166,7 @@ export async function sendTestLocation(
   }
 
   // 위치 로그 INSERT
-  await supabase.from("location_logs").insert({
+  const { error: logError } = await supabase.from("location_logs").insert({
     shift_id: shiftId,
     member_id: shift.member_id,
     lat,
@@ -163,6 +174,7 @@ export async function sendTestLocation(
     speed: null,
     accuracy: null,
   });
+  if (logError) throw new Error(`위치 로그 저장 실패: ${logError.message}`);
 
   // shift 최신 위치 업데이트
   const updateData: Record<string, unknown> = {
@@ -177,14 +189,15 @@ export async function sendTestLocation(
   }
 
   // 도착 판별 (10m 지오펜스)
-  const { data: distResult } = await supabase
+  const { data: distResult, error: rpcError } = await supabase
     .rpc("check_arrival_distance", {
       p_shift_id: shiftId,
       p_lat: lat,
       p_lng: lng,
       p_radius: 10,
     })
-    .maybeSingle() as { data: { is_arrived: boolean; distance_meters: number } | null };
+    .maybeSingle() as { data: { is_arrived: boolean; distance_meters: number } | null; error: unknown };
+  if (rpcError) console.error("check_arrival_distance RPC error:", rpcError);
 
   let arrived = false;
 
@@ -197,18 +210,25 @@ export async function sendTestLocation(
     updateData.arrived_at = now.toISOString();
     arrived = true;
   } else if (shift.arrival_status === "pending" || shift.arrival_status === "tracking") {
-    updateData.arrival_status = "moving";
+    const prevLat = shift.last_known_lat as number | null;
+    const prevLng = shift.last_known_lng as number | null;
+    if (prevLat != null && prevLng != null && haversineMeters(prevLat, prevLng, lat, lng) >= MOVING_THRESHOLD_METERS) {
+      updateData.arrival_status = "moving";
+    }
   }
 
-  await supabase
+  const { error: updateError } = await supabase
     .from("daily_shifts")
     .update(updateData)
     .eq("id", shiftId);
+  if (updateError) throw new Error(`위치 업데이트 실패: ${updateError.message}`);
 
   return {
     arrived,
     status: updateData.arrival_status as string,
     distance: distResult?.distance_meters ?? null,
+    lat,
+    lng,
   };
 }
 
