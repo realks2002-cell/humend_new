@@ -16,11 +16,14 @@ export default function Footer() {
             </div>
           </div>
           <nav className="flex gap-6 text-base text-muted-foreground">
-            <Link href="/about" className="hover:text-foreground">
-              사업소개
-            </Link>
             <Link href="/jobs" className="hover:text-foreground">
               채용공고
+            </Link>
+            <Link href="/privacy" className="hover:text-foreground">
+              개인정보처리방침
+            </Link>
+            <Link href="/terms" className="hover:text-foreground">
+              이용약관
             </Link>
           </nav>
         </div>
