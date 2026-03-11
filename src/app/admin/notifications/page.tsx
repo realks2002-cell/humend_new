@@ -1,17 +1,18 @@
-import { getNotificationLogs, getMembers } from "./actions";
+import { getNotificationLogs, getMembers, getClients } from "./actions";
 import NotificationForm from "./notification-form";
 
 export default async function NotificationsPage() {
-  const [logs, members] = await Promise.all([
+  const [logs, members, clients] = await Promise.all([
     getNotificationLogs(),
     getMembers(),
+    getClients(),
   ]);
 
   return (
     <div className="space-y-6 p-4 md:p-6">
       <h1 className="text-xl font-bold">알림 관리</h1>
 
-      <NotificationForm members={members} />
+      <NotificationForm members={members} clients={clients} />
 
       {/* 발송 내역 */}
       <div className="space-y-3">
@@ -49,7 +50,9 @@ export default async function NotificationsPage() {
                     <td className="whitespace-nowrap px-3 py-2 text-center">
                       {log.target_type === "all"
                         ? "전체"
-                        : log.members?.name ?? log.members?.phone ?? "-"}
+                        : log.target_type === "targeted"
+                          ? "고객사 경력"
+                          : log.members?.name ?? log.members?.phone ?? "-"}
                     </td>
                     <td className="px-3 py-2 text-center">{log.sent_count}</td>
                     <td className="px-3 py-2 text-center">

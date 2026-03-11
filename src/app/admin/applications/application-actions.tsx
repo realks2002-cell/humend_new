@@ -41,21 +41,22 @@ export function ApplicationActions({ applicationId }: { applicationId: string })
   }
 
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-1">
       <Button
         size="sm"
-        className="bg-green-600 text-white hover:bg-green-700"
+        className="h-6 px-1.5 text-[11px] bg-green-600 text-white hover:bg-green-700"
         onClick={handleApprove}
       >
-        <Check className="mr-1 h-4 w-4" />
+        <Check className="mr-0.5 h-3 w-3" />
         승인
       </Button>
       <Button
         size="sm"
         variant="destructive"
+        className="h-6 px-1.5 text-[11px]"
         onClick={handleReject}
       >
-        <X className="mr-1 h-4 w-4" />
+        <X className="mr-0.5 h-3 w-3" />
         거절
       </Button>
     </div>
@@ -84,9 +85,10 @@ export function RevertAction({ applicationId }: { applicationId: string }) {
     <Button
       size="sm"
       variant="outline"
+      className="h-6 px-1.5 text-[11px]"
       onClick={handleRevert}
     >
-      <Undo2 className="mr-1 h-4 w-4" />
+      <Undo2 className="mr-0.5 h-3 w-3" />
       대기로
     </Button>
   );

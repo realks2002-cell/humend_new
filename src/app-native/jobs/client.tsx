@@ -6,7 +6,9 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Briefcase, Search, Loader2, Clock, Calendar } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MapPin, Briefcase, Search, Loader2, Clock, Calendar, X } from "lucide-react";
 import { formatDate, formatTime, formatDateRange, formatWorkDays, formatClientWage } from "@/lib/utils/format";
 import { ApplyButton } from "@/components/jobs/ApplyButton";
 import { getClientsWithJobs } from "@/lib/native-api/queries";
@@ -16,6 +18,9 @@ export default function JobsClient() {
   const searchParams = useSearchParams();
   const [allClients, setAllClients] = useState<ClientWithJobs[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterFrom, setFilterFrom] = useState("");
+  const [filterTo, setFilterTo] = useState("");
+  const [filterClient, setFilterClient] = useState("");
 
   useEffect(() => {
     getClientsWithJobs()
@@ -23,9 +28,9 @@ export default function JobsClient() {
       .finally(() => setLoading(false));
   }, []);
 
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
-  const clientFilter = searchParams.get("client");
+  const from = filterFrom || searchParams.get("from");
+  const to = filterTo || searchParams.get("to");
+  const clientFilter = filterClient || searchParams.get("client");
 
   let clientsWithJobs = allClients;
   if (clientFilter) {
@@ -50,6 +55,24 @@ export default function JobsClient() {
   }
 
   const hasFilters = !!(from || to || clientFilter);
+  const clientNames = allClients.map((c) => ({ id: c.id, name: c.company_name }));
+
+  const clearFilters = () => {
+    setFilterFrom("");
+    setFilterTo("");
+    setFilterClient("");
+  };
+
+  // 기간제 공고를 별도 수집하고, 일별 전용 고객사 목록 생성
+  const allFixedTermJobs: { client: ClientWithJobs; job: ClientWithJobs["job_postings"][number] }[] = [];
+  const dailyOnlyClients = clientsWithJobs
+    .map((client) => {
+      const dailyJobs = client.job_postings.filter((j) => j.posting_type !== "fixed_term");
+      const fixedJobs = client.job_postings.filter((j) => j.posting_type === "fixed_term");
+      fixedJobs.forEach((job) => allFixedTermJobs.push({ client, job }));
+      return { ...client, job_postings: dailyJobs };
+    })
+    .filter((c) => c.job_postings.length > 0);
 
   if (loading) {
     return (
@@ -61,14 +84,45 @@ export default function JobsClient() {
 
   return (
     <div className="mx-auto max-w-7xl animate-in fade-in duration-500 px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold md:text-3xl">알바공고</h1>
-        <p className="mt-1 text-muted-foreground">
-          원하는 날짜에 지원하고, 바로 일하세요.
-        </p>
+      <h1 className="text-2xl font-bold mb-3">알바공고</h1>
+
+      <div className="mb-4 flex items-center gap-1.5">
+        <Select value={filterClient} onValueChange={setFilterClient}>
+          <SelectTrigger className="h-8 w-0 min-w-[90px] flex-1 text-xs">
+            <SelectValue placeholder="근무지" />
+          </SelectTrigger>
+          <SelectContent>
+            {clientNames.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          type="date"
+          className="h-8 w-0 min-w-[100px] flex-1 text-xs px-1.5"
+          value={filterFrom}
+          onChange={(e) => setFilterFrom(e.target.value)}
+        />
+        <span className="text-xs text-muted-foreground">~</span>
+        <Input
+          type="date"
+          className="h-8 w-0 min-w-[100px] flex-1 text-xs px-1.5"
+          value={filterTo}
+          onChange={(e) => setFilterTo(e.target.value)}
+        />
+        <Button size="sm" className="h-8 shrink-0 bg-red-400 hover:bg-red-500 text-white text-xs px-2.5" onClick={() => {}}>
+          검색
+        </Button>
+        {hasFilters && (
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={clearFilters}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        )}
       </div>
 
-      {clientsWithJobs.length === 0 ? (
+      {dailyOnlyClients.length === 0 && allFixedTermJobs.length === 0 ? (
         <Card className="py-20 text-center">
           <CardContent>
             <Search className="mx-auto mb-4 h-16 w-16 text-muted-foreground/30" />
@@ -87,54 +141,50 @@ export default function JobsClient() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {clientsWithJobs.map((client) => {
-            const dailyJobs = client.job_postings.filter((j) => j.posting_type !== "fixed_term");
-            const fixedTermJobs = client.job_postings.filter((j) => j.posting_type === "fixed_term");
-
-            return (
-              <Card
-                key={client.id}
-                className="group overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lg py-0 rounded-[10px]"
-              >
-                <Link href={`/jobs/detail?client=${client.id}`}>
-                  <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/5 to-primary/15">
-                    {client.main_image_url ? (
-                      <img
-                        src={client.main_image_url}
-                        alt={client.company_name}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center">
-                        <Briefcase className="h-12 w-12 text-primary/25" />
-                      </div>
-                    )}
-                  </div>
-                </Link>
-                <CardContent className="p-4">
+        <>
+          {dailyOnlyClients.length > 0 && (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {dailyOnlyClients.map((client) => (
+                <Card
+                  key={client.id}
+                  className="group overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lg py-0 rounded-[10px]"
+                >
                   <Link href={`/jobs/detail?client=${client.id}`}>
-                    <h3 className="text-lg font-semibold transition-colors group-hover:text-primary">
-                      {client.company_name}
-                    </h3>
+                    <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/5 to-primary/15">
+                      {client.main_image_url ? (
+                        <img
+                          src={client.main_image_url}
+                          alt={client.company_name}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <Briefcase className="h-12 w-12 text-primary/25" />
+                        </div>
+                      )}
+                    </div>
                   </Link>
-                  <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {client.location}
-                  </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="font-medium text-primary">
-                      {formatClientWage(client)}
-                    </span>
-                    <Badge variant="secondary">
-                      {client.job_postings.length}건 모집중
-                    </Badge>
-                  </div>
+                  <CardContent className="p-4">
+                    <Link href={`/jobs/detail?client=${client.id}`}>
+                      <h3 className="text-lg font-semibold transition-colors group-hover:text-primary">
+                        {client.company_name}
+                      </h3>
+                    </Link>
+                    <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5" />
+                      {client.location}
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="font-medium text-primary">
+                        {formatClientWage(client)}
+                      </span>
+                      <Badge variant="secondary">
+                        {client.job_postings.length}건 모집중
+                      </Badge>
+                    </div>
 
-                  {/* 일별 공고 */}
-                  {dailyJobs.length > 0 && (
                     <div className="mt-4 grid grid-cols-3 gap-1.5">
-                      {dailyJobs.map((job) => (
+                      {client.job_postings.map((job) => (
                         <div
                           key={job.id}
                           className="flex flex-col items-center gap-1 rounded-lg border p-2 text-center"
@@ -158,70 +208,81 @@ export default function JobsClient() {
                         </div>
                       ))}
                     </div>
-                  )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
-                  {/* 기간제 공고 */}
-                  {fixedTermJobs.length > 0 && (
-                    <div className="mt-3 space-y-2">
-                      {fixedTermJobs.map((job) => (
-                        <div
-                          key={job.id}
-                          className="rounded-lg border-2 border-violet-200 bg-violet-50/40 p-3"
-                        >
-                          <div className="flex items-center gap-1.5 mb-1.5">
-                            <Badge className="bg-violet-500/15 text-violet-700 border-0 text-[10px] font-semibold">
-                              기간제
-                            </Badge>
-                            {job.title && (
-                              <span className="text-xs font-medium text-violet-700 truncate">
-                                {job.title}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 text-xs text-violet-700">
-                            <Calendar className="h-3 w-3" />
-                            {job.start_date && job.end_date
-                              ? formatDateRange(job.start_date, job.end_date)
-                              : formatDate(job.work_date)}
-                          </div>
-                          <div className="flex items-center justify-between mt-1.5">
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              {job.work_days && (
-                                <span>{formatWorkDays(job.work_days)}</span>
-                              )}
-                              <span className="flex items-center gap-0.5">
-                                <Clock className="h-3 w-3" />
-                                {formatTime(job.start_time)}~{formatTime(job.end_time)}
-                              </span>
-                            </div>
-                            <span className="text-xs text-muted-foreground">{job.headcount}명</span>
-                          </div>
-                          <div className="mt-2">
-                            <ApplyButton
-                              postingId={job.id}
-                              clientName={client.company_name}
-                              workDate={
-                                job.start_date && job.end_date
-                                  ? formatDateRange(job.start_date, job.end_date)
-                                  : formatDate(job.work_date)
-                              }
-                              startTime={job.start_time}
-                              endTime={job.end_time}
-                              isFixedTerm
-                              workDays={job.work_days ?? undefined}
-                              size="sm"
-                              className="h-6 text-[11px] px-3 w-full"
-                            />
-                          </div>
-                        </div>
-                      ))}
+          {/* 기간제 알바 별도 섹션 */}
+          {allFixedTermJobs.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-xl font-bold mb-4">기간제 알바</h2>
+              <div className="space-y-3">
+                {allFixedTermJobs.map(({ client, job }) => (
+                  <div
+                    key={job.id}
+                    className="rounded-xl border-2 border-violet-200 bg-violet-50/40 p-4"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-violet-500/15 text-violet-700 border-0 text-[10px] font-semibold">
+                        기간제
+                      </Badge>
+                      <span className="font-semibold text-sm">{client.company_name}</span>
+                      {job.title && (
+                        <span className="text-xs font-medium text-violet-700 truncate">
+                          {job.title}
+                        </span>
+                      )}
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                      <MapPin className="h-3 w-3" />
+                      {client.location}
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-violet-700">
+                      <Calendar className="h-3 w-3" />
+                      {job.start_date && job.end_date
+                        ? formatDateRange(job.start_date, job.end_date)
+                        : formatDate(job.work_date)}
+                    </div>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {job.work_days && (
+                          <span>{formatWorkDays(job.work_days)}</span>
+                        )}
+                        <span className="flex items-center gap-0.5">
+                          <Clock className="h-3 w-3" />
+                          {formatTime(job.start_time)}~{formatTime(job.end_time)}
+                        </span>
+                        <span className="font-medium text-primary">
+                          {formatClientWage(client)}
+                        </span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{job.headcount}명</span>
+                    </div>
+                    <div className="mt-2">
+                      <ApplyButton
+                        postingId={job.id}
+                        clientName={client.company_name}
+                        workDate={
+                          job.start_date && job.end_date
+                            ? formatDateRange(job.start_date, job.end_date)
+                            : formatDate(job.work_date)
+                        }
+                        startTime={job.start_time}
+                        endTime={job.end_time}
+                        isFixedTerm
+                        workDays={job.work_days ?? undefined}
+                        size="sm"
+                        className="h-6 text-[11px] px-3 w-full"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

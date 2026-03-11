@@ -76,7 +76,7 @@ export async function createJobPosting(formData: FormData) {
     (async () => {
       try {
         const { data: client } = await db.from("clients").select("company_name").eq("id", clientId).single();
-        if (client) await notifyNewJobPosting(client.company_name, `${startDate}~${endDate}`);
+        if (client) await notifyNewJobPosting(clientId, client.company_name, `${startDate}~${endDate}`);
       } catch (e) { console.error("[push] newJobPosting error:", e); }
     })();
   } else {
@@ -105,7 +105,7 @@ export async function createJobPosting(formData: FormData) {
     (async () => {
       try {
         const { data: client } = await db.from("clients").select("company_name").eq("id", clientId).single();
-        if (client) await notifyNewJobPosting(client.company_name, workDate);
+        if (client) await notifyNewJobPosting(clientId, client.company_name, workDate);
       } catch (e) { console.error("[push] newJobPosting error:", e); }
     })();
   }

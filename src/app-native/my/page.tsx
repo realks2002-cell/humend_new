@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   ClipboardList, Calendar, ArrowRight,
-  Clock, Wallet, User, FileSignature, Loader2,
+  Clock, Wallet, User, FileSignature, Loader2, MapPin,
 } from "lucide-react";
 import { ChangePasswordButton } from "./change-password-button";
 import { DeleteAccountButton } from "./delete-account-button";
@@ -92,6 +92,7 @@ function MyPageContent() {
 
   const quickLinks = [
     { href: "/my/resume", icon: User, label: "프로필관리", desc: "회원정보 등록/수정", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
+    { href: "/my/tracking", icon: MapPin, label: "출근 추적", desc: "오늘 출근 위치 확인", gradient: "from-blue-500/5 to-indigo-500/5", iconBg: "", iconColor: "text-blue-600" },
     { href: "/my/salary", icon: Wallet, label: "급여신청", desc: "계약체결 및 급여신청", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
     { href: "/my/applications", icon: ClipboardList, label: "근무신청 조회", desc: "내 지원 현황 확인", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
     { href: "/my/history", icon: Clock, label: "근무내역", desc: "월별 근무내역 조회", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },

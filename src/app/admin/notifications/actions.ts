@@ -23,6 +23,7 @@ export async function sendNotification(formData: FormData) {
   const title = formData.get("title") as string;
   const body = formData.get("body") as string;
   const targetMemberId = formData.get("target_member_id") as string | null;
+  const targetClientId = formData.get("target_client_id") as string | null;
 
   if (!title || !body) {
     return { error: "제목과 내용을 입력해주세요." };
@@ -33,6 +34,7 @@ export async function sendNotification(formData: FormData) {
       title,
       body,
       targetMemberId: targetMemberId || undefined,
+      targetClientId: targetClientId || undefined,
       sentBy: user.id,
     });
 
@@ -64,6 +66,16 @@ export async function getNotificationLogs() {
     created_at: string;
     members: { name: string; phone: string } | null;
   }>;
+}
+
+export async function getClients() {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("clients")
+    .select("id, company_name")
+    .order("company_name", { ascending: true });
+
+  return (data ?? []) as Array<{ id: string; company_name: string }>;
 }
 
 export async function getMembers() {

@@ -1,7 +1,6 @@
 import "./globals.css";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import NativeAppProvider from "@/components/layout/NativeAppProvider";
+import BottomNav from "@/components/layout/BottomNav";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -23,11 +22,8 @@ export default function RootLayout({
       <body className="antialiased">
         <NativeAppProvider>
           <TooltipProvider>
-            <Header />
-            <main className="min-h-[calc(100vh-3.5rem)]">{children}</main>
-            <div className="text-[80%]">
-              <Footer />
-            </div>
+            <main className="min-h-screen pb-16" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>{children}</main>
+            <BottomNav />
             <Toaster position="top-center" richColors />
           </TooltipProvider>
         </NativeAppProvider>

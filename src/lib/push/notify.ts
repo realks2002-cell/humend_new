@@ -122,15 +122,55 @@ export async function notifyPaymentConfirmed(
   });
 }
 
-/** 새 공고 등록 알림 (전체) */
+/** 새 공고 등록 알림 (해당 근무지 경력 회원 대상) */
 export async function notifyNewJobPosting(
+  clientId: string,
   companyName: string,
   workDate: string
 ) {
-  await notifyAll({
-    title: "새로운 일자리가 등록되었습니다",
-    body: `${companyName} ${workDate} - 지금 확인하세요!`,
-    url: "/jobs",
+  const supabase = createAdminClient();
+
+  // 해당 client의 모든 posting id 조회
+  const { data: postings } = await supabase
+    .from("job_postings")
+    .select("id")
+    .eq("client_id", clientId);
+
+  const postingIds = postings?.map((p) => p.id) ?? [];
+  if (postingIds.length === 0) return;
+
+  // 해당 posting들의 근무 경력 회원 조회
+  const { data: records } = await supabase
+    .from("work_records")
+    .select("member_id")
+    .in("posting_id", postingIds);
+
+  const memberIds = [...new Set(records?.map((r) => r.member_id) ?? [])];
+  if (memberIds.length === 0) return;
+
+  // 해당 회원들의 FCM 토큰 조회
+  const { data: tokens } = await supabase
+    .from("device_tokens")
+    .select("fcm_token")
+    .in("member_id", memberIds);
+
+  if (!tokens || tokens.length === 0) return;
+
+  const title = "새로운 일자리가 등록되었습니다";
+  const body = `${companyName} ${workDate} - 지금 확인하세요!`;
+
+  const result = await sendPushToTokens(
+    tokens.map((t) => t.fcm_token),
+    { title, body, data: { url: "/jobs" } }
+  );
+
+  await supabase.from("notification_logs").insert({
+    title,
+    body,
+    target_type: "targeted",
+    target_member_id: null,
+    sent_count: result.sent,
+    trigger_type: "auto",
   });
 }
 
@@ -139,6 +179,7 @@ export async function sendManualPush(opts: {
   title: string;
   body: string;
   targetMemberId?: string;
+  targetClientId?: string;
   sentBy: string;
 }): Promise<number> {
   if (opts.targetMemberId) {
@@ -152,6 +193,15 @@ export async function sendManualPush(opts: {
     return 1;
   }
 
+  if (opts.targetClientId) {
+    return await notifyClientMembers({
+      clientId: opts.targetClientId,
+      title: opts.title,
+      body: opts.body,
+      sentBy: opts.sentBy,
+    });
+  }
+
   const sent = await notifyAll({
     title: opts.title,
     body: opts.body,
@@ -161,4 +211,54 @@ export async function sendManualPush(opts: {
   });
 
   return sent ?? 0;
+}
+
+/** 고객사 경력 회원에게 수동 푸시 발송 */
+async function notifyClientMembers(opts: {
+  clientId: string;
+  title: string;
+  body: string;
+  sentBy: string;
+}): Promise<number> {
+  const supabase = createAdminClient();
+
+  const { data: postings } = await supabase
+    .from("job_postings")
+    .select("id")
+    .eq("client_id", opts.clientId);
+
+  const postingIds = postings?.map((p) => p.id) ?? [];
+  if (postingIds.length === 0) return 0;
+
+  const { data: records } = await supabase
+    .from("work_records")
+    .select("member_id")
+    .in("posting_id", postingIds);
+
+  const memberIds = [...new Set(records?.map((r) => r.member_id) ?? [])];
+  if (memberIds.length === 0) return 0;
+
+  const { data: tokens } = await supabase
+    .from("device_tokens")
+    .select("fcm_token")
+    .in("member_id", memberIds);
+
+  if (!tokens || tokens.length === 0) return 0;
+
+  const result = await sendPushToTokens(
+    tokens.map((t) => t.fcm_token),
+    { title: opts.title, body: opts.body, data: { url: "/my" } }
+  );
+
+  await supabase.from("notification_logs").insert({
+    title: opts.title,
+    body: opts.body,
+    target_type: "targeted",
+    target_member_id: null,
+    sent_by: opts.sentBy,
+    sent_count: result.sent,
+    trigger_type: "manual",
+  });
+
+  return result.sent;
 }

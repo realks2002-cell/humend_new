@@ -10,13 +10,15 @@ import { toast } from "sonner";
 
 interface Props {
   members: Array<{ id: string; name: string | null; phone: string }>;
+  clients: Array<{ id: string; company_name: string }>;
 }
 
-export default function NotificationForm({ members }: Props) {
+export default function NotificationForm({ members, clients }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [target, setTarget] = useState<"all" | "individual">("all");
+  const [target, setTarget] = useState<"all" | "individual" | "client">("all");
   const [memberId, setMemberId] = useState("");
+  const [clientId, setClientId] = useState("");
   const [search, setSearch] = useState("");
 
   const filtered = search
@@ -34,6 +36,9 @@ export default function NotificationForm({ members }: Props) {
     if (target === "individual" && memberId) {
       formData.set("target_member_id", memberId);
     }
+    if (target === "client" && clientId) {
+      formData.set("target_client_id", clientId);
+    }
 
     const result = await sendNotification(formData);
     setLoading(false);
@@ -44,6 +49,7 @@ export default function NotificationForm({ members }: Props) {
       toast.success(`알림이 발송되었습니다 (${result.sent}건)`);
       (e.target as HTMLFormElement).reset();
       setMemberId("");
+      setClientId("");
       setSearch("");
       router.refresh();
     }
@@ -73,6 +79,7 @@ export default function NotificationForm({ members }: Props) {
               onChange={() => {
                 setTarget("all");
                 setMemberId("");
+                setClientId("");
               }}
             />
             전체 회원
@@ -81,9 +88,23 @@ export default function NotificationForm({ members }: Props) {
             <input
               type="radio"
               checked={target === "individual"}
-              onChange={() => setTarget("individual")}
+              onChange={() => {
+                setTarget("individual");
+                setClientId("");
+              }}
             />
             특정 회원
+          </label>
+          <label className="flex items-center gap-1.5 text-sm">
+            <input
+              type="radio"
+              checked={target === "client"}
+              onChange={() => {
+                setTarget("client");
+                setMemberId("");
+              }}
+            />
+            고객사 경력 회원
           </label>
         </div>
       </div>
@@ -122,9 +143,26 @@ export default function NotificationForm({ members }: Props) {
         </div>
       )}
 
+      {target === "client" && (
+        <div>
+          <select
+            className="w-full rounded-md border px-3 py-2 text-sm"
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+          >
+            <option value="">고객사 선택</option>
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.company_name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <Button
         type="submit"
-        disabled={loading || (target === "individual" && !memberId)}
+        disabled={loading || (target === "individual" && !memberId) || (target === "client" && !clientId)}
         className="w-full"
       >
         {loading ? "발송 중..." : "알림 발송"}

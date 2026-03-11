@@ -157,3 +157,12 @@ export async function getConsentForMember(memberId: string): Promise<ParentalCon
 
   return (data as ParentalConsent) ?? null;
 }
+
+export async function deletePayment(paymentId: string) {
+  const admin = createAdminClient();
+  const { error } = await admin.from("payments").delete().eq("id", paymentId);
+  if (error) {
+    return { success: false, error: error.message };
+  }
+  return { success: true, error: null };
+}

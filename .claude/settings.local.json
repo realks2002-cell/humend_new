@@ -125,7 +125,13 @@
       "Bash(~/Library/Android/sdk/emulator/emulator:*)",
       "Bash(wc:*)",
       "mcp__sequential-thinking__sequentialthinking",
-      "Bash(grep SHA1:*)"
+      "Bash(grep SHA1:*)",
+      "WebFetch(domain:developers.kakao.com)",
+      "Bash(chmod +x:*)",
+      "Bash(echo \"EXIT CODE: $?\")",
+      "Bash(cp:*)",
+      "Bash(rm:*)",
+      "Bash(NEXT_PUBLIC_API_BASE=https://humendhr.com npx next:*)"
     ]
   }
 }

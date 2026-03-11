@@ -135,6 +135,7 @@ export function PayrollTable({ records, month }: PayrollTableProps) {
               <th className="pb-2 px-2">이름</th>
               <th className="pb-2 px-2">근무지</th>
               <th className="pb-2 px-2 hidden sm:table-cell">근무일</th>
+              <th className="pb-2 px-2 hidden sm:table-cell">요청일</th>
               <th className="pb-2 px-2 hidden sm:table-cell">시작시간</th>
               <th className="pb-2 px-2 hidden sm:table-cell">종료시간</th>
               <th className="pb-2 px-2 hidden sm:table-cell">급여타입</th>
@@ -151,7 +152,7 @@ export function PayrollTable({ records, month }: PayrollTableProps) {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={14} className="py-8 text-center text-muted-foreground">
+                <td colSpan={15} className="py-8 text-center text-muted-foreground">
                   급여 내역이 없습니다.
                 </td>
               </tr>
@@ -185,6 +186,9 @@ export function PayrollTable({ records, month }: PayrollTableProps) {
                     <td className="py-2 px-2 text-center">{r.client_name}</td>
                     <td className="py-2 px-2 hidden sm:table-cell text-center whitespace-nowrap text-xs">
                       {r.work_date ? r.work_date.slice(0, 10) : "-"}
+                    </td>
+                    <td className="py-2 px-2 hidden sm:table-cell text-center whitespace-nowrap text-xs">
+                      {r.created_at ? r.created_at.slice(0, 10) : "-"}
                     </td>
                     <td className="py-2 px-2 hidden sm:table-cell text-center whitespace-nowrap">{r.start_time?.slice(0, 5)}</td>
                     <td className="py-2 px-2 hidden sm:table-cell text-center whitespace-nowrap">{r.end_time?.slice(0, 5)}</td>

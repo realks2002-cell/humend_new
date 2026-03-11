@@ -270,6 +270,20 @@ export async function uploadProfilePhoto(file: File) {
   return res.json();
 }
 
+export async function verifyIdentity(
+  name: string,
+  rrnFront: string,
+  rrnBack: string,
+) {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/verify-identity`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ name, rrnFront, rrnBack }),
+  });
+  return res.json();
+}
+
 export async function submitPartnerInquiry(input: {
   companyName: string;
   contactPerson: string;

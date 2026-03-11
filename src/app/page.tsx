@@ -12,9 +12,9 @@ import HeroSection from "@/components/home/HeroSection";
 import KakaoFloatingButton from "@/components/home/KakaoFloatingButton";
 
 const stats = [
-  { label: "등록 회원", value: 1200, suffix: "+", icon: Users, color: "text-blue-500" },
-  { label: "제휴 고객사", value: 50, suffix: "+", icon: Building2, color: "text-green-500" },
-  { label: "매칭 완료", value: 8500, suffix: "+", icon: Handshake, color: "text-purple-500" },
+  { label: "등록 회원", value: 12000, suffix: "+", icon: Users, color: "text-blue-500" },
+  { label: "제휴 고객사", value: 200, suffix: "+", icon: Building2, color: "text-green-500" },
+  { label: "매칭 완료", value: 30000, suffix: "+", icon: Handshake, color: "text-purple-500" },
 ];
 
 const services = [

@@ -208,16 +208,17 @@ export async function importPayrollFromSheets(month: string) {
 
     console.log("📊 Import 시작:", { month, sheetName, rowCount: rows.length });
 
-    // 1. 해당 월의 모든 work_records를 DB에서 가져오기 (매칭용)
-    const start = `${month}-01`;
-    const endDate = new Date(Number(month.split("-")[0]), Number(month.split("-")[1]), 0);
-    const end = `${month}-${String(endDate.getDate()).padStart(2, "0")}`;
+    // 1. 해당 월의 모든 work_records를 DB에서 가져오기 (매칭용, signed_at 기준 — export와 동일)
+    const [yearStr, monthStr] = month.split("-");
+    const startTs = `${month}-01T00:00:00`;
+    const nextMonth = new Date(Number(yearStr), Number(monthStr), 1);
+    const endTs = nextMonth.toISOString();
 
     const { data: workRecords } = await supabase
       .from("work_records")
       .select("id, client_name, work_date, members(name, phone)")
-      .gte("work_date", start)
-      .lte("work_date", end)
+      .gte("signed_at", startTs)
+      .lt("signed_at", endTs)
       .not("signature_url", "is", null);
 
     const dbRecords = (workRecords ?? []) as Array<Record<string, unknown>>;

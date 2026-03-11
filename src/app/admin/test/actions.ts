@@ -71,7 +71,7 @@ export async function createTestShift(
   if (existingClient) {
     await supabase
       .from("clients")
-      .update({ latitude: lat, longitude: lng, location: placeName })
+      .update({ latitude: lat, longitude: lng, location: placeName, is_test: true })
       .eq("id", existingClient.id);
     clientId = existingClient.id;
   } else {
@@ -82,6 +82,7 @@ export async function createTestShift(
         location: placeName,
         latitude: lat,
         longitude: lng,
+        is_test: true,
       })
       .select("id")
       .single();
@@ -120,6 +121,10 @@ export async function createTestShift(
         last_seen_at: null,
         location_consent: false,
         tracking_started_at: null,
+        first_in_range_at: null,
+        tracking_start_lat: null,
+        tracking_start_lng: null,
+        last_speed: null,
       })
       .eq("id", existingShift.id);
 
@@ -154,7 +159,7 @@ export async function sendTestLocation(
   // shift 정보 확인
   const { data: shift, error: shiftError } = await supabase
     .from("daily_shifts")
-    .select("id, member_id, client_id, arrival_status, start_time, work_date, last_known_lat, last_known_lng")
+    .select("id, member_id, client_id, arrival_status, start_time, work_date, last_known_lat, last_known_lng, first_in_range_at")
     .eq("id", shiftId)
     .single();
 
@@ -165,18 +170,7 @@ export async function sendTestLocation(
     return { arrived: true, status: shift.arrival_status, distance: null };
   }
 
-  // 위치 로그 INSERT
-  const { error: logError } = await supabase.from("location_logs").insert({
-    shift_id: shiftId,
-    member_id: shift.member_id,
-    lat,
-    lng,
-    speed: null,
-    accuracy: null,
-  });
-  if (logError) throw new Error(`위치 로그 저장 실패: ${logError.message}`);
-
-  // shift 최신 위치 업데이트
+  // daily_shifts 캐시 업데이트 (location_logs 없음)
   const updateData: Record<string, unknown> = {
     last_known_lat: lat,
     last_known_lng: lng,
@@ -186,15 +180,17 @@ export async function sendTestLocation(
   if (shift.arrival_status === "pending") {
     updateData.arrival_status = "tracking";
     updateData.tracking_started_at = new Date().toISOString();
+    updateData.tracking_start_lat = lat;
+    updateData.tracking_start_lng = lng;
   }
 
-  // 도착 판별 (10m 지오펜스)
+  // 도착 판별 (250m 지오펜스)
   const { data: distResult, error: rpcError } = await supabase
     .rpc("check_arrival_distance", {
       p_shift_id: shiftId,
       p_lat: lat,
       p_lng: lng,
-      p_radius: 10,
+      p_radius: 250,
     })
     .maybeSingle() as { data: { is_arrived: boolean; distance_meters: number } | null; error: unknown };
   if (rpcError) console.error("check_arrival_distance RPC error:", rpcError);
@@ -202,18 +198,42 @@ export async function sendTestLocation(
   let arrived = false;
 
   if (distResult?.is_arrived) {
-    const now = new Date();
+    const firstInRangeAt = shift.first_in_range_at
+      ? new Date(shift.first_in_range_at as string)
+      : new Date();
+
+    if (!shift.first_in_range_at) {
+      updateData.first_in_range_at = firstInRangeAt.toISOString();
+    }
+
     const shiftStart = new Date(`${shift.work_date}T${shift.start_time}+09:00`);
-    const isLate = now > shiftStart;
+    const isLate = firstInRangeAt > shiftStart;
 
     updateData.arrival_status = isLate ? "late" : "arrived";
-    updateData.arrived_at = now.toISOString();
+    updateData.arrived_at = firstInRangeAt.toISOString();
     arrived = true;
-  } else if (shift.arrival_status === "pending" || shift.arrival_status === "tracking") {
+  } else if (distResult && distResult.distance_meters <= 250 && !shift.first_in_range_at) {
+    updateData.first_in_range_at = new Date().toISOString();
+  }
+
+  if (!arrived && (shift.arrival_status === "pending" || shift.arrival_status === "tracking")) {
     const prevLat = shift.last_known_lat as number | null;
     const prevLng = shift.last_known_lng as number | null;
     if (prevLat != null && prevLng != null && haversineMeters(prevLat, prevLng, lat, lng) >= MOVING_THRESHOLD_METERS) {
       updateData.arrival_status = "moving";
+    }
+  }
+
+  // moving/tracking 상태에서 출근시간 경과 시 late_risk 전환
+  if (
+    !arrived &&
+    ["moving", "tracking"].includes(updateData.arrival_status as string ?? shift.arrival_status) &&
+    shift.start_time && shift.work_date
+  ) {
+    const now = new Date();
+    const shiftStart = new Date(`${shift.work_date}T${shift.start_time}+09:00`);
+    if (now > shiftStart) {
+      updateData.arrival_status = "late_risk";
     }
   }
 
@@ -230,6 +250,17 @@ export async function sendTestLocation(
     lat,
     lng,
   };
+}
+
+export async function updateClientLocation(clientId: string, lat: number, lng: number) {
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from("clients")
+    .update({ latitude: lat, longitude: lng })
+    .eq("id", clientId);
+
+  if (error) throw new Error(`고객사 위치 업데이트 실패: ${error.message}`);
 }
 
 export async function deleteTestShift(shiftId: string) {

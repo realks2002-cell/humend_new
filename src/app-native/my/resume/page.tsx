@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Camera, Save, Loader2, ShieldCheck, AlertTriangle, User, CreditCard, Briefcase, FileCheck, CheckCircle2 } from "lucide-react";
 import imageCompression from "browser-image-compression";
-import { saveResume, getResume, uploadProfilePhoto } from "@/lib/native-api/actions";
+import { saveResume, getResume, uploadProfilePhoto, verifyIdentity } from "@/lib/native-api/actions";
 import { AuthGuard } from "@/lib/native-api/auth-guard";
 
 function ResumeContent() {
@@ -415,7 +415,7 @@ function ResumeContent() {
           <div id="field-identity" className="border-t pt-4" tabIndex={-1}>
             <label className="mb-1.5 block text-xs font-semibold text-foreground">NICE 신용평가 본인인증</label>
             <p className="mb-3 text-xs text-muted-foreground">
-              휴대폰 본인인증을 통해 신원을 확인합니다. (개발모드: 버튼 클릭 시 인증완료 처리)
+              이름과 주민등록번호 일치 여부를 확인합니다.
             </p>
             {identityVerified ? (
               <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3.5 text-sm text-emerald-700 font-medium">
@@ -428,13 +428,30 @@ function ResumeContent() {
                 variant="ghost"
                 className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold hover:from-amber-600 hover:to-orange-600 hover:text-black disabled:opacity-70"
                 disabled={verifying}
-                onClick={() => {
+                onClick={async () => {
+                  if (!memberName?.trim()) {
+                    setMessage("이름을 먼저 입력해주세요.");
+                    return;
+                  }
+                  if (form.rrnFront.length !== 6 || form.rrnBack.length !== 7) {
+                    setMessage("주민등록번호를 정확히 입력해주세요.");
+                    return;
+                  }
                   setVerifying(true);
-                  setTimeout(() => {
-                    setIdentityVerified(true);
+                  setMessage("");
+                  try {
+                    const data = await verifyIdentity(memberName, form.rrnFront, form.rrnBack);
+                    if (data.verified) {
+                      setIdentityVerified(true);
+                      setMessage("본인인증이 완료되었습니다.");
+                    } else {
+                      setMessage(data.error || "본인인증에 실패했습니다.");
+                    }
+                  } catch {
+                    setMessage("본인인증 처리 중 오류가 발생했습니다.");
+                  } finally {
                     setVerifying(false);
-                    setMessage("본인인증이 완료되었습니다. (개발모드)");
-                  }, 1500);
+                  }
                 }}
               >
                 {verifying ? (

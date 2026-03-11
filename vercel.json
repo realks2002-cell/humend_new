@@ -1,3 +1,17 @@
 {
-  "regions": ["icn1"]
+  "regions": ["icn1"],
+  "crons": [
+    {
+      "path": "/api/cron/noshow-check",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/late-prediction",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/noshow-confirm",
+      "schedule": "*/10 * * * *"
+    }
+  ]
 }

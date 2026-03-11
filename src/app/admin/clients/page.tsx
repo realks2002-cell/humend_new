@@ -12,6 +12,7 @@ async function getAllClientsWithPhotos() {
   const { data } = await admin
     .from("clients")
     .select("*, client_photos(*)")
+    .or("is_test.is.null,is_test.eq.false")
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
   return data ?? [];

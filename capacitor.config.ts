@@ -5,11 +5,18 @@ const config: CapacitorConfig = {
   appName: 'Humend HR',
   webDir: 'out',
   server: {
-    // url 제거 — 로컬 번들에서 로드 (Google Play 심사 대응)
-    allowNavigation: ['https://humendhr.com/*', 'https://*.supabase.co/*', 'https://accounts.google.com/*'],
+    url: 'http://10.0.2.2:3000/jobs', // 개발용 — 배포 시 제거
+    allowNavigation: [
+      'https://humendhr.com/*',
+      'https://*.supabase.co/*',
+      'https://accounts.google.com/*',
+      'https://*.googleapis.com/*',
+      'https://*.gstatic.com/*',
+      'https://*.google.com/*',
+    ],
   },
   android: {
-    webContentsDebuggingEnabled: true,
+    webContentsDebuggingEnabled: false,
     allowMixedContent: false,
   },
   plugins: {
@@ -25,6 +32,13 @@ const config: CapacitorConfig = {
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
+    },
+    BackgroundGeolocation: {
+      // Android Foreground Service 설정
+    },
+    LocalNotifications: {
+      smallIcon: 'ic_stat_icon_config_sample',
+      iconColor: '#3B82F6',
     },
   },
 };

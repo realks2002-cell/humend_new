@@ -243,18 +243,19 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
       <div className="overflow-x-auto">
         <table className="w-full text-sm table-fixed">
           <colgroup>
+            {showActions && <col className="w-[28px]" />}
+            <col className="w-[53px]" />
+            <col className="w-[53px]" />
+            <col className="w-[53px]" />
+            <col className="w-[27px]" />
+            <col className="w-[41px]" />
+            <col className="w-[32px] hidden md:table-column" />
+            <col className="w-[64px] hidden md:table-column" />
+            <col className="w-[57px] hidden md:table-column" />
+            <col className="w-[38px] hidden md:table-column" />
+            <col className="w-[34px]" />
+            {showActions && <col className="w-[54px]" />}
             {showActions && <col className="w-[34px]" />}
-            <col className="w-[77px]" />
-            <col className="w-[77px]" />
-            <col className="w-[77px]" />
-            <col className="w-[40px]" />
-            <col className="w-[60px]" />
-            <col className="w-[40px] hidden md:table-column" />
-            <col className="w-[80px] hidden md:table-column" />
-            <col className="w-[102px] hidden md:table-column" />
-            <col className="w-[68px] hidden md:table-column" />
-            <col className="w-[42px]" />
-            {showActions && <col className="w-[68px]" />}
           </colgroup>
           <thead>
             <tr className="border-b bg-muted/50 text-center">
@@ -278,11 +279,12 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
               <th className="hidden px-2 py-3 font-medium md:table-cell">급여</th>
               <th className="px-2 py-3 font-medium">상태</th>
               {showActions && <th className="px-2 py-3 font-medium">처리</th>}
+              {showActions && <th className="px-2 py-3 font-medium">삭제</th>}
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={showActions ? 12 : 10} className="py-8 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</td></tr>
+              <tr><td colSpan={showActions ? 13 : 10} className="py-8 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</td></tr>
             ) : null}
             {paginatedApps.map((app) => {
               const config = statusConfig[app.status] ?? statusConfig["대기"];
@@ -352,20 +354,24 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                       <div className="flex items-center justify-center gap-1">
                         {app.status === "대기" && <ApplicationActions applicationId={app.id} />}
                         {(app.status === "승인" || app.status === "거절") && <RevertAction applicationId={app.id} />}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600"
-                          disabled={deletingId === app.id}
-                          onClick={() => handleDelete(app.id, app.members?.name ?? "알 수 없음")}
-                        >
-                          {deletingId === app.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
                       </div>
+                    </td>
+                  )}
+                  {showActions && (
+                    <td className="px-2 py-3 text-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        disabled={deletingId === app.id}
+                        onClick={() => handleDelete(app.id, app.members?.name ?? "알 수 없음")}
+                      >
+                        {deletingId === app.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
                     </td>
                   )}
                 </tr>

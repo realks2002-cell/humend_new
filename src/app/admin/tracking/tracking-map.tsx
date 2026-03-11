@@ -8,6 +8,7 @@ import {
   InfoWindowF,
 } from "@react-google-maps/api";
 import { createBrowserClient } from "@supabase/ssr";
+import { updateClientLocation } from "@/app/admin/test/actions";
 import type { DailyShiftWithDetails, ArrivalStatus, MarkerColor } from "@/types/location";
 
 const MAP_CENTER = { lat: 37.5665, lng: 126.978 }; // 서울 시청
@@ -43,9 +44,9 @@ export function createWorkerIcon(color: MarkerColor) {
 }
 
 export function createClientIcon() {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
-    <path d="M14 2 L4 14 L8 14 L8 26 L20 26 L20 14 L24 14 Z" fill="#6366f1" stroke="white" stroke-width="1.5"/>
-    <rect x="11" y="16" width="6" height="10" fill="white" rx="1"/>
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
+    <path d="M20 0 C9 0 0 9 0 20 C0 34 20 48 20 48 C20 48 40 34 40 20 C40 9 31 0 20 0Z" fill="#ef4444" stroke="white" stroke-width="2"/>
+    <circle cx="20" cy="18" r="8" fill="white"/>
   </svg>`;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
@@ -65,6 +66,7 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
   const [shifts, setShifts] = useState(externalShifts);
   const [selectedShift, setSelectedShift] = useState<DailyShiftWithDetails | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
+  const clientMarkersRef = useRef<google.maps.Marker[]>([]);
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? "",
@@ -72,17 +74,11 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
     region: "KR",
   });
 
-  // 외부 prop 변경 시 내부 state 동기화
-  useEffect(() => {
-    setShifts(externalShifts);
-  }, [externalShifts]);
-
-  // shifts 변경 시 bounds 자동 업데이트
-  useEffect(() => {
-    if (!mapRef.current || shifts.length === 0) return;
+  const fitBoundsToShifts = useCallback((map: google.maps.Map, data: DailyShiftWithDetails[]) => {
+    if (data.length === 0) return;
     const bounds = new google.maps.LatLngBounds();
     let hasPoint = false;
-    shifts.forEach((s) => {
+    data.forEach((s) => {
       if (s.clients.latitude && s.clients.longitude) {
         bounds.extend({ lat: s.clients.latitude, lng: s.clients.longitude });
         hasPoint = true;
@@ -92,8 +88,59 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
         hasPoint = true;
       }
     });
-    if (hasPoint) mapRef.current.fitBounds(bounds);
-  }, [shifts]);
+    if (hasPoint) map.fitBounds(bounds);
+  }, []);
+
+  const createClientMarkers = useCallback((map: google.maps.Map, data: DailyShiftWithDetails[]) => {
+    clientMarkersRef.current.forEach((m) => m.setMap(null));
+    clientMarkersRef.current = [];
+
+    const seen = new Set<string>();
+    data.forEach((s) => {
+      if (!s.clients.latitude || !s.clients.longitude || seen.has(s.client_id)) return;
+      seen.add(s.client_id);
+
+      const marker = new google.maps.Marker({
+        position: { lat: s.clients.latitude, lng: s.clients.longitude },
+        map,
+        draggable: true,
+        icon: {
+          url: createClientIcon(),
+          scaledSize: new google.maps.Size(40, 48),
+          anchor: new google.maps.Point(20, 48),
+        },
+        title: s.clients.company_name,
+      });
+
+      const clientId = s.client_id;
+      marker.addListener("dragend", () => {
+        const pos = marker.getPosition();
+        if (!pos) return;
+        updateClientLocation(clientId, pos.lat(), pos.lng()).catch(console.error);
+      });
+
+      clientMarkersRef.current.push(marker);
+    });
+  }, []);
+
+  // 외부 prop 변경 시 내부 state 동기화
+  useEffect(() => {
+    setShifts(externalShifts);
+  }, [externalShifts]);
+
+  // shifts 변경 시 bounds + 고객사 마커 자동 업데이트
+  useEffect(() => {
+    if (!mapRef.current) return;
+    fitBoundsToShifts(mapRef.current, shifts);
+    createClientMarkers(mapRef.current, shifts);
+  }, [shifts, fitBoundsToShifts, createClientMarkers]);
+
+  // cleanup
+  useEffect(() => {
+    return () => {
+      clientMarkersRef.current.forEach((m) => m.setMap(null));
+    };
+  }, []);
 
   // Supabase Realtime 구독
   useEffect(() => {
@@ -138,7 +185,9 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
-  }, []);
+    fitBoundsToShifts(map, shifts);
+    createClientMarkers(map, shifts);
+  }, [shifts, fitBoundsToShifts, createClientMarkers]);
 
   if (!isLoaded) {
     return (
@@ -147,15 +196,6 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
       </div>
     );
   }
-
-  // 고객사 중복 제거
-  const uniqueClients = Array.from(
-    new Map(
-      shifts
-        .filter((s) => s.clients.latitude && s.clients.longitude)
-        .map((s) => [s.client_id, s.clients])
-    ).entries()
-  );
 
   return (
     <GoogleMap
@@ -168,22 +208,9 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
         zoomControl: true,
         streetViewControl: false,
         mapTypeControl: false,
+        disableDoubleClickZoom: true,
       }}
     >
-      {/* 고객사 마커 */}
-      {uniqueClients.map(([clientId, client]) => (
-        <MarkerF
-          key={`client-${clientId}`}
-          position={{ lat: client.latitude!, lng: client.longitude! }}
-          icon={{
-            url: createClientIcon(),
-            scaledSize: new google.maps.Size(28, 28),
-            anchor: new google.maps.Point(14, 26),
-          }}
-          title={client.company_name}
-        />
-      ))}
-
       {/* 근무자 마커 */}
       {shifts
         .filter((s) => s.last_known_lat && s.last_known_lng)
@@ -202,6 +229,28 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
             />
           );
         })}
+
+      {/* 레전드 */}
+      <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-md px-3 py-2.5 text-xs space-y-1.5 z-10 border">
+        {[
+          { color: "#9ca3af", label: "대기" },
+          { color: "#3b82f6", label: "추적중·이동중" },
+          { color: "#f97316", label: "지각위험·지각" },
+          { color: "#22c55e", label: "도착" },
+        ].map(({ color, label }) => (
+          <div key={color} className="flex items-center gap-2">
+            <span
+              className="inline-block w-3 h-3 rounded-full border border-white shadow-sm shrink-0"
+              style={{ backgroundColor: color }}
+            />
+            <span className="text-gray-700">{label}</span>
+          </div>
+        ))}
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-3 h-3 shrink-0 text-center leading-3" style={{ color: "#ef4444" }}>📍</span>
+          <span className="text-gray-700">고객사</span>
+        </div>
+      </div>
 
       {/* InfoWindow */}
       {selectedShift && selectedShift.last_known_lat && selectedShift.last_known_lng && (

@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import NativeAppProvider from "@/components/layout/NativeAppProvider";
+import AppShell from "@/components/layout/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -46,9 +45,7 @@ export default function RootLayout({
       >
         <NativeAppProvider>
           <TooltipProvider>
-            <Header />
-            <main className="min-h-[calc(100vh-3.5rem)]">{children}</main>
-            <Footer />
+            <AppShell>{children}</AppShell>
             <Toaster position="top-center" richColors />
           </TooltipProvider>
         </NativeAppProvider>

@@ -282,6 +282,40 @@ export async function batchApproveApplications(applicationIds: string[]) {
   return { success, failed, skippedFull, errors };
 }
 
+export async function deleteApplication(applicationId: string) {
+  const supabase = createAdminClient();
+
+  // 관련 work_records 먼저 삭제
+  await supabase
+    .from("work_records")
+    .delete()
+    .eq("application_id", applicationId);
+
+  const { error } = await supabase
+    .from("applications")
+    .delete()
+    .eq("id", applicationId);
+
+  revalidatePath("/admin/applications");
+  revalidatePath("/admin/payroll");
+  return { error: error?.message ?? null };
+}
+
+export async function updateApplicationMemo(
+  applicationId: string,
+  memo: string
+) {
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from("applications")
+    .update({ admin_memo: memo || null })
+    .eq("id", applicationId);
+
+  revalidatePath("/admin/applications");
+  return { error: error?.message ?? null };
+}
+
 /** 푸시 알림용: 지원 정보 조회 */
 async function getApprovalInfo(applicationId: string) {
   const supabase = createAdminClient();

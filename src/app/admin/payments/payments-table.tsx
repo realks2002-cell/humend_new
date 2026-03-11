@@ -11,7 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarIcon, Download, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDate, formatCurrency } from "@/lib/utils/format";
 import {
@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { type PaymentRecord, getPaymentsForCsvExport, getMemberDetail, getConsentForMember } from "./actions";
+import { type PaymentRecord, getPaymentsForCsvExport, getMemberDetail, getConsentForMember, deletePayment } from "./actions";
 import { type Member, type Payment, type ParentalConsent } from "@/lib/supabase/queries";
 import { MemberDetailModal } from "../members/member-detail-modal";
 import { PayslipContent, type PayslipRecord } from "@/app/my/salary/payslip-modal";
@@ -277,6 +277,7 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
             <col className="w-[100px] hidden sm:table-column" />
             <col className="w-[100px]" />
             <col className="w-[80px] hidden sm:table-column" />
+            <col className="w-[50px]" />
           </colgroup>
           <thead>
             <tr className="border-b text-center text-muted-foreground">
@@ -291,12 +292,13 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
               <th className="pb-2 px-2 hidden sm:table-cell">총지급액</th>
               <th className="pb-2 px-2">실수령액</th>
               <th className="pb-2 px-2 hidden sm:table-cell">상태</th>
+              <th className="pb-2 px-2">삭제</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={11} className="py-8 text-center text-muted-foreground">
+                <td colSpan={12} className="py-8 text-center text-muted-foreground">
                   급여지급 내역이 없습니다.
                 </td>
               </tr>
@@ -394,6 +396,24 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
                       >
                         {p.status}
                       </Badge>
+                    </td>
+                    <td className="py-2 px-2 text-center">
+                      <button
+                        type="button"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition-colors"
+                        onClick={async () => {
+                          if (!window.confirm("이 정산 내역을 삭제하시겠습니까?")) return;
+                          const result = await deletePayment(p.id);
+                          if (result.success) {
+                            toast.success("삭제되었습니다");
+                            router.refresh();
+                          } else {
+                            toast.error("삭제 실패", { description: result.error ?? undefined });
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </td>
                   </tr>
                 );

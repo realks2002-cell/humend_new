@@ -9,17 +9,20 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-echo "=== [1/7] 작업 디렉토리 정리 ==="
+echo "=== [1/8] 작업 디렉토리 정리 ==="
 # 빌드 전 혹시 이전 빌드 잔여물이 있으면 복원
 git checkout -- src/app/ src/middleware.ts next.config.ts 2>/dev/null || true
 
-echo "=== [2/7] Overlay: app-native → app 복사 ==="
+echo "=== [2/8] Overlay: app-native → app 복사 ==="
 # app-native 파일들을 app 위에 덮어쓰기 (기존 파일 교체)
 cp -R src/app-native/* src/app/
 
-echo "=== [3/7] 정적 빌드 호환성 위해 서버 전용 파일 제거 ==="
+echo "=== [3/8] 정적 빌드 호환성 위해 서버 전용 파일 제거 ==="
 # admin 디렉토리 전체 제거 (회원 전용 빌드)
 rm -rf src/app/admin
+
+# health-cert 제거 (Vercel Blob 서버 전용 기능)
+rm -rf src/app/my/health-cert
 
 # API routes 제거 (정적 빌드에서 동작 불가)
 rm -rf src/app/api
@@ -42,18 +45,30 @@ grep -rl '"use server"' src/app --include="*.ts" --include="*.tsx" 2>/dev/null |
   rm -f "$f"
 done || true
 
-echo "=== [4/7] Next.js 설정 교체 (정적 빌드용) ==="
+echo "=== [4/8] Next.js 설정 교체 (정적 빌드용) ==="
 # next.config.ts → capacitor 빌드 전용 설정으로 교체
 cp next.config.capacitor.ts next.config.ts
 
-echo "=== [5/7] Next.js 정적 빌드 (output: export) ==="
+echo "=== [5/8] Google Play 심사 대응: 개발용 설정 제거 ==="
+# capacitor.config.ts에서 server.url 제거 (로컬 번들 모드로 전환)
+sed -i.bak "/url:.*10\.0\.2\.2/d" capacitor.config.ts
+rm -f capacitor.config.ts.bak
+
+# AndroidManifest.xml에서 networkSecurityConfig 제거
+sed -i.bak '/android:networkSecurityConfig/d' android/app/src/main/AndroidManifest.xml
+rm -f android/app/src/main/AndroidManifest.xml.bak
+
+# network_security_config.xml 삭제
+rm -f android/app/src/main/res/xml/network_security_config.xml
+
+echo "=== [6/8] Next.js 정적 빌드 (output: export) ==="
 # API Bridge 호출 시 Vercel 서버를 가리키도록 환경변수 설정
 NEXT_PUBLIC_API_BASE=https://humendhr.com npx next build
 
-echo "=== [6/7] 소스 코드 복원 ==="
-git checkout -- src/app/ src/middleware.ts next.config.ts
+echo "=== [7/8] 소스 코드 복원 ==="
+git checkout -- src/app/ src/middleware.ts next.config.ts capacitor.config.ts android/app/src/main/AndroidManifest.xml
 
-echo "=== [7/7] Capacitor sync ==="
+echo "=== [8/8] Capacitor sync ==="
 npx cap sync android
 
 echo ""
