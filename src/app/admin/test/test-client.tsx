@@ -14,10 +14,11 @@ import {
   addTestMember,
   removeTestMember,
   getTestMembers,
+  cleanupTestClients,
 } from "./actions";
 import type { TestMember } from "./actions";
 import type { DailyShiftWithDetails, ArrivalStatus } from "@/types/location";
-import { MapPin, Trash2, Plus, User, Phone, Search, Navigation, Radio, UserPlus, Check } from "lucide-react";
+import { MapPin, Trash2, Plus, User, Phone, Search, Navigation, Radio, UserPlus, Check, AlertTriangle } from "lucide-react";
 import { TrackingMap } from "@/app/admin/tracking/tracking-map";
 
 const statusBadgeVariant: Record<ArrivalStatus, string> = {
@@ -86,8 +87,8 @@ export function TestClient({
 }) {
   const [shifts, setShifts] = useState(initialShifts);
   const [members, setMembers] = useState(initialMembers);
-  const [selectedMemberId, setSelectedMemberId] = useState<string>(
-    initialMembers[0]?.id ?? ""
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(
+    new Set(initialMembers[0] ? [initialMembers[0].id] : [])
   );
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -105,9 +106,11 @@ export function TestClient({
   ]);
   const [loading, setLoading] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [assigning, setAssigning] = useState<string | null>(null);
   const [sendingLocation, setSendingLocation] = useState<string | null>(null);
-  const [autoSendId, setAutoSendId] = useState<string | null>(null);
-  const autoSendRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [autoSendIds, setAutoSendIds] = useState<Set<string>>(new Set());
+  const [cleaningUp, setCleaningUp] = useState(false);
+  const autoSendRefs = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
 
   const refreshShifts = async () => {
@@ -129,7 +132,7 @@ export function TestClient({
     try {
       const member = await addTestMember(name, phone);
       await refreshMembers();
-      setSelectedMemberId(member.id);
+      setSelectedMemberIds((prev) => new Set(prev).add(member.id));
       setNewName("");
       setNewPhone("");
     } catch (e) {
@@ -145,10 +148,11 @@ export function TestClient({
     try {
       await removeTestMember(memberId);
       await refreshShifts();
-      if (selectedMemberId === memberId) {
-        const remaining = members.filter((m) => m.id !== memberId);
-        setSelectedMemberId(remaining[0]?.id ?? "");
-      }
+      setSelectedMemberIds((prev) => {
+        const next = new Set(prev);
+        next.delete(memberId);
+        return next;
+      });
     } catch (e) {
       alert(e instanceof Error ? e.message : "삭제 실패");
     } finally {
@@ -182,11 +186,20 @@ export function TestClient({
         lat: r.geometry.location.lat(),
         lng: r.geometry.location.lng(),
       }));
-      setSlots((prev) => {
-        const next = [...prev];
-        next[index] = { ...next[index], results, searching: false };
-        return next;
-      });
+      if (results.length === 1) {
+        handleSelectAddress(index, results[0]);
+        setSlots((prev) => {
+          const next = [...prev];
+          next[index] = { ...next[index], searching: false };
+          return next;
+        });
+      } else {
+        setSlots((prev) => {
+          const next = [...prev];
+          next[index] = { ...next[index], results, searching: false };
+          return next;
+        });
+      }
     } catch (e) {
       console.error("Geocoding error:", e);
       const msg = e instanceof Error ? e.message : String(e);
@@ -216,24 +229,30 @@ export function TestClient({
 
   const handleAssign = async (index: number) => {
     const slot = slots[index];
-    if (!slot.placeName || !slot.lat || !selectedMemberId) return;
+    if (!slot.placeName || (slot.lat === 0 && slot.lng === 0) || selectedMemberIds.size === 0) return;
 
     setLoading(index);
     try {
-      const shiftId = await createTestShift(
-        slot.placeName,
-        slot.lat,
-        slot.lng,
-        slot.startTime,
-        selectedMemberId
-      );
+      const createdShiftIds: string[] = [];
+      for (const memberId of selectedMemberIds) {
+        const shiftId = await createTestShift(
+          slot.placeName,
+          slot.lat,
+          slot.lng,
+          slot.startTime,
+          memberId
+        );
+        if (shiftId) createdShiftIds.push(shiftId);
+      }
       await refreshShifts();
       setSlots((prev) => {
         const next = [...prev];
         next[index] = defaultSlot();
         return next;
       });
-      toggleAutoSend(shiftId);
+      for (const shiftId of createdShiftIds) {
+        startAutoSend(shiftId);
+      }
     } catch (e) {
       alert(e instanceof Error ? e.message : "배정 실패");
     } finally {
@@ -272,23 +291,40 @@ export function TestClient({
   };
 
   const toggleAutoSend = (shiftId: string) => {
-    if (autoSendId === shiftId) {
-      if (autoSendRef.current) clearInterval(autoSendRef.current);
-      autoSendRef.current = null;
-      setAutoSendId(null);
+    if (autoSendIds.has(shiftId)) {
+      const existing = autoSendRefs.current.get(shiftId);
+      if (existing) clearInterval(existing);
+      autoSendRefs.current.delete(shiftId);
+      setAutoSendIds((prev) => {
+        const next = new Set(prev);
+        next.delete(shiftId);
+        return next;
+      });
     } else {
-      if (autoSendRef.current) clearInterval(autoSendRef.current);
-      setAutoSendId(shiftId);
       handleSendLocation(shiftId);
-      autoSendRef.current = setInterval(() => {
+      const interval = setInterval(() => {
         handleSendLocation(shiftId);
       }, 60_000);
+      autoSendRefs.current.set(shiftId, interval);
+      setAutoSendIds((prev) => new Set(prev).add(shiftId));
     }
+  };
+
+  const startAutoSend = (shiftId: string) => {
+    if (autoSendIds.has(shiftId)) return;
+    handleSendLocation(shiftId);
+    const interval = setInterval(() => {
+      handleSendLocation(shiftId);
+    }, 60_000);
+    autoSendRefs.current.set(shiftId, interval);
+    setAutoSendIds((prev) => new Set(prev).add(shiftId));
   };
 
   useEffect(() => {
     return () => {
-      if (autoSendRef.current) clearInterval(autoSendRef.current);
+      for (const interval of autoSendRefs.current.values()) {
+        clearInterval(interval);
+      }
     };
   }, []);
 
@@ -305,7 +341,41 @@ export function TestClient({
     }
   };
 
-  const selectedMember = members.find((m) => m.id === selectedMemberId);
+  const handleAssignToShift = async (shift: DailyShiftWithDetails) => {
+    const alreadyAssigned = new Set(
+      shifts
+        .filter((s) => s.client_id === shift.client_id)
+        .map((s) => s.member_id)
+    );
+    const toAssign = [...selectedMemberIds].filter((id) => !alreadyAssigned.has(id));
+    if (toAssign.length === 0) {
+      alert("선택된 멤버가 이미 모두 배정되어 있습니다.");
+      return;
+    }
+    setAssigning(shift.id);
+    try {
+      const createdShiftIds: string[] = [];
+      for (const memberId of toAssign) {
+        const shiftId = await createTestShift(
+          shift.clients.company_name,
+          shift.clients.latitude!,
+          shift.clients.longitude!,
+          shift.start_time,
+          memberId
+        );
+        if (shiftId) createdShiftIds.push(shiftId);
+      }
+      await refreshShifts();
+      for (const id of createdShiftIds) {
+        startAutoSend(id);
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "배정 실패");
+    } finally {
+      setAssigning(null);
+    }
+  };
+
 
   const formatPhone = (phone: string) => {
     if (phone.length === 11) {
@@ -327,25 +397,32 @@ export function TestClient({
         <CardContent className="space-y-4">
           {/* 멤버 목록 */}
           <div className="space-y-2">
-            {members.map((member) => (
-              <button
+            {members.map((member) => {
+              const isSelected = selectedMemberIds.has(member.id);
+              return (
+              <div
                 key={member.id}
-                className={`flex w-full items-center justify-between rounded-lg border p-3 text-left transition-colors ${
-                  selectedMemberId === member.id
+                className={`flex w-full cursor-pointer items-center justify-between rounded-lg border p-3 text-left transition-colors ${
+                  isSelected
                     ? "border-blue-500 bg-blue-50"
                     : "hover:bg-gray-50"
                 }`}
-                onClick={() => setSelectedMemberId(member.id)}
+                onClick={() => setSelectedMemberIds((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(member.id)) next.delete(member.id);
+                  else next.add(member.id);
+                  return next;
+                })}
               >
                 <div className="flex items-center gap-3">
                   <div
                     className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                      selectedMemberId === member.id
+                      isSelected
                         ? "bg-blue-500 text-white"
                         : "bg-gray-100 text-gray-500"
                     }`}
                   >
-                    {selectedMemberId === member.id ? (
+                    {isSelected ? (
                       <Check className="h-4 w-4" />
                     ) : (
                       <User className="h-4 w-4" />
@@ -370,8 +447,9 @@ export function TestClient({
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-              </button>
-            ))}
+              </div>
+              );
+            })}
             {members.length === 0 && (
               <p className="py-4 text-center text-sm text-muted-foreground">
                 등록된 테스트 멤버가 없습니다.
@@ -416,9 +494,9 @@ export function TestClient({
             </Button>
           </div>
 
-          {selectedMember && (
+          {selectedMemberIds.size > 0 && (
             <p className="text-xs text-blue-600">
-              선택된 멤버: <span className="font-medium">{selectedMember.name}</span> — 아래에서 근무지를 배정하면 이 멤버에게 배정됩니다.
+              선택된 멤버: <span className="font-medium">{members.filter((m) => selectedMemberIds.has(m.id)).map((m) => m.name).join(", ")}</span> ({selectedMemberIds.size}명) — 아래에서 근무지를 배정하면 선택된 멤버 전원에게 배정됩니다.
             </p>
           )}
         </CardContent>
@@ -521,11 +599,11 @@ export function TestClient({
                 </div>
                 <Button
                   onClick={() => handleAssign(i)}
-                  disabled={!slot.placeName || !selectedMemberId || loading === i}
+                  disabled={!slot.placeName || selectedMemberIds.size === 0 || loading === i}
                   size="sm"
                 >
                   <Plus className="mr-1 h-4 w-4" />
-                  {loading === i ? "배정중..." : selectedMember ? `${selectedMember.name} 배정` : "배정"}
+                  {loading === i ? "배정중..." : selectedMemberIds.size > 0 ? `${selectedMemberIds.size}명 배정` : "배정"}
                 </Button>
               </div>
             </div>
@@ -552,81 +630,104 @@ export function TestClient({
             </p>
           ) : (
             <div className="space-y-3">
-              {shifts.map((shift) => (
-                <div
-                  key={shift.id}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs font-normal">
-                        {shift.members?.name ?? "알 수 없음"}
-                      </Badge>
-                      <span className="font-medium text-sm">
-                        {shift.clients.company_name}
-                      </span>
-                      {(() => {
-                        const displayStatus = getDisplayStatus(shift, mounted);
-                        return (
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeVariant[displayStatus]}`}
-                          >
-                            {statusLabels[displayStatus]}
+              {(() => {
+                const groups = new Map<string, DailyShiftWithDetails[]>();
+                for (const shift of shifts) {
+                  const key = `${shift.client_id}_${shift.start_time}`;
+                  const arr = groups.get(key) ?? [];
+                  arr.push(shift);
+                  groups.set(key, arr);
+                }
+                return [...groups.values()].map((groupShifts) => {
+                  const first = groupShifts[0];
+                  return (
+                    <div key={`${first.client_id}_${first.start_time}`} className="rounded-lg border p-3 space-y-2">
+                      {/* 근무지 헤더 */}
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <span className="font-medium text-sm">
+                            {first.clients.company_name}
                           </span>
-                        );
-                      })()}
+                          <p className="text-xs text-muted-foreground">
+                            출근: {first.start_time.slice(0, 5)}
+                            {first.clients.latitude && (
+                              <span className="ml-2">
+                                ({first.clients.latitude.toFixed(4)},{" "}
+                                {first.clients.longitude?.toFixed(4)})
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {selectedMemberIds.size > 0 && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-xs"
+                              onClick={() => handleAssignToShift(first)}
+                              disabled={assigning === first.id}
+                            >
+                              <UserPlus className="mr-1 h-3.5 w-3.5" />
+                              {assigning === first.id ? "배정중..." : `${selectedMemberIds.size}명 배정`}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      {/* 멤버 목록 */}
+                      <div className="space-y-1">
+                        {groupShifts.map((shift) => {
+                          const displayStatus = getDisplayStatus(shift, mounted);
+                          return (
+                            <div key={shift.id} className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">{shift.members?.name ?? "알 수 없음"}</span>
+                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeVariant[displayStatus]}`}>
+                                  {statusLabels[displayStatus]}
+                                </span>
+                                {shift.last_seen_at && (
+                                  <span className="text-xs text-blue-600">
+                                    {new Date(shift.last_seen_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => handleSendLocation(shift.id)}
+                                  disabled={sendingLocation === shift.id}
+                                >
+                                  <Navigation className="mr-1 h-3 w-3" />
+                                  {sendingLocation === shift.id ? "전송중..." : "위치"}
+                                </Button>
+                                <Button
+                                  variant={autoSendIds.has(shift.id) ? "default" : "outline"}
+                                  size="sm"
+                                  className={`h-7 text-xs ${autoSendIds.has(shift.id) ? "bg-green-600 hover:bg-green-700" : ""}`}
+                                  onClick={() => toggleAutoSend(shift.id)}
+                                >
+                                  <Radio className="mr-1 h-3 w-3" />
+                                  {autoSendIds.has(shift.id) ? "자동 ON" : "자동"}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-red-500 hover:bg-red-50 hover:text-red-600"
+                                  onClick={() => handleDelete(shift.id)}
+                                  disabled={deleting === shift.id}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      출근: {shift.start_time.slice(0, 5)}
-                      {shift.clients.latitude && (
-                        <span className="ml-2">
-                          ({shift.clients.latitude.toFixed(4)},{" "}
-                          {shift.clients.longitude?.toFixed(4)})
-                        </span>
-                      )}
-                    </p>
-                    {shift.last_seen_at && (
-                      <p className="text-xs text-blue-600">
-                        최근 위치:{" "}
-                        {new Date(shift.last_seen_at).toLocaleTimeString(
-                          "ko-KR",
-                          { hour: "2-digit", minute: "2-digit" }
-                        )}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-xs"
-                      onClick={() => handleSendLocation(shift.id)}
-                      disabled={sendingLocation === shift.id}
-                    >
-                      <Navigation className="mr-1 h-3.5 w-3.5" />
-                      {sendingLocation === shift.id ? "전송중..." : "내 위치"}
-                    </Button>
-                    <Button
-                      variant={autoSendId === shift.id ? "default" : "outline"}
-                      size="sm"
-                      className={`h-8 text-xs ${autoSendId === shift.id ? "bg-green-600 hover:bg-green-700" : ""}`}
-                      onClick={() => toggleAutoSend(shift.id)}
-                    >
-                      <Radio className="mr-1 h-3.5 w-3.5" />
-                      {autoSendId === shift.id ? "자동 ON" : "자동"}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600"
-                      onClick={() => handleDelete(shift.id)}
-                      disabled={deleting === shift.id}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                  );
+                });
+              })()}
             </div>
           )}
         </CardContent>
@@ -639,6 +740,42 @@ export function TestClient({
         </CardHeader>
         <CardContent>
           <TrackingMap shifts={shifts} />
+        </CardContent>
+      </Card>
+
+      {/* 테스트 데이터 정리 */}
+      <Card className="border-red-200">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base text-red-600 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            테스트 데이터 정리
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="mb-3 text-sm text-muted-foreground">
+            is_test 플래그가 있는 테스트 고객사와 해당 배정/공고를 모두 삭제합니다.
+          </p>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={cleaningUp}
+            onClick={async () => {
+              if (!confirm("테스트 고객사와 관련 배정/공고를 모두 삭제하시겠습니까?")) return;
+              setCleaningUp(true);
+              try {
+                const result = await cleanupTestClients();
+                await refreshShifts();
+                alert(`테스트 고객사 ${result.deleted}개 삭제 완료`);
+              } catch (e) {
+                alert(e instanceof Error ? e.message : "정리 실패");
+              } finally {
+                setCleaningUp(false);
+              }
+            }}
+          >
+            <Trash2 className="mr-1 h-4 w-4" />
+            {cleaningUp ? "삭제중..." : "테스트 데이터 정리"}
+          </Button>
         </CardContent>
       </Card>
     </div>
