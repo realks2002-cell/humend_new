@@ -13,24 +13,72 @@ function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number)
 
 const MOVING_THRESHOLD_METERS = 50;
 
-const TEST_PHONE = "01034061921";
-const TEST_NAME = "이강석";
+const SEED_MEMBERS = [
+  { name: "이강석", phone: "01034061921" },
+  { name: "이윤주", phone: "01023596976" },
+];
 
-export async function ensureTestMember() {
+export interface TestMember {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+export async function getTestMembers(): Promise<TestMember[]> {
   const supabase = createAdminClient();
 
+  const phones = SEED_MEMBERS.map((m) => m.phone);
+
+  // 시드 멤버 + daily_shifts에 배정된 멤버들 포함
+  const today = new Date(Date.now() + 9 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+
+  const { data: shiftMembers } = await supabase
+    .from("daily_shifts")
+    .select("member_id")
+    .eq("work_date", today);
+
+  const shiftMemberIds = (shiftMembers ?? []).map((s) => s.member_id);
+
+  // 시드 멤버 조회
+  const { data: seedData } = await supabase
+    .from("members")
+    .select("id, name, phone")
+    .in("phone", phones);
+
+  // daily_shifts 멤버 조회 (시드에 없는 추가 멤버)
+  const seedIds = new Set((seedData ?? []).map((m) => m.id));
+  const extraIds = shiftMemberIds.filter((id) => !seedIds.has(id));
+
+  let extraMembers: TestMember[] = [];
+  if (extraIds.length > 0) {
+    const { data } = await supabase
+      .from("members")
+      .select("id, name, phone")
+      .in("id", extraIds);
+    extraMembers = (data ?? []) as TestMember[];
+  }
+
+  return [...((seedData ?? []) as TestMember[]), ...extraMembers];
+}
+
+export async function addTestMember(name: string, phone: string): Promise<TestMember> {
+  const supabase = createAdminClient();
+
+  // 기존 멤버 확인
   const { data: existing } = await supabase
     .from("members")
-    .select("id")
-    .eq("phone", TEST_PHONE)
+    .select("id, name, phone")
+    .eq("phone", phone)
     .single();
 
-  if (existing) return existing.id as string;
+  if (existing) return existing as TestMember;
 
-  // Supabase Auth에 유저 생성 후 members에 추가
+  // Auth 유저 생성
   const { data: authUser, error: authError } =
     await supabase.auth.admin.createUser({
-      phone: TEST_PHONE,
+      phone,
       phone_confirm: true,
     });
 
@@ -38,26 +86,68 @@ export async function ensureTestMember() {
 
   const { error: memberError } = await supabase.from("members").insert({
     id: authUser.user.id,
-    phone: TEST_PHONE,
-    name: TEST_NAME,
+    phone,
+    name,
   });
 
-  if (memberError)
-    throw new Error(`멤버 생성 실패: ${memberError.message}`);
+  if (memberError) throw new Error(`멤버 생성 실패: ${memberError.message}`);
+
+  return { id: authUser.user.id, name, phone };
+}
+
+export async function removeTestMember(memberId: string) {
+  const supabase = createAdminClient();
+
+  // 해당 멤버의 오늘 배정 삭제
+  const today = new Date(Date.now() + 9 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+
+  await supabase
+    .from("daily_shifts")
+    .delete()
+    .eq("member_id", memberId)
+    .eq("work_date", today);
+}
+
+async function ensureTestMember(phone: string, name: string): Promise<string> {
+  const supabase = createAdminClient();
+
+  const { data: existing } = await supabase
+    .from("members")
+    .select("id")
+    .eq("phone", phone)
+    .single();
+
+  if (existing) return existing.id as string;
+
+  const { data: authUser, error: authError } =
+    await supabase.auth.admin.createUser({
+      phone,
+      phone_confirm: true,
+    });
+
+  if (authError) throw new Error(`Auth 유저 생성 실패: ${authError.message}`);
+
+  const { error: memberError } = await supabase.from("members").insert({
+    id: authUser.user.id,
+    phone,
+    name,
+  });
+
+  if (memberError) throw new Error(`멤버 생성 실패: ${memberError.message}`);
 
   return authUser.user.id;
 }
-
 
 export async function createTestShift(
   placeName: string,
   lat: number,
   lng: number,
-  startTime: string
+  startTime: string,
+  memberId: string
 ) {
   const supabase = createAdminClient();
-
-  const memberId = await ensureTestMember();
 
   // 고객사 upsert (placeName 기준)
   const { data: existingClient } = await supabase
@@ -90,12 +180,10 @@ export async function createTestShift(
     clientId = newClient.id;
   }
 
-  // 오늘 날짜 (KST)
   const today = new Date(Date.now() + 9 * 60 * 60 * 1000)
     .toISOString()
     .split("T")[0];
 
-  // 종료시간: 시작시간 + 9시간 (기본값)
   const [h, m] = startTime.split(":").map(Number);
   const endTime = `${String(Math.min(h + 9, 23)).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 
@@ -156,7 +244,6 @@ export async function sendTestLocation(
 ) {
   const supabase = createAdminClient();
 
-  // shift 정보 확인
   const { data: shift, error: shiftError } = await supabase
     .from("daily_shifts")
     .select("id, member_id, client_id, arrival_status, start_time, work_date, last_known_lat, last_known_lng, first_in_range_at")
@@ -165,12 +252,10 @@ export async function sendTestLocation(
 
   if (shiftError || !shift) throw new Error("배정을 찾을 수 없습니다");
 
-  // 이미 도착/노쇼 확정이면 스킵
   if (["arrived", "late", "noshow"].includes(shift.arrival_status)) {
     return { arrived: true, status: shift.arrival_status, distance: null };
   }
 
-  // daily_shifts 캐시 업데이트 (location_logs 없음)
   const updateData: Record<string, unknown> = {
     last_known_lat: lat,
     last_known_lng: lng,
@@ -184,13 +269,12 @@ export async function sendTestLocation(
     updateData.tracking_start_lng = lng;
   }
 
-  // 도착 판별 (250m 지오펜스)
   const { data: distResult, error: rpcError } = await supabase
     .rpc("check_arrival_distance", {
       p_shift_id: shiftId,
       p_lat: lat,
       p_lng: lng,
-      p_radius: 250,
+      p_radius: 200,
     })
     .maybeSingle() as { data: { is_arrived: boolean; distance_meters: number } | null; error: unknown };
   if (rpcError) console.error("check_arrival_distance RPC error:", rpcError);
@@ -212,28 +296,32 @@ export async function sendTestLocation(
     updateData.arrival_status = isLate ? "late" : "arrived";
     updateData.arrived_at = firstInRangeAt.toISOString();
     arrived = true;
-  } else if (distResult && distResult.distance_meters <= 250 && !shift.first_in_range_at) {
+  } else if (distResult && distResult.distance_meters <= 200 && !shift.first_in_range_at) {
     updateData.first_in_range_at = new Date().toISOString();
   }
 
-  if (!arrived && (shift.arrival_status === "pending" || shift.arrival_status === "tracking")) {
+  if (!arrived && !["arrived", "late", "noshow"].includes(shift.arrival_status)) {
     const prevLat = shift.last_known_lat as number | null;
     const prevLng = shift.last_known_lng as number | null;
-    if (prevLat != null && prevLng != null && haversineMeters(prevLat, prevLng, lat, lng) >= MOVING_THRESHOLD_METERS) {
-      updateData.arrival_status = "moving";
+    if (prevLat != null && prevLng != null) {
+      const moved = haversineMeters(prevLat, prevLng, lat, lng) >= MOVING_THRESHOLD_METERS;
+      if (moved) {
+        updateData.arrival_status = "moving";
+      } else if (shift.arrival_status === "moving") {
+        updateData.arrival_status = "tracking";
+      }
     }
   }
 
-  // moving/tracking 상태에서 출근시간 경과 시 late_risk 전환
   if (
     !arrived &&
-    ["moving", "tracking"].includes(updateData.arrival_status as string ?? shift.arrival_status) &&
+    !["arrived", "late", "noshow"].includes(updateData.arrival_status as string ?? shift.arrival_status) &&
     shift.start_time && shift.work_date
   ) {
     const now = new Date();
     const shiftStart = new Date(`${shift.work_date}T${shift.start_time}+09:00`);
     if (now > shiftStart) {
-      updateData.arrival_status = "late_risk";
+      updateData.arrival_status = "late";
     }
   }
 
@@ -281,14 +369,11 @@ export async function getTestShifts() {
     .toISOString()
     .split("T")[0];
 
-  // 이강석 member id 찾기
-  const { data: member } = await supabase
-    .from("members")
-    .select("id")
-    .eq("phone", TEST_PHONE)
-    .single();
+  // 테스트 멤버 목록 가져오기
+  const members = await getTestMembers();
+  if (members.length === 0) return [];
 
-  if (!member) return [];
+  const memberIds = members.map((m) => m.id);
 
   const { data: shifts } = await supabase
     .from("daily_shifts")
@@ -303,7 +388,7 @@ export async function getTestShifts() {
       members (name, phone)
     `
     )
-    .eq("member_id", member.id)
+    .in("member_id", memberIds)
     .eq("work_date", today)
     .order("start_time", { ascending: true });
 

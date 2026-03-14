@@ -1,10 +1,13 @@
 export const dynamic = "force-dynamic";
 
-import { getTestShifts } from "./actions";
+import { getTestShifts, getTestMembers } from "./actions";
 import { TestClient } from "./test-client";
 
 export default async function AdminTestPage() {
-  const shifts = await getTestShifts();
+  const [shifts, members] = await Promise.all([
+    getTestShifts(),
+    getTestMembers(),
+  ]);
 
   return (
     <div className="p-6 space-y-6">
@@ -15,7 +18,7 @@ export default async function AdminTestPage() {
           위치를 확인합니다.
         </p>
       </div>
-      <TestClient initialShifts={shifts} />
+      <TestClient initialShifts={shifts} initialMembers={members} />
     </div>
   );
 }

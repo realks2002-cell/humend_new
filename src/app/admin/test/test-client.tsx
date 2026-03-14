@@ -11,15 +11,20 @@ import {
   deleteTestShift,
   getTestShifts,
   sendTestLocation,
+  addTestMember,
+  removeTestMember,
+  getTestMembers,
 } from "./actions";
+import type { TestMember } from "./actions";
 import type { DailyShiftWithDetails, ArrivalStatus } from "@/types/location";
-import { MapPin, Trash2, Plus, User, Phone, Search, Navigation, Radio } from "lucide-react";
+import { MapPin, Trash2, Plus, User, Phone, Search, Navigation, Radio, UserPlus, Check } from "lucide-react";
 import { TrackingMap } from "@/app/admin/tracking/tracking-map";
 
 const statusBadgeVariant: Record<ArrivalStatus, string> = {
   pending: "bg-gray-100 text-gray-700",
   tracking: "bg-blue-100 text-blue-700",
   moving: "bg-blue-100 text-blue-700",
+  offline: "bg-gray-100 text-gray-500",
   late_risk: "bg-orange-100 text-orange-700",
   noshow_risk: "bg-red-100 text-red-700",
   arrived: "bg-green-100 text-green-700",
@@ -43,6 +48,25 @@ interface SlotInput {
   searching: boolean;
 }
 
+function getDisplayStatus(shift: DailyShiftWithDetails, mounted: boolean): ArrivalStatus {
+  if (!mounted) return shift.arrival_status;
+  const status = shift.arrival_status;
+  if (["arrived", "late", "noshow"].includes(status)) return status;
+
+  const now = Date.now();
+  const startTimeNorm = shift.start_time.length === 5 ? shift.start_time + ":00" : shift.start_time;
+  const shiftStart = new Date(`${shift.work_date}T${startTimeNorm}+09:00`).getTime();
+  if (now > shiftStart) return "late";
+
+  if (
+    shift.last_seen_at &&
+    ["tracking", "moving"].includes(status) &&
+    now - new Date(shift.last_seen_at).getTime() > 5 * 60 * 1000
+  ) return "offline";
+
+  return status;
+}
+
 const defaultSlot = (): SlotInput => ({
   query: "",
   placeName: "",
@@ -55,10 +79,25 @@ const defaultSlot = (): SlotInput => ({
 
 export function TestClient({
   initialShifts,
+  initialMembers,
 }: {
   initialShifts: DailyShiftWithDetails[];
+  initialMembers: TestMember[];
 }) {
   const [shifts, setShifts] = useState(initialShifts);
+  const [members, setMembers] = useState(initialMembers);
+  const [selectedMemberId, setSelectedMemberId] = useState<string>(
+    initialMembers[0]?.id ?? ""
+  );
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  // 멤버 추가 폼
+  const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
+  const [removingMember, setRemovingMember] = useState<string | null>(null);
+
   const [slots, setSlots] = useState<SlotInput[]>([
     defaultSlot(),
     defaultSlot(),
@@ -74,6 +113,47 @@ export function TestClient({
   const refreshShifts = async () => {
     const updated = await getTestShifts();
     setShifts(updated);
+  };
+
+  const refreshMembers = async () => {
+    const updated = await getTestMembers();
+    setMembers(updated);
+  };
+
+  const handleAddMember = async () => {
+    const name = newName.trim();
+    const phone = newPhone.trim().replace(/-/g, "");
+    if (!name || !phone) return;
+
+    setAddingMember(true);
+    try {
+      const member = await addTestMember(name, phone);
+      await refreshMembers();
+      setSelectedMemberId(member.id);
+      setNewName("");
+      setNewPhone("");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "멤버 추가 실패");
+    } finally {
+      setAddingMember(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!confirm("이 멤버의 오늘 배정을 모두 삭제하시겠습니까?")) return;
+    setRemovingMember(memberId);
+    try {
+      await removeTestMember(memberId);
+      await refreshShifts();
+      if (selectedMemberId === memberId) {
+        const remaining = members.filter((m) => m.id !== memberId);
+        setSelectedMemberId(remaining[0]?.id ?? "");
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "삭제 실패");
+    } finally {
+      setRemovingMember(null);
+    }
   };
 
   const handleSearch = async (index: number) => {
@@ -136,15 +216,16 @@ export function TestClient({
 
   const handleAssign = async (index: number) => {
     const slot = slots[index];
-    if (!slot.placeName || !slot.lat) return;
+    if (!slot.placeName || !slot.lat || !selectedMemberId) return;
 
     setLoading(index);
     try {
-      await createTestShift(
+      const shiftId = await createTestShift(
         slot.placeName,
         slot.lat,
         slot.lng,
-        slot.startTime
+        slot.startTime,
+        selectedMemberId
       );
       await refreshShifts();
       setSlots((prev) => {
@@ -152,6 +233,7 @@ export function TestClient({
         next[index] = defaultSlot();
         return next;
       });
+      toggleAutoSend(shiftId);
     } catch (e) {
       alert(e instanceof Error ? e.message : "배정 실패");
     } finally {
@@ -191,15 +273,12 @@ export function TestClient({
 
   const toggleAutoSend = (shiftId: string) => {
     if (autoSendId === shiftId) {
-      // 끄기
       if (autoSendRef.current) clearInterval(autoSendRef.current);
       autoSendRef.current = null;
       setAutoSendId(null);
     } else {
-      // 기존 타이머 해제
       if (autoSendRef.current) clearInterval(autoSendRef.current);
       setAutoSendId(shiftId);
-      // 즉시 1회 전송 + 60초 간격
       handleSendLocation(shiftId);
       autoSendRef.current = setInterval(() => {
         handleSendLocation(shiftId);
@@ -207,7 +286,6 @@ export function TestClient({
     }
   };
 
-  // 컴포넌트 언마운트 시 타이머 정리
   useEffect(() => {
     return () => {
       if (autoSendRef.current) clearInterval(autoSendRef.current);
@@ -227,24 +305,122 @@ export function TestClient({
     }
   };
 
+  const selectedMember = members.find((m) => m.id === selectedMemberId);
+
+  const formatPhone = (phone: string) => {
+    if (phone.length === 11) {
+      return `${phone.slice(0, 3)}-${phone.slice(3, 7)}-${phone.slice(7)}`;
+    }
+    return phone;
+  };
+
   return (
     <div className="space-y-6">
-      {/* 테스트 대상 */}
+      {/* 테스트 멤버 관리 */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">테스트 대상</CardTitle>
+          <CardTitle className="text-base flex items-center justify-between">
+            <span>테스트 멤버</span>
+            <Badge variant="secondary">{members.length}명</Badge>
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">이강석</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">010-3406-1921</span>
-            </div>
+        <CardContent className="space-y-4">
+          {/* 멤버 목록 */}
+          <div className="space-y-2">
+            {members.map((member) => (
+              <button
+                key={member.id}
+                className={`flex w-full items-center justify-between rounded-lg border p-3 text-left transition-colors ${
+                  selectedMemberId === member.id
+                    ? "border-blue-500 bg-blue-50"
+                    : "hover:bg-gray-50"
+                }`}
+                onClick={() => setSelectedMemberId(member.id)}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                      selectedMemberId === member.id
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    {selectedMemberId === member.id ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <User className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{member.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatPhone(member.phone)}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-red-400 hover:bg-red-50 hover:text-red-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveMember(member.id);
+                  }}
+                  disabled={removingMember === member.id}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </button>
+            ))}
+            {members.length === 0 && (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                등록된 테스트 멤버가 없습니다.
+              </p>
+            )}
           </div>
+
+          {/* 멤버 추가 폼 */}
+          <div className="flex items-end gap-2 rounded-lg border border-dashed p-3">
+            <div className="flex-1 space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">이름</label>
+              <Input
+                placeholder="홍길동"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="h-9"
+              />
+            </div>
+            <div className="flex-1 space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">전화번호</label>
+              <Input
+                placeholder="01012345678"
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddMember();
+                  }
+                }}
+                className="h-9"
+              />
+            </div>
+            <Button
+              size="sm"
+              onClick={handleAddMember}
+              disabled={!newName.trim() || !newPhone.trim() || addingMember}
+              className="h-9"
+            >
+              <UserPlus className="mr-1 h-4 w-4" />
+              {addingMember ? "추가중..." : "추가"}
+            </Button>
+          </div>
+
+          {selectedMember && (
+            <p className="text-xs text-blue-600">
+              선택된 멤버: <span className="font-medium">{selectedMember.name}</span> — 아래에서 근무지를 배정하면 이 멤버에게 배정됩니다.
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -345,11 +521,11 @@ export function TestClient({
                 </div>
                 <Button
                   onClick={() => handleAssign(i)}
-                  disabled={!slot.placeName || loading === i}
+                  disabled={!slot.placeName || !selectedMemberId || loading === i}
                   size="sm"
                 >
                   <Plus className="mr-1 h-4 w-4" />
-                  {loading === i ? "배정중..." : "배정"}
+                  {loading === i ? "배정중..." : selectedMember ? `${selectedMember.name} 배정` : "배정"}
                 </Button>
               </div>
             </div>
@@ -383,14 +559,22 @@ export function TestClient({
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs font-normal">
+                        {shift.members?.name ?? "알 수 없음"}
+                      </Badge>
                       <span className="font-medium text-sm">
                         {shift.clients.company_name}
                       </span>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeVariant[shift.arrival_status]}`}
-                      >
-                        {statusLabels[shift.arrival_status]}
-                      </span>
+                      {(() => {
+                        const displayStatus = getDisplayStatus(shift, mounted);
+                        return (
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeVariant[displayStatus]}`}
+                          >
+                            {statusLabels[displayStatus]}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       출근: {shift.start_time.slice(0, 5)}
