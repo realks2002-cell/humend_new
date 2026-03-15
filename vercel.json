@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/noshow-confirm",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/pre-shift-alert",
+      "schedule": "*/10 * * * *"
     }
   ]
 }

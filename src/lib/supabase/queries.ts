@@ -391,6 +391,7 @@ export async function getAllClients() {
   const { data } = await admin
     .from("clients")
     .select("*")
+    .or("is_test.is.null,is_test.eq.false")
     .order("created_at", { ascending: false });
 
   return (data ?? []) as Client[];
@@ -421,6 +422,7 @@ export async function getAllClientsWithJobs() {
   const { data } = await admin
     .from("clients")
     .select(`*, job_postings(*)`)
+    .or("is_test.is.null,is_test.eq.false")
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false })
     .order("work_date", { referencedTable: "job_postings", ascending: true });

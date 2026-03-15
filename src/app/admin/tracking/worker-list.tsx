@@ -6,13 +6,30 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { DailyShiftWithDetails, ArrivalStatus } from "@/types/location";
 
-const statusConfig: Record<
+function getDisplayStatus(shift: DailyShiftWithDetails, mounted: boolean): ArrivalStatus {
+  if (!mounted) return shift.arrival_status;
+  const status = shift.arrival_status;
+  if (["arrived", "late", "noshow"].includes(status)) return status;
+  const now = Date.now();
+  const startTimeNorm = shift.start_time.length === 5 ? shift.start_time + ":00" : shift.start_time;
+  const shiftStart = new Date(`${shift.work_date}T${startTimeNorm}+09:00`).getTime();
+  if (now > shiftStart) return "late";
+  if (
+    shift.last_seen_at &&
+    ["tracking", "moving"].includes(status) &&
+    now - new Date(shift.last_seen_at).getTime() > 5 * 60 * 1000
+  ) return "offline";
+  return status;
+}
+
+export const statusConfig: Record<
   ArrivalStatus,
   { label: string; color: string; bgColor: string }
 > = {
   pending: { label: "대기", color: "text-gray-600", bgColor: "bg-gray-100" },
   tracking: { label: "추적중", color: "text-blue-600", bgColor: "bg-blue-50" },
   moving: { label: "이동중", color: "text-blue-700", bgColor: "bg-blue-100" },
+  offline: { label: "오프라인", color: "text-gray-500", bgColor: "bg-gray-50" },
   late_risk: { label: "지각위험", color: "text-orange-600", bgColor: "bg-orange-50" },
   noshow_risk: { label: "노쇼위험", color: "text-red-600", bgColor: "bg-red-50" },
   arrived: { label: "도착", color: "text-green-700", bgColor: "bg-green-50" },
@@ -25,6 +42,8 @@ type StatusFilter = ArrivalStatus | "all";
 export function WorkerList({ shifts: initialShifts }: { shifts: DailyShiftWithDetails[] }) {
   const [shifts, setShifts] = useState(initialShifts);
   const [filter, setFilter] = useState<StatusFilter>("all");
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   // 외부 prop 변경 시 내부 state 동기화
   useEffect(() => {
@@ -72,22 +91,29 @@ export function WorkerList({ shifts: initialShifts }: { shifts: DailyShiftWithDe
     };
   }, []);
 
-  // 상태별 집계
-  const counts = shifts.reduce(
+  // 표시 상태 계산
+  const shiftsWithDisplay = shifts.map((s) => ({
+    ...s,
+    displayStatus: getDisplayStatus(s, mounted),
+  }));
+
+  // 상태별 집계 (표시 상태 기준)
+  const counts = shiftsWithDisplay.reduce(
     (acc, s) => {
-      acc[s.arrival_status] = (acc[s.arrival_status] || 0) + 1;
+      acc[s.displayStatus] = (acc[s.displayStatus] || 0) + 1;
       return acc;
     },
     {} as Record<string, number>
   );
 
   const filteredShifts =
-    filter === "all" ? shifts : shifts.filter((s) => s.arrival_status === filter);
+    filter === "all" ? shiftsWithDisplay : shiftsWithDisplay.filter((s) => s.displayStatus === filter);
 
   const summaryItems: { status: StatusFilter; label: string; count: number; color: string }[] = [
     { status: "all", label: "전체", count: shifts.length, color: "text-gray-700" },
     { status: "arrived", label: "도착", count: counts["arrived"] || 0, color: "text-green-600" },
     { status: "moving", label: "이동중", count: (counts["moving"] || 0) + (counts["tracking"] || 0), color: "text-blue-600" },
+    { status: "offline", label: "오프라인", count: counts["offline"] || 0, color: "text-gray-500" },
     { status: "late_risk", label: "지각위험", count: counts["late_risk"] || 0, color: "text-orange-600" },
     { status: "noshow_risk", label: "노쇼위험", count: counts["noshow_risk"] || 0, color: "text-red-600" },
     { status: "noshow", label: "노쇼", count: counts["noshow"] || 0, color: "text-red-800" },
@@ -132,7 +158,7 @@ export function WorkerList({ shifts: initialShifts }: { shifts: DailyShiftWithDe
           </div>
         ) : (
           filteredShifts.map((shift) => {
-            const config = statusConfig[shift.arrival_status];
+            const config = statusConfig[shift.displayStatus];
             return (
               <div
                 key={shift.id}

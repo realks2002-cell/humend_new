@@ -21,17 +21,17 @@ export async function GET(req: NextRequest) {
   const parts = today.split("-");
   const dateStr = `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
 
-  // 이동 중이거나 추적 중인 shift 조회
+  // 미도착 상태 shift 조회
   const { data: shifts } = await admin
     .from("daily_shifts")
     .select(`
       id, member_id, client_id, start_time, arrival_status, risk_level,
-      last_known_lat, last_known_lng,
+      last_known_lat, last_known_lng, last_seen_at,
       clients (company_name),
       members (name)
     `)
     .eq("work_date", dateStr)
-    .in("arrival_status", ["tracking", "moving", "late_risk"]);
+    .in("arrival_status", ["tracking", "moving", "offline", "late_risk"]);
 
   if (!shifts || shifts.length === 0) {
     return NextResponse.json({ checked: 0 });
@@ -41,16 +41,30 @@ export async function GET(req: NextRequest) {
   let predicted = 0;
 
   for (const shift of shifts) {
+    // 5분간 위치 미수신 → offline 전환
+    const lastSeen = (shift as unknown as { last_seen_at: string | null }).last_seen_at;
+    if (
+      lastSeen &&
+      ["tracking", "moving"].includes(shift.arrival_status) &&
+      now.getTime() - new Date(lastSeen).getTime() > 5 * 60 * 1000
+    ) {
+      await admin
+        .from("daily_shifts")
+        .update({ arrival_status: "offline" })
+        .eq("id", shift.id);
+      shift.arrival_status = "offline";
+    }
+
     // 출근까지 남은 시간 계산
     const shiftStart = new Date(`${dateStr}T${shift.start_time}+09:00`);
     const minutesUntil = (shiftStart.getTime() - now.getTime()) / 60000;
 
-    // 출근시간 경과: ETA 없이 바로 late_risk
+    // 출근시간 경과: 지각 확정
     if (minutesUntil < 0) {
-      if (shift.arrival_status !== "late_risk") {
+      if (!["late", "arrived"].includes(shift.arrival_status)) {
         await admin
           .from("daily_shifts")
-          .update({ arrival_status: "late_risk" })
+          .update({ arrival_status: "late" })
           .eq("id", shift.id);
 
         const { data: admins } = await admin.from("admins").select("id");

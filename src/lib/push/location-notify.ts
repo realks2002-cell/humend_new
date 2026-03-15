@@ -148,6 +148,35 @@ export async function notifyShiftCancelled(
   });
 }
 
+/** 출근 2시간 전 첫 앱 활성화 알림 */
+export async function notifyAppActivation(
+  memberId: string,
+  companyName: string,
+  startTime: string
+) {
+  await notifyMemberLocation({
+    memberId,
+    title: "출근 2시간 전입니다",
+    body: `${companyName} ${startTime} 출근 예정입니다. 앱을 열어주세요.`,
+    url: "/my/tracking",
+  });
+}
+
+/** 출근 리마인더 알림 (20분 간격) */
+export async function notifyAppReminder(
+  memberId: string,
+  companyName: string,
+  startTime: string,
+  minutesLeft: number
+) {
+  await notifyMemberLocation({
+    memberId,
+    title: "출근 알림 리마인더",
+    body: `${companyName} ${startTime} 출근까지 ${minutesLeft}분 남았습니다. 앱을 열어주세요.`,
+    url: "/my/tracking",
+  });
+}
+
 /** 관리자에게 지각 예측 알림 */
 export async function notifyAdminLatePrediction(
   adminId: string,

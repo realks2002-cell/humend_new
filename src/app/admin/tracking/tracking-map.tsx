@@ -18,6 +18,7 @@ export const statusColorMap: Record<ArrivalStatus, MarkerColor> = {
   pending: "gray",
   tracking: "blue",
   moving: "blue",
+  offline: "gray",
   late_risk: "orange",
   noshow_risk: "red",
   arrived: "green",
@@ -36,9 +37,9 @@ export const markerColors: Record<MarkerColor, string> = {
 
 export function createWorkerIcon(color: MarkerColor) {
   const hex = markerColors[color];
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="${hex}" stroke="white" stroke-width="2"/>
-    <circle cx="12" cy="12" r="4" fill="white"/>
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
+    <rect x="2" y="2" width="24" height="24" rx="5" ry="5" fill="${hex}" stroke="#1a1a1a" stroke-width="3"/>
+    <rect x="9" y="9" width="10" height="10" rx="2" ry="2" fill="white"/>
   </svg>`;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
@@ -55,6 +56,7 @@ export const statusLabels: Record<ArrivalStatus, string> = {
   pending: "대기",
   tracking: "추적중",
   moving: "이동중",
+  offline: "오프라인",
   late_risk: "지각위험",
   noshow_risk: "노쇼위험",
   arrived: "도착",
@@ -62,9 +64,26 @@ export const statusLabels: Record<ArrivalStatus, string> = {
   noshow: "노쇼",
 };
 
+function getDisplayStatus(shift: DailyShiftWithDetails, mounted: boolean): ArrivalStatus {
+  if (!mounted) return shift.arrival_status;
+  const status = shift.arrival_status;
+  if (["arrived", "late", "noshow"].includes(status)) return status;
+  const now = Date.now();
+  const startTimeNorm = shift.start_time.length === 5 ? shift.start_time + ":00" : shift.start_time;
+  const shiftStart = new Date(`${shift.work_date}T${startTimeNorm}+09:00`).getTime();
+  if (now > shiftStart) return "late";
+  if (
+    shift.last_seen_at &&
+    ["tracking", "moving"].includes(status) &&
+    now - new Date(shift.last_seen_at).getTime() > 5 * 60 * 1000
+  ) return "offline";
+  return status;
+}
+
 export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWithDetails[] }) {
   const [shifts, setShifts] = useState(externalShifts);
   const [selectedShift, setSelectedShift] = useState<DailyShiftWithDetails | null>(null);
+  const [mounted, setMounted] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
   const clientMarkersRef = useRef<google.maps.Marker[]>([]);
 
@@ -122,6 +141,8 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
       clientMarkersRef.current.push(marker);
     });
   }, []);
+
+  useEffect(() => setMounted(true), []);
 
   // 외부 prop 변경 시 내부 state 동기화
   useEffect(() => {
@@ -215,15 +236,16 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
       {shifts
         .filter((s) => s.last_known_lat && s.last_known_lng)
         .map((s) => {
-          const color = statusColorMap[s.arrival_status];
+          const displayStatus = getDisplayStatus(s, mounted);
+          const color = statusColorMap[displayStatus];
           return (
             <MarkerF
               key={`worker-${s.id}`}
               position={{ lat: s.last_known_lat!, lng: s.last_known_lng! }}
               icon={{
                 url: createWorkerIcon(color),
-                scaledSize: new google.maps.Size(24, 24),
-                anchor: new google.maps.Point(12, 12),
+                scaledSize: new google.maps.Size(28, 28),
+                anchor: new google.maps.Point(14, 14),
               }}
               onClick={() => setSelectedShift(s)}
             />
@@ -240,7 +262,7 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
         ].map(({ color, label }) => (
           <div key={color} className="flex items-center gap-2">
             <span
-              className="inline-block w-3 h-3 rounded-full border border-white shadow-sm shrink-0"
+              className="inline-block w-3 h-3 rounded-sm border border-white shadow-sm shrink-0"
               style={{ backgroundColor: color }}
             />
             <span className="text-gray-700">{label}</span>
@@ -266,7 +288,7 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
               {selectedShift.members.name ?? "이름없음"}
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
-              {statusLabels[selectedShift.arrival_status]}
+              {statusLabels[getDisplayStatus(selectedShift, mounted)]}
             </p>
             <p className="text-xs mt-1">
               고객사: {selectedShift.clients.company_name}

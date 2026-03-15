@@ -47,6 +47,11 @@ const statusConfig: Record<
     color: "bg-blue-100 text-blue-700",
     icon: Navigation,
   },
+  offline: {
+    label: "오프라인",
+    color: "bg-gray-100 text-gray-500",
+    icon: AlertTriangle,
+  },
   late_risk: {
     label: "지각 위험",
     color: "bg-orange-100 text-orange-700",

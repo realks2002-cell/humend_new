@@ -133,15 +133,20 @@ export default function SignupCompletePage() {
               {error}
             </div>
           )}
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="홍길동"
-              className="pl-10"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+          <div>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="홍길동"
+                className="pl-10"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <p className="mt-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded">
+              * 반드시 실명으로 입력해주세요
+            </p>
           </div>
           <div className="relative">
             <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

@@ -131,6 +131,7 @@ export function ShiftMapModal({ open, onOpenChange, shifts: initialShifts }: Shi
         );
       }
     };
+    poll();
     const timer = setInterval(poll, 60_000);
 
     return () => {

@@ -22,11 +22,12 @@ export default async function AdminTrackingPage() {
       last_known_lat, last_known_lng, last_seen_at,
       location_consent, tracking_started_at,
       created_at, updated_at,
-      clients (company_name, location, latitude, longitude, contact_phone),
+      clients!inner (company_name, location, latitude, longitude, contact_phone, is_test),
       members (name, phone)
     `
     )
     .eq("work_date", today)
+    .or("clients.is_test.is.null,clients.is_test.eq.false")
     .order("start_time", { ascending: true });
 
   const typedShifts = (shifts ?? []) as unknown as DailyShiftWithDetails[];
