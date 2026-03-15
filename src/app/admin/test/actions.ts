@@ -75,10 +75,11 @@ export async function addTestMember(name: string, phone: string): Promise<TestMe
 
   if (existing) return existing as TestMember;
 
-  // Auth 유저 생성
+  // Auth 유저 생성 (E.164 형식 필요)
+  const e164Phone = phone.startsWith("+") ? phone : `+82${phone.replace(/^0/, "")}`;
   const { data: authUser, error: authError } =
     await supabase.auth.admin.createUser({
-      phone,
+      phone: e164Phone,
       phone_confirm: true,
     });
 
@@ -274,7 +275,7 @@ export async function sendTestLocation(
       p_shift_id: shiftId,
       p_lat: lat,
       p_lng: lng,
-      p_radius: 200,
+      p_radius: 100,
     })
     .maybeSingle() as { data: { is_arrived: boolean; distance_meters: number } | null; error: unknown };
   if (rpcError) console.error("check_arrival_distance RPC error:", rpcError);
@@ -338,6 +339,38 @@ export async function sendTestLocation(
     lat,
     lng,
   };
+}
+
+export async function cleanupTestClients() {
+  const supabase = createAdminClient();
+
+  const { data: testClients } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("is_test", true);
+
+  if (!testClients || testClients.length === 0) return { deleted: 0 };
+
+  const clientIds = testClients.map((c) => c.id);
+
+  await supabase
+    .from("daily_shifts")
+    .delete()
+    .in("client_id", clientIds);
+
+  await supabase
+    .from("job_postings")
+    .delete()
+    .in("client_id", clientIds);
+
+  const { error } = await supabase
+    .from("clients")
+    .delete()
+    .eq("is_test", true);
+
+  if (error) throw new Error(`테스트 고객사 삭제 실패: ${error.message}`);
+
+  return { deleted: clientIds.length };
 }
 
 export async function updateClientLocation(clientId: string, lat: number, lng: number) {

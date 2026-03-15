@@ -18,7 +18,7 @@ import {
 } from "./actions";
 import type { TestMember } from "./actions";
 import type { DailyShiftWithDetails, ArrivalStatus } from "@/types/location";
-import { MapPin, Trash2, Plus, User, Phone, Search, Navigation, Radio, UserPlus, Check, AlertTriangle } from "lucide-react";
+import { MapPin, Trash2, Plus, User, Phone, Search, Navigation, UserPlus, Check, AlertTriangle } from "lucide-react";
 import { TrackingMap } from "@/app/admin/tracking/tracking-map";
 
 const statusBadgeVariant: Record<ArrivalStatus, string> = {
@@ -108,9 +108,7 @@ export function TestClient({
   const [deleting, setDeleting] = useState<string | null>(null);
   const [assigning, setAssigning] = useState<string | null>(null);
   const [sendingLocation, setSendingLocation] = useState<string | null>(null);
-  const [autoSendIds, setAutoSendIds] = useState<Set<string>>(new Set());
   const [cleaningUp, setCleaningUp] = useState(false);
-  const autoSendRefs = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
 
   const refreshShifts = async () => {
@@ -250,9 +248,6 @@ export function TestClient({
         next[index] = defaultSlot();
         return next;
       });
-      for (const shiftId of createdShiftIds) {
-        startAutoSend(shiftId);
-      }
     } catch (e) {
       alert(e instanceof Error ? e.message : "배정 실패");
     } finally {
@@ -290,43 +285,45 @@ export function TestClient({
     }
   };
 
-  const toggleAutoSend = (shiftId: string) => {
-    if (autoSendIds.has(shiftId)) {
-      const existing = autoSendRefs.current.get(shiftId);
-      if (existing) clearInterval(existing);
-      autoSendRefs.current.delete(shiftId);
-      setAutoSendIds((prev) => {
-        const next = new Set(prev);
-        next.delete(shiftId);
-        return next;
-      });
-    } else {
-      handleSendLocation(shiftId);
-      const interval = setInterval(() => {
-        handleSendLocation(shiftId);
-      }, 60_000);
-      autoSendRefs.current.set(shiftId, interval);
-      setAutoSendIds((prev) => new Set(prev).add(shiftId));
-    }
-  };
-
-  const startAutoSend = (shiftId: string) => {
-    if (autoSendIds.has(shiftId)) return;
-    handleSendLocation(shiftId);
-    const interval = setInterval(() => {
-      handleSendLocation(shiftId);
-    }, 60_000);
-    autoSendRefs.current.set(shiftId, interval);
-    setAutoSendIds((prev) => new Set(prev).add(shiftId));
-  };
-
+  // 단일 타이머: 1분마다 모든 활성 shift에 위치 자동 전송
+  const autoSendingRef = useRef(false);
   useEffect(() => {
-    return () => {
-      for (const interval of autoSendRefs.current.values()) {
-        clearInterval(interval);
+    const activeShifts = shifts.filter(
+      (s) => !["arrived", "late", "noshow"].includes(s.arrival_status)
+    );
+    if (activeShifts.length === 0) return;
+
+    const sendAll = async () => {
+      if (autoSendingRef.current) return;
+      autoSendingRef.current = true;
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+          })
+        );
+        const targets = shifts.filter(
+          (s) => !["arrived", "late", "noshow"].includes(s.arrival_status)
+        );
+        for (const shift of targets) {
+          try {
+            await sendTestLocation(shift.id, pos.coords.latitude, pos.coords.longitude);
+          } catch {
+            // 개별 실패 무시
+          }
+        }
+        await refreshShifts();
+      } catch {
+        // 위치 획득 실패 무시
+      } finally {
+        autoSendingRef.current = false;
       }
     };
-  }, []);
+
+    const timer = setInterval(sendAll, 60_000);
+    return () => clearInterval(timer);
+  }, [shifts]);
 
   const handleDelete = async (shiftId: string) => {
     if (!confirm("이 배정을 삭제하시겠습니까?")) return;
@@ -366,9 +363,6 @@ export function TestClient({
         if (shiftId) createdShiftIds.push(shiftId);
       }
       await refreshShifts();
-      for (const id of createdShiftIds) {
-        startAutoSend(id);
-      }
     } catch (e) {
       alert(e instanceof Error ? e.message : "배정 실패");
     } finally {
@@ -620,7 +614,19 @@ export function TestClient({
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center justify-between">
             <span>오늘 배정 목록</span>
-            <Badge variant="secondary">{shifts.length}건</Badge>
+            <div className="flex items-center gap-2">
+              {(() => {
+                const activeCount = shifts.filter(
+                  (s) => !["arrived", "late", "noshow"].includes(s.arrival_status)
+                ).length;
+                return activeCount > 0 ? (
+                  <span className="text-xs font-normal text-green-600">
+                    자동 전송 중 ({activeCount}건, 1분 주기)
+                  </span>
+                ) : null;
+              })()}
+              <Badge variant="secondary">{shifts.length}건</Badge>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -700,15 +706,6 @@ export function TestClient({
                                 >
                                   <Navigation className="mr-1 h-3 w-3" />
                                   {sendingLocation === shift.id ? "전송중..." : "위치"}
-                                </Button>
-                                <Button
-                                  variant={autoSendIds.has(shift.id) ? "default" : "outline"}
-                                  size="sm"
-                                  className={`h-7 text-xs ${autoSendIds.has(shift.id) ? "bg-green-600 hover:bg-green-700" : ""}`}
-                                  onClick={() => toggleAutoSend(shift.id)}
-                                >
-                                  <Radio className="mr-1 h-3 w-3" />
-                                  {autoSendIds.has(shift.id) ? "자동 ON" : "자동"}
                                 </Button>
                                 <Button
                                   variant="ghost"
