@@ -47,6 +47,11 @@ const statusConfig: Record<
     color: "bg-blue-100 text-blue-700",
     icon: Navigation,
   },
+  offline: {
+    label: "오프라인",
+    color: "bg-gray-100 text-gray-500",
+    icon: AlertTriangle,
+  },
   late_risk: {
     label: "지각 위험",
     color: "bg-orange-100 text-orange-700",
@@ -134,17 +139,16 @@ function TrackingContent() {
         const d = calcDistanceMeters(lat, lng, clientLat, clientLng);
         setDistance(Math.round(d));
 
-        // 자동 도착 처리됨
+        // 자동 도착 처리됨 → shift 새로고침 (추적은 계속)
         if (result.arrived) {
-          setTracking(false);
           loadShift();
         }
       },
       onArrival: () => {
-        setTracking(false);
+        // 도착 후에도 추적 계속 (15분 간격으로 전환됨)
         loadShift();
       },
-    });
+    }, 200, shift.end_time, shift.work_date);
 
     if (started) {
       setTracking(true);
@@ -221,9 +225,8 @@ function TrackingContent() {
 
   const status = statusConfig[shift.arrival_status] ?? statusConfig.pending;
   const StatusIcon = status.icon;
-  const isFinished = ["arrived", "late", "noshow"].includes(
-    shift.arrival_status
-  );
+  const isArrived = ["arrived", "late"].includes(shift.arrival_status);
+  const isFinished = isArrived || shift.arrival_status === "noshow";
 
   return (
     <div className="mx-auto max-w-lg px-4 py-8 space-y-4">
@@ -314,6 +317,32 @@ function TrackingContent() {
                 })}
               </p>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 근무 중 추적 안내 */}
+      {isArrived && tracking && (
+        <Card className="overflow-hidden py-0">
+          <div className="h-1 bg-gradient-to-r from-blue-400 to-cyan-400" />
+          <CardContent className="py-4 text-center space-y-2">
+            <div className="flex items-center justify-center gap-2 text-sm text-blue-600">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+              </span>
+              근무 중 위치를 확인하고 있습니다
+            </div>
+            <p className="text-xs text-muted-foreground">
+              15분 간격으로 위치가 기록됩니다 · 퇴근 시간 후 자동 종료
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleStopTracking}
+            >
+              추적 중지
+            </Button>
           </CardContent>
         </Card>
       )}

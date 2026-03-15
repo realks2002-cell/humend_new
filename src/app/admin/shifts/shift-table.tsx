@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo, useEffect } from "react";
 import {
   Plus,
   Trash2,
@@ -35,6 +35,22 @@ import type { ArrivalStatus } from "@/types/location";
 import { createShift, deleteShift } from "./actions";
 import { ShiftMapModal } from "./shift-map-modal";
 
+function getDisplayStatus(shift: { arrival_status: ArrivalStatus; work_date: string; start_time: string; last_seen_at: string | null }, mounted: boolean): ArrivalStatus {
+  if (!mounted) return shift.arrival_status;
+  const status = shift.arrival_status;
+  if (["arrived", "late", "noshow"].includes(status)) return status;
+  const now = Date.now();
+  const startTimeNorm = shift.start_time.length === 5 ? shift.start_time + ":00" : shift.start_time;
+  const shiftStart = new Date(`${shift.work_date}T${startTimeNorm}+09:00`).getTime();
+  if (now > shiftStart) return "late";
+  if (
+    shift.last_seen_at &&
+    ["tracking", "moving"].includes(status) &&
+    now - new Date(shift.last_seen_at).getTime() > 5 * 60 * 1000
+  ) return "offline";
+  return status;
+}
+
 export interface ShiftWithDetails {
   id: string;
   client_id: string;
@@ -45,6 +61,8 @@ export interface ShiftWithDetails {
   arrival_status: ArrivalStatus;
   risk_level: number;
   arrived_at: string | null;
+  left_site_at: string | null;
+  offsite_count: number;
   last_known_lat: number | null;
   last_known_lng: number | null;
   last_seen_at: string | null;
@@ -104,6 +122,11 @@ const statusConfig: Record<
     variant: "outline",
     className: "border-blue-500 text-blue-700",
   },
+  offline: {
+    label: "오프라인",
+    variant: "outline",
+    className: "border-gray-400 text-gray-500",
+  },
   late_risk: {
     label: "지각위험",
     variant: "outline",
@@ -141,6 +164,8 @@ export function ShiftTable({
   approvedPostings?: ApprovedPosting[];
 }) {
   const [isPending, startTransition] = useTransition();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [showForm, setShowForm] = useState(false);
   const [mapShifts, setMapShifts] = useState<ShiftWithDetails[] | null>(null);
 
@@ -152,13 +177,15 @@ export function ShiftTable({
   const [formEndTime, setFormEndTime] = useState("17:00");
 
   const statusCounts = useMemo(() => {
-    const moving = shifts.filter((s) =>
-      ["tracking", "moving", "late_risk", "noshow_risk"].includes(s.arrival_status)
+    const statuses = shifts.map((s) => getDisplayStatus(s, mounted));
+    const moving = statuses.filter((st) =>
+      ["tracking", "moving", "late_risk", "noshow_risk"].includes(st)
     ).length;
-    const arrived = shifts.filter((s) => s.arrival_status === "arrived").length;
-    const late = shifts.filter((s) => s.arrival_status === "late").length;
-    const noshow = shifts.filter((s) => s.arrival_status === "noshow").length;
-    return { moving, arrived, late, noshow };
+    const arrived = statuses.filter((st) => st === "arrived").length;
+    const late = statuses.filter((st) => st === "late").length;
+    const noshow = statuses.filter((st) => st === "noshow").length;
+    const offline = statuses.filter((st) => st === "offline").length;
+    return { moving, arrived, late, noshow, offline };
   }, [shifts]);
 
   const groupedShifts = useMemo(() => {
@@ -191,6 +218,18 @@ export function ShiftTable({
     setFormStartTime(posting.startTime.slice(0, 5));
     setFormEndTime(posting.endTime.slice(0, 5));
     setSelectedMembers(posting.approvedMembers.map((m) => m.id));
+  }
+
+  function handleClientSelect(clientId: string) {
+    setFormClientId(clientId);
+    const posting = approvedPostings.find((p) => p.clientId === clientId);
+    if (posting) {
+      setSelectedMembers(posting.approvedMembers.map((m) => m.id));
+      setFormStartTime(posting.startTime.slice(0, 5));
+      setFormEndTime(posting.endTime.slice(0, 5));
+    } else {
+      setSelectedMembers([]);
+    }
   }
 
   function resetForm() {
@@ -244,6 +283,9 @@ export function ShiftTable({
           <Badge variant="secondary" className="text-sm">
             총 {shifts.length}명
           </Badge>
+          <Badge variant="outline" className="text-sm border-gray-400 text-gray-500">
+            오프라인 {statusCounts.offline}
+          </Badge>
           <Badge variant="outline" className="text-sm border-blue-500 text-blue-700">
             이동중 {statusCounts.moving}
           </Badge>
@@ -282,17 +324,16 @@ export function ShiftTable({
             {/* 승인된 공고 불러오기 */}
             {approvedPostings.length > 0 && (
               <div>
-                <Label>고용등록 불러오기</Label>
+                <Label>공고에서 불러오기</Label>
                 <Select onValueChange={handleApprovedPostingSelect}>
                   <SelectTrigger>
-                    <SelectValue placeholder="승인된 공고에서 불러오기" />
+                    <SelectValue placeholder="해당 날짜 공고에서 불러오기" />
                   </SelectTrigger>
                   <SelectContent>
                     {approvedPostings.map((p) => (
                       <SelectItem key={p.postingId} value={p.postingId}>
                         {p.clientName} - {p.startTime.slice(0, 5)}~
-                        {p.endTime.slice(0, 5)} ({p.approvedMembers.length}명
-                        승인)
+                        {p.endTime.slice(0, 5)} ({p.approvedMembers.length > 0 ? `${p.approvedMembers.length}명 승인` : "지원자 없음"})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -309,7 +350,7 @@ export function ShiftTable({
             </div>
             <div>
               <Label>고객사</Label>
-              <Select value={formClientId} onValueChange={setFormClientId}>
+              <Select value={formClientId} onValueChange={handleClientSelect}>
                 <SelectTrigger>
                   <SelectValue placeholder="고객사 선택" />
                 </SelectTrigger>
@@ -416,7 +457,6 @@ export function ShiftTable({
                       size="sm"
                       variant="ghost"
                       className="h-7 w-7 p-0 shrink-0"
-                      disabled={!first.clients.latitude || !first.clients.longitude}
                       onClick={() => setMapShifts(groupShifts)}
                       title="지도 보기"
                     >
@@ -440,17 +480,20 @@ export function ShiftTable({
                     <Badge variant="secondary" className="text-[11px] px-1.5 py-0">
                       총 {groupShifts.length}명
                     </Badge>
+                    <Badge variant="outline" className="text-[11px] px-1.5 py-0 border-gray-400 text-gray-500">
+                      오프라인 {groupShifts.filter((s) => getDisplayStatus(s, mounted) === "offline").length}
+                    </Badge>
                     <Badge variant="outline" className="text-[11px] px-1.5 py-0 border-blue-500 text-blue-700">
-                      이동중 {groupShifts.filter((s) => ["tracking", "moving", "late_risk", "noshow_risk"].includes(s.arrival_status)).length}
+                      이동중 {groupShifts.filter((s) => ["tracking", "moving", "late_risk", "noshow_risk"].includes(getDisplayStatus(s, mounted))).length}
                     </Badge>
                     <Badge className="text-[11px] px-1.5 py-0 bg-green-600">
-                      출근완료 {groupShifts.filter((s) => s.arrival_status === "arrived").length}
+                      출근완료 {groupShifts.filter((s) => getDisplayStatus(s, mounted) === "arrived").length}
                     </Badge>
                     <Badge variant="outline" className="text-[11px] px-1.5 py-0 border-orange-500 text-orange-700">
-                      지각 {groupShifts.filter((s) => s.arrival_status === "late").length}
+                      지각 {groupShifts.filter((s) => getDisplayStatus(s, mounted) === "late").length}
                     </Badge>
                     <Badge variant="destructive" className="text-[11px] px-1.5 py-0 bg-red-700">
-                      노쇼 {groupShifts.filter((s) => s.arrival_status === "noshow").length}
+                      노쇼 {groupShifts.filter((s) => getDisplayStatus(s, mounted) === "noshow").length}
                     </Badge>
                   </div>
                 </div>
@@ -458,7 +501,7 @@ export function ShiftTable({
                 {/* 회원 리스트 */}
                 <div className="border-t divide-y">
                   {groupShifts.map((shift) => {
-                    const config = statusConfig[shift.arrival_status];
+                    const config = statusConfig[getDisplayStatus(shift, mounted)];
                     return (
                       <div
                         key={shift.id}
@@ -480,6 +523,13 @@ export function ShiftTable({
                         >
                           {config.label}
                         </Badge>
+                        {shift.left_site_at ? (
+                          <span className="text-orange-600 text-xs shrink-0 tabular-nums">
+                            {new Date(shift.left_site_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/40 text-xs shrink-0">—</span>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"

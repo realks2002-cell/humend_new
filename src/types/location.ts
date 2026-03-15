@@ -4,6 +4,7 @@ export type ArrivalStatus =
   | "pending"      // 배정됨 (추적 전)
   | "tracking"     // 추적 중 (위치 수집 시작)
   | "moving"       // 이동 중 (정상)
+  | "offline"      // 오프라인 (위치 미수신)
   | "late_risk"    // 지각 위험
   | "noshow_risk"  // 노쇼 위험
   | "arrived"      // 도착 확인
@@ -29,6 +30,8 @@ export interface DailyShift {
   tracking_start_lat: number | null;
   tracking_start_lng: number | null;
   last_speed: number | null;
+  left_site_at: string | null;
+  offsite_count: number;
   created_at: string;
   updated_at: string;
 }

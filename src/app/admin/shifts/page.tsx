@@ -23,11 +23,11 @@ export default async function AdminShiftsPage({
     .select(
       `
       id, client_id, member_id, work_date, start_time, end_time,
-      arrival_status, risk_level, arrived_at,
+      arrival_status, risk_level, arrived_at, left_site_at, offsite_count,
       last_known_lat, last_known_lng, last_seen_at,
       location_consent, tracking_started_at,
       created_at, updated_at,
-      clients (company_name, location, latitude, longitude, contact_phone),
+      clients!inner (company_name, location, latitude, longitude, contact_phone),
       members (name, phone)
     `
     )
@@ -46,60 +46,60 @@ export default async function AdminShiftsPage({
     .select("id, name, phone")
     .order("name");
 
-  // 승인된 지원 조회 (일일 공고: work_date 매칭, 기간제: start_date~end_date 범위)
-  const { data: approvedApps } = await supabase
-    .from("applications")
+  // 해당 날짜의 전체 공고 조회 (일일: work_date 매칭, 기간제: start_date~end_date 범위)
+  const { data: allPostings } = await supabase
+    .from("job_postings")
     .select(
       `
-      id, posting_id, member_id, status,
-      job_postings!inner (
-        id, client_id, work_date, start_time, end_time,
-        posting_type, start_date, end_date,
-        clients (company_name, location)
-      ),
-      members!inner (id, name, phone)
+      id, client_id, work_date, start_time, end_time,
+      posting_type, start_date, end_date,
+      clients!inner (company_name, location)
     `
     )
-    .eq("status", "승인");
+    .or(
+      `work_date.eq.${selectedDate},and(start_date.lte.${selectedDate},end_date.gte.${selectedDate})`
+    );
 
-  // selectedDate에 해당하는 승인 지원만 필터 + 공고별 그룹화
-  const postingMap = new Map<string, ApprovedPosting>();
+  const datePostings = allPostings ?? [];
 
+  // 해당 공고들의 승인 지원자 조회
+  const postingIds = datePostings.map((p) => p.id);
+  const { data: approvedApps } = postingIds.length > 0
+    ? await supabase
+        .from("applications")
+        .select(`posting_id, members!inner (id, name, phone)`)
+        .eq("status", "승인")
+        .in("posting_id", postingIds)
+    : { data: [] };
+
+  // 공고별 승인 지원자 그룹화
+  const approvedByPosting = new Map<string, { id: string; name: string | null; phone: string }[]>();
   for (const app of approvedApps ?? []) {
-    const posting = app.job_postings as any;
-    if (!posting) continue;
-
-    const isDaily = posting.posting_type !== "fixed_term";
-    const matchesDate = isDaily
-      ? posting.work_date === selectedDate
-      : posting.start_date <= selectedDate && posting.end_date >= selectedDate;
-
-    if (!matchesDate) continue;
-
-    const postingId = posting.id as string;
-    if (!postingMap.has(postingId)) {
-      const client = posting.clients as any;
-      postingMap.set(postingId, {
-        postingId,
-        clientId: posting.client_id,
-        clientName: client?.company_name ?? "",
-        clientLocation: client?.location ?? "",
-        workDate: selectedDate,
-        startTime: posting.start_time,
-        endTime: posting.end_time,
-        approvedMembers: [],
-      });
-    }
-
     const member = app.members as any;
-    postingMap.get(postingId)!.approvedMembers.push({
+    if (!approvedByPosting.has(app.posting_id)) {
+      approvedByPosting.set(app.posting_id, []);
+    }
+    approvedByPosting.get(app.posting_id)!.push({
       id: member.id,
       name: member.name,
       phone: member.phone,
     });
   }
 
-  const approvedPostings = Array.from(postingMap.values());
+  // 전체 공고 → ApprovedPosting 변환 (승인 지원자 0명도 포함)
+  const approvedPostings: ApprovedPosting[] = datePostings.map((p) => {
+    const client = p.clients as any;
+    return {
+      postingId: p.id,
+      clientId: p.client_id,
+      clientName: client?.company_name ?? "",
+      clientLocation: client?.location ?? "",
+      workDate: selectedDate,
+      startTime: p.start_time,
+      endTime: p.end_time,
+      approvedMembers: approvedByPosting.get(p.id) ?? [],
+    };
+  });
 
   return (
     <div className="p-6 space-y-6">

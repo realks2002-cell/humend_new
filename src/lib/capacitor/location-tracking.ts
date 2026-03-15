@@ -1,6 +1,7 @@
 /**
  * 백그라운드 위치추적 — @capacitor-community/background-geolocation
- * Foreground Service + 100m 지오펜스 도착 감지
+ * Foreground Service + 200m 지오펜스 도착 감지
+ * 도착 후 15분 간격 근무 중 위치추적
  */
 import { registerPlugin } from "@capacitor/core";
 import { isNative } from "./native";
@@ -39,17 +40,23 @@ export interface TrackingCallbacks {
   onError?: (error: unknown) => void;
 }
 
+const POST_ARRIVAL_INTERVAL_MS = 15 * 60 * 1000; // 15분
+
 /**
  * 백그라운드 위치추적 시작
  * @param targetLat 목적지 위도
  * @param targetLng 목적지 경도
- * @param geofenceRadius 도착 판정 반경 (기본 250m)
+ * @param geofenceRadius 도착 판정 반경 (기본 200m)
+ * @param endTime 퇴근 시간 (HH:MM 또는 HH:MM:SS), 이 시간 + 30분 후 자동 종료
+ * @param workDate 근무 날짜 (YYYY-MM-DD)
  */
 export async function startTracking(
   targetLat: number,
   targetLng: number,
   callbacks: TrackingCallbacks,
-  geofenceRadius = 250
+  geofenceRadius = 200,
+  endTime?: string,
+  workDate?: string,
 ): Promise<boolean> {
   if (!isNative()) return false;
   if (watcherId) return true; // 이미 추적 중
@@ -62,52 +69,86 @@ export async function startTracking(
       backgroundTitle: "Humend HR 출근 추적",
       requestPermissions: true,
       stale: false,
-      distanceFilter: 50, // 50m 이동 시마다 콜백
+      distanceFilter: 50,
     });
 
-    // 위치 업데이트 콜백은 Capacitor plugin이 자체적으로 처리
-    // 여기서는 watcher를 등록하고, 실제 위치 콜백은 native bridge를 통해 전달됨
-    // 아래는 간소화된 폴링 방식 (background-geolocation 콜백 대체)
-    const intervalId = setInterval(async () => {
-      try {
-        const { Geolocation } = await import("@capacitor/geolocation");
-        const pos = await Geolocation.getCurrentPosition({
-          enableHighAccuracy: true,
-          timeout: 10000,
-        });
+    let arrived = false;
 
+    async function getPosition() {
+      const { Geolocation } = await import("@capacitor/geolocation");
+      const pos = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000,
+      });
+      return pos;
+    }
+
+    // 출근 전: 1분 간격 폴링
+    const intervalId = setInterval(async () => {
+      if (arrived) return; // 도착 후에는 별도 인터벌 사용
+      try {
+        const pos = await getPosition();
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        const speed = pos.coords.speed;
-        const accuracy = pos.coords.accuracy;
 
-        callbacks.onLocation(lat, lng, speed, accuracy);
+        callbacks.onLocation(lat, lng, pos.coords.speed, pos.coords.accuracy);
 
-        // 100m 지오펜스 체크
         const dist = calcDistanceMeters(lat, lng, targetLat, targetLng);
         if (dist <= geofenceRadius) {
-          callbacks.onArrival();
-          stopTracking();
+          arrived = true;
           clearInterval(intervalId);
+          callbacks.onArrival();
+          startPostArrivalTracking(callbacks, getPosition);
         }
       } catch (err) {
         callbacks.onError?.(err);
       }
-    }, 60_000); // 1분 간격
+    }, 60_000);
 
-    // intervalId를 전역에 저장해서 stopTracking 시 정리
     (globalThis as Record<string, unknown>).__trackingInterval = intervalId;
 
-    // 2시간 자동 종료 타이머 (배터리 보호)
+    // 자동 종료 타이머: endTime + 30분 또는 fallback 2시간
+    let autoStopMs = 2 * 60 * 60 * 1000;
+    if (endTime && workDate) {
+      const endTimeNorm = endTime.length === 5 ? endTime + ":00" : endTime;
+      const endDate = new Date(`${workDate}T${endTimeNorm}+09:00`);
+      const stopAt = endDate.getTime() + 30 * 60 * 1000; // end_time + 30분
+      const remaining = stopAt - Date.now();
+      if (remaining > 0) {
+        autoStopMs = remaining;
+      }
+    }
+
     const autoStopTimer = setTimeout(() => {
       stopTracking();
-    }, 2 * 60 * 60 * 1000); // 2시간
+    }, autoStopMs);
     (globalThis as Record<string, unknown>).__trackingAutoStop = autoStopTimer;
 
     return true;
   } catch {
     return false;
   }
+}
+
+function startPostArrivalTracking(
+  callbacks: TrackingCallbacks,
+  getPosition: () => Promise<{ coords: { latitude: number; longitude: number; speed: number | null; accuracy: number } }>,
+) {
+  const postInterval = setInterval(async () => {
+    try {
+      const pos = await getPosition();
+      callbacks.onLocation(
+        pos.coords.latitude,
+        pos.coords.longitude,
+        pos.coords.speed,
+        pos.coords.accuracy,
+      );
+    } catch (err) {
+      callbacks.onError?.(err);
+    }
+  }, POST_ARRIVAL_INTERVAL_MS);
+
+  (globalThis as Record<string, unknown>).__postArrivalInterval = postInterval;
 }
 
 /** 추적 중지 */
@@ -127,6 +168,13 @@ export async function stopTracking(): Promise<void> {
   if (intervalId) {
     clearInterval(intervalId as ReturnType<typeof setInterval>);
     delete (globalThis as Record<string, unknown>).__trackingInterval;
+  }
+
+  // 근무 중 위치추적 인터벌 정리
+  const postInterval = (globalThis as Record<string, unknown>).__postArrivalInterval;
+  if (postInterval) {
+    clearInterval(postInterval as ReturnType<typeof setInterval>);
+    delete (globalThis as Record<string, unknown>).__postArrivalInterval;
   }
 
   // 자동 종료 타이머 정리
