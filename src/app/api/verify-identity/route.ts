@@ -103,13 +103,13 @@ async function getCryptoToken(accessToken: string): Promise<{
       gwCode,
       data.dataHeader?.GW_RSLT_MSG,
     );
-    throw new Error(`crypto/token 실패: GW_RSLT_CD=${gwCode}`);
+    throw new Error("본인인증 서비스 연결에 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 
   const rspCd = data.dataBody?.rsp_cd;
   if (rspCd !== "P000") {
     console.error("[NICE] crypto/token rsp_cd:", rspCd, data.dataBody?.res_msg);
-    throw new Error(`crypto/token 실패: rsp_cd=${rspCd}`);
+    throw new Error("본인인증 서비스 연결에 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 
   return {
