@@ -54,9 +54,10 @@ async function getNiceAccessToken(): Promise<string> {
   console.log("[NICE] token response:", JSON.stringify(data, null, 2));
 
   const gwCode = data.dataHeader?.GW_RSLT_CD;
+  const gwMsg = data.dataHeader?.GW_RSLT_MSG;
+  console.error("[NICE] token GW_RSLT_CD:", gwCode, "GW_RSLT_MSG:", gwMsg, "dataBody type:", typeof data.dataBody);
   if (gwCode !== "1200") {
-    console.error("[NICE] token GW error:", gwCode, data.dataHeader?.GW_RSLT_MSG);
-    throw new Error("본인인증 서비스 연결에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    throw new Error(`본인인증 서비스 연결에 실패했습니다. (GW: ${gwCode}, ${gwMsg})`);
   }
 
   if (!data.dataBody || !data.dataBody.access_token) {
