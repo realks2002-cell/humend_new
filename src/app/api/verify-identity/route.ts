@@ -27,6 +27,15 @@ async function getNiceAccessToken(): Promise<string> {
     "base64",
   );
 
+  console.log("[NICE] ENV check:", {
+    proxy: process.env.NICE_PROXY_BASE_URL?.slice(0, 20),
+    clientId: process.env.NICE_CLIENT_ID?.slice(0, 8),
+    clientIdLength: process.env.NICE_CLIENT_ID?.length,
+    secretLength: process.env.NICE_CLIENT_SECRET?.length,
+    hasNewline: process.env.NICE_CLIENT_ID?.includes('\n'),
+    hasSpace: process.env.NICE_CLIENT_ID?.includes(' '),
+    hasQuote: process.env.NICE_CLIENT_ID?.includes('"'),
+  });
   console.log("[NICE] token request to:", `${NICE_PROXY_BASE}${NICE_TOKEN_PATH}`);
   let res: Response;
   try {
