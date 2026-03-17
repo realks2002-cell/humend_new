@@ -27,22 +27,43 @@ async function getNiceAccessToken(): Promise<string> {
     "base64",
   );
 
-  const res = await fetch(`${NICE_PROXY_BASE}${NICE_TOKEN_PATH}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials&scope=default",
-  });
+  console.log("[NICE] token request to:", `${NICE_PROXY_BASE}${NICE_TOKEN_PATH}`);
+  let res: Response;
+  try {
+    res = await fetch(`${NICE_PROXY_BASE}${NICE_TOKEN_PATH}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${credentials}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "grant_type=client_credentials&scope=default",
+    });
+  } catch (fetchErr) {
+    console.error("[NICE] token fetch failed:", fetchErr instanceof Error ? { message: fetchErr.message, cause: fetchErr.cause } : fetchErr);
+    throw fetchErr;
+  }
 
+  console.log("[NICE] token response status:", res.status);
   if (!res.ok) {
     const text = await res.text();
     console.error("[NICE] token error:", res.status, text);
-    throw new Error("NICE token request failed");
+    throw new Error(`NICE token request failed: ${res.status} ${text}`);
   }
 
   const data = await res.json();
+  console.log("[NICE] token response:", JSON.stringify(data, null, 2));
+
+  const gwCode = data.dataHeader?.GW_RSLT_CD;
+  if (gwCode !== "1200") {
+    console.error("[NICE] token GW error:", gwCode, data.dataHeader?.GW_RSLT_MSG);
+    throw new Error("본인인증 서비스 연결에 실패했습니다. 잠시 후 다시 시도해주세요.");
+  }
+
+  if (!data.dataBody || !data.dataBody.access_token) {
+    console.error("[NICE] token response missing dataBody:", JSON.stringify(data));
+    throw new Error("본인인증 서비스 응답이 올바르지 않습니다.");
+  }
+
   cachedToken = {
     access_token: data.dataBody.access_token,
     expires_at: Date.now() + data.dataBody.expires_in * 1000,
@@ -77,19 +98,27 @@ async function getCryptoToken(accessToken: string): Promise<{
     .slice(0, 14);
   const reqNo = crypto.randomUUID().replace(/-/g, "").slice(0, 30);
 
-  const res = await fetch(`${NICE_PROXY_BASE}${NICE_CRYPTO_PATH}`, {
-    method: "POST",
-    headers: buildNiceAuthHeader(accessToken),
-    body: JSON.stringify({
-      dataHeader: { CNTY_CD: "ko" },
-      dataBody: {
-        req_dtim: reqDtim,
-        req_no: reqNo,
-        enc_mode: "1",
-      },
-    }),
-  });
+  console.log("[NICE] crypto/token request to:", `${NICE_PROXY_BASE}${NICE_CRYPTO_PATH}`);
+  let res: Response;
+  try {
+    res = await fetch(`${NICE_PROXY_BASE}${NICE_CRYPTO_PATH}`, {
+      method: "POST",
+      headers: buildNiceAuthHeader(accessToken),
+      body: JSON.stringify({
+        dataHeader: { CNTY_CD: "ko" },
+        dataBody: {
+          req_dtim: reqDtim,
+          req_no: reqNo,
+          enc_mode: "1",
+        },
+      }),
+    });
+  } catch (fetchErr) {
+    console.error("[NICE] crypto/token fetch failed:", fetchErr instanceof Error ? { message: fetchErr.message, cause: fetchErr.cause } : fetchErr);
+    throw fetchErr;
+  }
 
+  console.log("[NICE] crypto/token response status:", res.status);
   const data = await res.json();
   console.log(
     "[NICE] crypto/token response:",
@@ -173,7 +202,14 @@ async function verifyIdentity(
 
   // Step 3: 암호화 (성명은 EUC-KR 인코딩 필요 — NICE 가이드 요구사항)
   const encJuminId = encryptAES128CBC(juminId, key, iv);
-  const nameEucKr = iconv.encode(name, "euc-kr");
+  let nameEucKr: Buffer;
+  try {
+    nameEucKr = iconv.encode(name, "euc-kr");
+    console.log("[NICE] EUC-KR encode OK, bytes:", nameEucKr.length);
+  } catch (encErr) {
+    console.error("[NICE] iconv encode failed:", encErr);
+    throw encErr;
+  }
   const encName = encryptAES128CBC(nameEucKr, key, iv);
   const integrityValue = generateIntegrity(
     hmacKey,
@@ -181,24 +217,32 @@ async function verifyIdentity(
   );
 
   // Step 4: 실명확인 호출
-  const res = await fetch(`${NICE_PROXY_BASE}${NICE_VERIFY_PATH}`, {
-    method: "POST",
-    headers: buildNiceAuthHeader(accessToken),
-    body: JSON.stringify({
-      dataHeader: { CNTY_CD: "ko" },
-      dataBody: {
-        token_version_id: cryptoResult.token_version_id,
-        enc_jumin_id: encJuminId,
-        enc_name: encName,
-        integrity_value: integrityValue,
-      },
-    }),
-  });
+  console.log("[NICE] verify request to:", `${NICE_PROXY_BASE}${NICE_VERIFY_PATH}`);
+  let res: Response;
+  try {
+    res = await fetch(`${NICE_PROXY_BASE}${NICE_VERIFY_PATH}`, {
+      method: "POST",
+      headers: buildNiceAuthHeader(accessToken),
+      body: JSON.stringify({
+        dataHeader: { CNTY_CD: "ko" },
+        dataBody: {
+          token_version_id: cryptoResult.token_version_id,
+          enc_jumin_id: encJuminId,
+          enc_name: encName,
+          integrity_value: integrityValue,
+        },
+      }),
+    });
+  } catch (fetchErr) {
+    console.error("[NICE] verify fetch failed:", fetchErr instanceof Error ? { message: fetchErr.message, cause: fetchErr.cause } : fetchErr);
+    throw fetchErr;
+  }
 
+  console.log("[NICE] verify response status:", res.status);
   if (!res.ok) {
     const text = await res.text();
     console.error("[NICE] verify error:", res.status, text);
-    throw new Error("실명확인 서비스에 오류가 발생했습니다.");
+    throw new Error(`실명확인 서비스에 오류가 발생했습니다. (${res.status})`);
   }
 
   const niceData = await res.json();
@@ -301,13 +345,13 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ verified: true });
   } catch (error) {
-    console.error("[verify-identity] error:", error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    const errStack = error instanceof Error ? error.stack : undefined;
+    console.error("[verify-identity] error:", errMsg, errStack);
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "실명확인 처리 중 오류가 발생했습니다.",
+        error: errMsg || "실명확인 처리 중 오류가 발생했습니다.",
+        _debug: errMsg,
       },
       { status: 500 },
     );
