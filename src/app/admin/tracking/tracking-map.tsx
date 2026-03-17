@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import {
   GoogleMap,
   useJsApiLoader,
-  MarkerF,
   InfoWindowF,
 } from "@react-google-maps/api";
 import { createBrowserClient } from "@supabase/ssr";
@@ -69,9 +68,6 @@ function getDisplayStatus(shift: DailyShiftWithDetails, mounted: boolean): Arriv
   const status = shift.arrival_status;
   if (["arrived", "late", "noshow"].includes(status)) return status;
   const now = Date.now();
-  const startTimeNorm = shift.start_time.length === 5 ? shift.start_time + ":00" : shift.start_time;
-  const shiftStart = new Date(`${shift.work_date}T${startTimeNorm}+09:00`).getTime();
-  if (now > shiftStart) return "late";
   if (
     shift.last_seen_at &&
     ["tracking", "moving"].includes(status) &&
@@ -86,6 +82,7 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
   const [mounted, setMounted] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
   const clientMarkersRef = useRef<google.maps.Marker[]>([]);
+  const workerMarkersRef = useRef<google.maps.Marker[]>([]);
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? "",
@@ -142,6 +139,30 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
     });
   }, []);
 
+  const createWorkerMarkers = useCallback((map: google.maps.Map, data: DailyShiftWithDetails[], isMounted: boolean) => {
+    workerMarkersRef.current.forEach((m) => m.setMap(null));
+    workerMarkersRef.current = [];
+
+    data.forEach((s) => {
+      if (!s.last_known_lat || !s.last_known_lng) return;
+      const displayStatus = getDisplayStatus(s, isMounted);
+      const color = statusColorMap[displayStatus];
+
+      const marker = new google.maps.Marker({
+        position: { lat: s.last_known_lat, lng: s.last_known_lng },
+        map,
+        icon: {
+          url: createWorkerIcon(color),
+          scaledSize: new google.maps.Size(28, 28),
+          anchor: new google.maps.Point(14, 14),
+        },
+      });
+
+      marker.addListener("click", () => setSelectedShift(s));
+      workerMarkersRef.current.push(marker);
+    });
+  }, []);
+
   useEffect(() => setMounted(true), []);
 
   // 외부 prop 변경 시 내부 state 동기화
@@ -149,17 +170,19 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
     setShifts(externalShifts);
   }, [externalShifts]);
 
-  // shifts 변경 시 bounds + 고객사 마커 자동 업데이트
+  // shifts 변경 시 bounds + 마커 자동 업데이트
   useEffect(() => {
     if (!mapRef.current) return;
     fitBoundsToShifts(mapRef.current, shifts);
     createClientMarkers(mapRef.current, shifts);
-  }, [shifts, fitBoundsToShifts, createClientMarkers]);
+    createWorkerMarkers(mapRef.current, shifts, mounted);
+  }, [shifts, mounted, fitBoundsToShifts, createClientMarkers, createWorkerMarkers]);
 
   // cleanup
   useEffect(() => {
     return () => {
       clientMarkersRef.current.forEach((m) => m.setMap(null));
+      workerMarkersRef.current.forEach((m) => m.setMap(null));
     };
   }, []);
 
@@ -208,7 +231,8 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
     mapRef.current = map;
     fitBoundsToShifts(map, shifts);
     createClientMarkers(map, shifts);
-  }, [shifts, fitBoundsToShifts, createClientMarkers]);
+    createWorkerMarkers(map, shifts, mounted);
+  }, [shifts, mounted, fitBoundsToShifts, createClientMarkers, createWorkerMarkers]);
 
   if (!isLoaded) {
     return (
@@ -232,26 +256,6 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
         disableDoubleClickZoom: true,
       }}
     >
-      {/* 근무자 마커 */}
-      {shifts
-        .filter((s) => s.last_known_lat && s.last_known_lng)
-        .map((s) => {
-          const displayStatus = getDisplayStatus(s, mounted);
-          const color = statusColorMap[displayStatus];
-          return (
-            <MarkerF
-              key={`worker-${s.id}`}
-              position={{ lat: s.last_known_lat!, lng: s.last_known_lng! }}
-              icon={{
-                url: createWorkerIcon(color),
-                scaledSize: new google.maps.Size(28, 28),
-                anchor: new google.maps.Point(14, 14),
-              }}
-              onClick={() => setSelectedShift(s)}
-            />
-          );
-        })}
-
       {/* 레전드 */}
       <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-md px-3 py-2.5 text-xs space-y-1.5 z-10 border">
         {[
