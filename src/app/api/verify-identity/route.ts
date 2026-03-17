@@ -219,7 +219,7 @@ async function verifyIdentity(
 
   const resultCode = niceData.dataBody?.result_cd;
 
-  return resultCode === "Y"
+  return resultCode === "1"
     ? { verified: true }
     : { verified: false, error: "이름과 주민등록번호가 일치하지 않습니다." };
 }
