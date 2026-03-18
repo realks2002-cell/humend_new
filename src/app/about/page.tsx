@@ -177,7 +177,7 @@ export default function AboutPage() {
                   <v.icon className={`h-6 w-6 md:h-8 md:w-8 ${v.color}`} />
                 </div>
                 <p className="text-lg font-bold md:text-2xl">{v.title}</p>
-                <p className="mt-1 text-xs text-muted-foreground md:mt-2 md:text-sm">
+                <p className={`mt-1 text-xs text-muted-foreground md:mt-2 md:text-sm ${isNative ? "hidden" : ""}`}>
                   {v.description}
                 </p>
               </div>
