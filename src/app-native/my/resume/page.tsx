@@ -298,12 +298,68 @@ function ResumeContent() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-foreground">생년월일</label>
-              <Input
-                id="field-birthDate"
-                type="date"
-                value={form.birthDate}
-                onChange={(e) => handleChange("birthDate", e.target.value)}
-              />
+              {(() => {
+                const [bYear, bMonth, bDay] = form.birthDate ? form.birthDate.split("-") : ["", "", ""];
+                const daysInMonth = bYear && bMonth
+                  ? new Date(Number(bYear), Number(bMonth), 0).getDate()
+                  : 31;
+                const clampDay = (y: string, m: string, d: string) => {
+                  const max = new Date(Number(y), Number(m), 0).getDate();
+                  return String(Math.min(Number(d) || 1, max)).padStart(2, "0");
+                };
+                const selectClass = "h-9 rounded-md border border-input bg-background px-2 text-sm";
+                return (
+                  <div id="field-birthDate" className="flex gap-1.5">
+                    <select
+                      value={bYear}
+                      onChange={(e) => {
+                        const y = e.target.value;
+                        if (!y) return handleChange("birthDate", "");
+                        const m = bMonth || "01";
+                        const d = clampDay(y, m, bDay || "01");
+                        handleChange("birthDate", `${y}-${m}-${d}`);
+                      }}
+                      className={`flex-1 ${selectClass}`}
+                    >
+                      <option value="">년</option>
+                      {Array.from({ length: 71 }, (_, i) => 2010 - i).map((y) => (
+                        <option key={y} value={String(y)}>{y}년</option>
+                      ))}
+                    </select>
+                    <select
+                      value={bMonth}
+                      onChange={(e) => {
+                        const m = e.target.value;
+                        if (!m) return;
+                        const y = bYear || "2000";
+                        const d = clampDay(y, m, bDay || "01");
+                        handleChange("birthDate", `${y}-${m}-${d}`);
+                      }}
+                      className={`flex-[0.7] ${selectClass}`}
+                    >
+                      <option value="">월</option>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                        <option key={m} value={String(m).padStart(2, "0")}>{m}월</option>
+                      ))}
+                    </select>
+                    <select
+                      value={bDay}
+                      onChange={(e) => {
+                        if (!e.target.value) return;
+                        const y = bYear || "2000";
+                        const m = bMonth || "01";
+                        handleChange("birthDate", `${y}-${m}-${e.target.value}`);
+                      }}
+                      className={`flex-[0.7] ${selectClass}`}
+                    >
+                      <option value="">일</option>
+                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((d) => (
+                        <option key={d} value={String(d).padStart(2, "0")}>{d}일</option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })()}
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-foreground">성별</label>
