@@ -95,7 +95,8 @@ function TrackingContent() {
   }, []);
 
   useEffect(() => {
-    loadShift();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadShift();
   }, [loadShift]);
 
   // 위치추적 시작

@@ -14,7 +14,7 @@ import {
   getAllClients,
 } from "@/lib/native-api/queries";
 import type { WorkRecord, Member, Client } from "@/lib/native-api/queries";
-import { formatDate, formatCurrency, formatAccount } from "@/lib/utils/format";
+import { formatDate, formatAccount } from "@/lib/utils/format";
 import { ContractModal } from "./contract-modal";
 import { ContractViewModal } from "./contract-view-modal";
 import { PayslipModal } from "./payslip-modal";
@@ -40,6 +40,7 @@ function SalaryContent() {
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     Promise.all([
       getMyWorkRecords(currentMonth),

@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Capacitor Android 빌드 산출물 제외
+    "android/**",
   ]),
 ]);
 

@@ -26,10 +26,10 @@ export default function JobDetailClient() {
   const searchParams = useSearchParams();
   const id = searchParams.get("client");
   const [data, setData] = useState<ClientWithJobs | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!id);
 
   useEffect(() => {
-    if (!id) { setLoading(false); return; }
+    if (!id) return;
     getClientDetail(id)
       .then(setData)
       .finally(() => setLoading(false));
