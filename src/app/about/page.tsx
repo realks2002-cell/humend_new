@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,6 +73,14 @@ export default function AboutPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState("");
+  const [isNative, setIsNative] = useState(false);
+
+  useEffect(() => {
+    try {
+      const w = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
+      setIsNative(!!w.Capacitor?.isNativePlatform?.());
+    } catch {}
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -103,7 +111,7 @@ export default function AboutPage() {
             <br />
             <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">파트너</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-lg text-lg text-muted-foreground">
+          <p className={`mx-auto mt-6 max-w-lg text-lg text-muted-foreground ${isNative ? "hidden" : ""}`}>
             Humend HR은 웨딩홀, 케이터링, 컨벤션 등 행사 현장에
             <br />
             필요한 인력을 빠르고 정확하게 매칭하는 플랫폼입니다.
@@ -112,19 +120,16 @@ export default function AboutPage() {
       </section>
 
       {/* Process */}
-      <section className="mx-auto max-w-4xl px-4 py-20">
+      <section className={`mx-auto px-4 py-20 ${isNative ? "" : "max-w-4xl"}`}>
         <h2 className="mb-2 text-center text-2xl font-bold md:text-3xl">서비스 프로세스</h2>
         <p className="mb-12 text-center text-muted-foreground">4단계로 간편하게 진행됩니다</p>
-        <div className="grid gap-6 md:grid-cols-4">
-          {steps.map((step, i) => (
-            <div key={step.title} className="relative">
-              {i < steps.length - 1 && (
-                <div className="absolute right-0 top-12 hidden h-0.5 w-6 translate-x-3 bg-border md:block" />
-              )}
-              <Card className="group text-center transition-all hover:-translate-y-1 hover:shadow-lg">
+        {isNative ? (
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
+            {steps.map((step) => (
+              <Card key={step.title} className="min-w-[70vw] shrink-0 snap-center text-center">
                 <CardContent className="pt-6">
                   <span className="mb-2 block text-xs font-bold text-muted-foreground/50">{step.step}</span>
-                  <div className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl ${step.color} transition-transform group-hover:scale-110`}>
+                  <div className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl ${step.color}`}>
                     <step.icon className="h-7 w-7" />
                   </div>
                   <h3 className="font-semibold">{step.title}</h3>
@@ -133,9 +138,31 @@ export default function AboutPage() {
                   </p>
                 </CardContent>
               </Card>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-4">
+            {steps.map((step, i) => (
+              <div key={step.title} className="relative">
+                {i < steps.length - 1 && (
+                  <div className="absolute right-0 top-12 hidden h-0.5 w-6 translate-x-3 bg-border md:block" />
+                )}
+                <Card className="group text-center transition-all hover:-translate-y-1 hover:shadow-lg">
+                  <CardContent className="pt-6">
+                    <span className="mb-2 block text-xs font-bold text-muted-foreground/50">{step.step}</span>
+                    <div className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl ${step.color} transition-transform group-hover:scale-110`}>
+                      <step.icon className="h-7 w-7" />
+                    </div>
+                    <h3 className="font-semibold">{step.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      {step.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Values */}
@@ -143,14 +170,14 @@ export default function AboutPage() {
         <div className="mx-auto max-w-4xl">
           <h2 className="mb-2 text-center text-2xl font-bold md:text-3xl">핵심 가치</h2>
           <p className="mb-12 text-center text-muted-foreground">Humend HR이 추구하는 가치</p>
-          <div className="grid gap-8 md:grid-cols-3">
+          <div className="grid grid-cols-3 gap-4">
             {values.map((v) => (
               <div key={v.title} className="text-center">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-background shadow-sm">
-                  <v.icon className={`h-8 w-8 ${v.color}`} />
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-background shadow-sm md:h-16 md:w-16">
+                  <v.icon className={`h-6 w-6 md:h-8 md:w-8 ${v.color}`} />
                 </div>
-                <p className="text-2xl font-bold">{v.title}</p>
-                <p className="mt-2 text-sm text-muted-foreground">
+                <p className="text-lg font-bold md:text-2xl">{v.title}</p>
+                <p className="mt-1 text-xs text-muted-foreground md:mt-2 md:text-sm">
                   {v.description}
                 </p>
               </div>
@@ -160,7 +187,7 @@ export default function AboutPage() {
       </section>
 
       {/* Partner Inquiry Form */}
-      <section className="px-4 py-20">
+      <section className={`px-4 py-20 ${isNative ? "hidden" : ""}`}>
         <div className="mx-auto max-w-lg">
           <h2 className="text-center text-2xl font-bold md:text-3xl">파트너 제휴문의</h2>
           <p className="mt-3 text-center text-muted-foreground">
