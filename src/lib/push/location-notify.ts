@@ -177,6 +177,21 @@ export async function notifyAppReminder(
   });
 }
 
+/** 앱 재실행 요청 알림 (오프라인 감지) */
+export async function notifyAppReopen(
+  memberId: string,
+  companyName: string,
+  startTime: string,
+  minutesLeft: number
+) {
+  await notifyMemberLocation({
+    memberId,
+    title: "앱을 다시 열어주세요",
+    body: `${companyName} ${startTime} 출근까지 ${minutesLeft}분. 위치 확인이 중단되었습니다.`,
+    url: "/my/tracking",
+  });
+}
+
 /** 관리자에게 지각 예측 알림 */
 export async function notifyAdminLatePrediction(
   adminId: string,
