@@ -1,0 +1,8 @@
+[      63ms] [WARNING] The value "1230px" for key "width" was truncated to its numeric prefix. @ https://www.niceapi.co.kr/:0
+[     322ms] [WARNING] MutationObserver is not supported by your browser. @ https://www.niceapi.co.kr/static/js/chunk-d4f0.1a7cb1fa3bd6ec10ee6c.js:0
+[     323ms] [WARNING] WOW.js cannot detect dom mutations, please call .sync() after loading new content. @ https://www.niceapi.co.kr/static/js/chunk-d4f0.1a7cb1fa3bd6ec10ee6c.js:0
+[  843984ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://www.niceapi.co.kr/user/select:0
+[  844010ms] TypeError: Cannot read properties of undefined (reading 'authorities')
+    at https://www.niceapi.co.kr/static/js/app.defd204f063118eeeb4d.js:5:42250
+[  845299ms] TypeError: Cannot read properties of undefined (reading '$store')
+    at https://www.niceapi.co.kr/static/js/app.defd204f063118eeeb4d.js:5:39223

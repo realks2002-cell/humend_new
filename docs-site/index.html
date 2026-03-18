@@ -91,6 +91,8 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
 .browser-frame .titlebar .url{flex:1;text-align:center;font-size:11px;font-family:var(--font-mono);color:#666;background:white;border-radius:5px;padding:4px 12px;margin:0 60px;border:1px solid #d5d5d5}
 .browser-frame .frame-body{overflow:hidden;background:white}
 .browser-frame .frame-body img{width:100%;height:auto;display:block}
+.blur-footer{position:relative}
+.blur-footer::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:50px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);background:rgba(255,255,255,0.3);z-index:1}
 
 /* iPhone Frame */
 .phone-frame{width:320px;flex-shrink:0}
@@ -215,7 +217,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid dual">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com</div></div>
-            <div class="frame-body"><img src="screenshots/public-home-desktop.png?v=3" alt="홈페이지 데스크탑" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/public-home-desktop.png?v=3" alt="홈페이지 데스크탑" loading="lazy"></div>
           </div>
           <div class="phone-frame">
             <div class="phone-frame-inner">
@@ -251,7 +253,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid dual">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/jobs</div></div>
-            <div class="frame-body"><img src="screenshots/public-jobs-desktop.png?v=3" alt="일자리 목록 데스크탑" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/public-jobs-desktop.png?v=3" alt="일자리 목록 데스크탑" loading="lazy"></div>
           </div>
           <div class="phone-frame">
             <div class="phone-frame-inner">
@@ -286,7 +288,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid single">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/jobs/[id]</div></div>
-            <div class="frame-body"><img src="screenshots/public-jobdetail-desktop.png?v=3" alt="일자리 상세 데스크탑" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/public-jobdetail-desktop.png?v=3" alt="일자리 상세 데스크탑" loading="lazy"></div>
           </div>
         </div>
         <table class="feature-table">
@@ -316,7 +318,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid dual">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/login</div></div>
-            <div class="frame-body"><img src="screenshots/public-login-desktop.png?v=3" alt="로그인 데스크탑" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/public-login-desktop.png?v=3" alt="로그인 데스크탑" loading="lazy"></div>
           </div>
           <div class="phone-frame">
             <div class="phone-frame-inner">
@@ -343,7 +345,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid dual">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/signup</div></div>
-            <div class="frame-body"><img src="screenshots/public-signup-desktop.png?v=3" alt="회원가입 데스크탑" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/public-signup-desktop.png?v=3" alt="회원가입 데스크탑" loading="lazy"></div>
           </div>
           <div class="phone-frame">
             <div class="phone-frame-inner">
@@ -370,7 +372,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid single">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/about</div></div>
-            <div class="frame-body"><img src="screenshots/public-about-desktop.png?v=3" alt="소개 데스크탑" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/public-about-desktop.png?v=3" alt="소개 데스크탑" loading="lazy"></div>
           </div>
         </div>
       </div>
@@ -390,7 +392,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid single">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/login</div></div>
-            <div class="frame-body"><img src="screenshots/public-adminlogin-desktop.png?v=3" alt="관리자 로그인" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/public-adminlogin-desktop.png?v=3" alt="관리자 로그인" loading="lazy"></div>
           </div>
         </div>
       </div>
@@ -432,7 +434,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid dual">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/my</div></div>
-            <div class="frame-body"><img src="screenshots/member-mypage-desktop.png?v=3" alt="마이페이지 데스크탑" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/member-mypage-desktop.png?v=3" alt="마이페이지 데스크탑" loading="lazy"></div>
           </div>
           <div class="phone-frame">
             <div class="phone-frame-inner">
@@ -468,7 +470,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid dual">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/my/resume</div></div>
-            <div class="frame-body"><img src="screenshots/member-resume-desktop.png?v=3" alt="프로필 관리 데스크탑" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/member-resume-desktop.png?v=3" alt="프로필 관리 데스크탑" loading="lazy"></div>
           </div>
           <div class="phone-frame">
             <div class="phone-frame-inner">
@@ -505,7 +507,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid dual">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/my/applications</div></div>
-            <div class="frame-body"><img src="screenshots/member-applications-desktop.png?v=3" alt="근무신청 조회 데스크탑" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/member-applications-desktop.png?v=3" alt="근무신청 조회 데스크탑" loading="lazy"></div>
           </div>
           <div class="phone-frame">
             <div class="phone-frame-inner">
@@ -532,7 +534,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid dual">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/my/salary</div></div>
-            <div class="frame-body"><img src="screenshots/member-salary-desktop.png?v=3" alt="급여신청 데스크탑" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/member-salary-desktop.png?v=3" alt="급여신청 데스크탑" loading="lazy"></div>
           </div>
           <div class="phone-frame">
             <div class="phone-frame-inner">
@@ -568,7 +570,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid dual">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/my/contracts</div></div>
-            <div class="frame-body"><img src="screenshots/member-contracts-desktop.png?v=3" alt="계약서 조회 데스크탑" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/member-contracts-desktop.png?v=3" alt="계약서 조회 데스크탑" loading="lazy"></div>
           </div>
           <div class="phone-frame">
             <div class="phone-frame-inner">
@@ -595,7 +597,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid dual">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/my/history</div></div>
-            <div class="frame-body"><img src="screenshots/member-history-desktop.png?v=3" alt="근무내역 데스크탑" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/member-history-desktop.png?v=3" alt="근무내역 데스크탑" loading="lazy"></div>
           </div>
           <div class="phone-frame">
             <div class="phone-frame-inner">
@@ -643,7 +645,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid single">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin</div></div>
-            <div class="frame-body"><img src="screenshots/admin-dashboard-desktop.png?v=3" alt="관리자 대시보드" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/admin-dashboard-desktop.png?v=3" alt="관리자 대시보드" loading="lazy"></div>
           </div>
         </div>
         <table class="feature-table">
@@ -673,7 +675,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid single">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/members</div></div>
-            <div class="frame-body"><img src="screenshots/admin-members-desktop.png?v=3" alt="회원 관리" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/admin-members-desktop.png?v=3" alt="회원 관리" loading="lazy"></div>
           </div>
         </div>
       </div>
@@ -693,7 +695,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid single">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/clients</div></div>
-            <div class="frame-body"><img src="screenshots/admin-clients-desktop.png?v=3" alt="고객사 관리" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/admin-clients-desktop.png?v=3" alt="고객사 관리" loading="lazy"></div>
           </div>
         </div>
       </div>
@@ -713,7 +715,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid single">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/jobs</div></div>
-            <div class="frame-body"><img src="screenshots/admin-jobs-desktop.png?v=3" alt="일자리 관리" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/admin-jobs-desktop.png?v=3" alt="일자리 관리" loading="lazy"></div>
           </div>
         </div>
       </div>
@@ -733,7 +735,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid single">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/applications</div></div>
-            <div class="frame-body"><img src="screenshots/admin-applications-desktop.png?v=3" alt="지원 관리" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/admin-applications-desktop.png?v=3" alt="지원 관리" loading="lazy"></div>
           </div>
         </div>
       </div>
@@ -753,7 +755,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid single">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/payroll</div></div>
-            <div class="frame-body"><img src="screenshots/admin-payroll-desktop.png?v=3" alt="급여 관리" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/admin-payroll-desktop.png?v=3" alt="급여 관리" loading="lazy"></div>
           </div>
         </div>
       </div>
@@ -773,7 +775,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid single">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/payments</div></div>
-            <div class="frame-body"><img src="screenshots/admin-payments-desktop.png?v=3" alt="급여지급 내역" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/admin-payments-desktop.png?v=3" alt="급여지급 내역" loading="lazy"></div>
           </div>
         </div>
       </div>
@@ -793,7 +795,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid single">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/contracts</div></div>
-            <div class="frame-body"><img src="screenshots/admin-contracts-desktop.png?v=3" alt="계약서 관리" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/admin-contracts-desktop.png?v=3" alt="계약서 관리" loading="lazy"></div>
           </div>
         </div>
       </div>
@@ -813,7 +815,7 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
         <div class="screenshot-grid single">
           <div class="browser-frame">
             <div class="titlebar"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div class="url">humendhr.com/admin/settings</div></div>
-            <div class="frame-body"><img src="screenshots/admin-settings-desktop.png?v=3" alt="설정" loading="lazy"></div>
+            <div class="frame-body blur-footer"><img src="screenshots/admin-settings-desktop.png?v=3" alt="설정" loading="lazy"></div>
           </div>
         </div>
       </div>

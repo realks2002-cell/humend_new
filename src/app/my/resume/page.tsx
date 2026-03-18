@@ -23,6 +23,7 @@ export default function ResumePage() {
 
   const [identityVerified, setIdentityVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [verifyMessage, setVerifyMessage] = useState("");
   const [memberPhone, setMemberPhone] = useState("");
   const [memberName, setMemberName] = useState("");
   const [form, setForm] = useState({
@@ -192,7 +193,6 @@ export default function ResumePage() {
     try {
       const result = await saveResume({
         ...form,
-        identityVerified,
         privacyAgreed,
         name: memberName,
         phone: memberPhone,
@@ -426,9 +426,15 @@ export default function ResumePage() {
 
           <div id="field-identity" className="border-t pt-4" tabIndex={-1}>
             <label className="mb-1.5 block text-xs font-semibold text-foreground">NICE 신용평가 본인인증</label>
-            <p className="mb-3 text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               이름과 주민등록번호 일치 여부를 확인합니다.
             </p>
+            {verifyMessage && (
+              <div className={`mt-2 mb-1 rounded-lg p-2.5 text-xs font-medium ${verifyMessage.includes("완료") ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"}`}>
+                {verifyMessage}
+              </div>
+            )}
+            <div className="mt-3" />
             {identityVerified ? (
               <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3.5 text-sm text-emerald-700 font-medium">
                 <ShieldCheck className="h-4 w-4" />
@@ -442,15 +448,15 @@ export default function ResumePage() {
                 disabled={verifying}
                 onClick={async () => {
                   if (!memberName?.trim()) {
-                    setMessage("이름을 먼저 입력해주세요.");
+                    setVerifyMessage("이름을 먼저 입력해주세요.");
                     return;
                   }
                   if (form.rrnFront.length !== 6 || form.rrnBack.length !== 7) {
-                    setMessage("주민등록번호를 정확히 입력해주세요.");
+                    setVerifyMessage("주민등록번호를 정확히 입력해주세요.");
                     return;
                   }
                   setVerifying(true);
-                  setMessage("");
+                  setVerifyMessage("");
                   try {
                     const res = await fetch("/api/verify-identity", {
                       method: "POST",
@@ -464,12 +470,12 @@ export default function ResumePage() {
                     const data = await res.json();
                     if (data.verified) {
                       setIdentityVerified(true);
-                      setMessage("본인인증이 완료되었습니다.");
+                      setVerifyMessage("본인인증이 완료되었습니다.");
                     } else {
-                      setMessage(data.error || "본인인증에 실패했습니다.");
+                      setVerifyMessage(data.error || "본인인증에 실패했습니다.");
                     }
                   } catch {
-                    setMessage("본인인증 처리 중 오류가 발생했습니다.");
+                    setVerifyMessage("본인인증 처리 중 오류가 발생했습니다.");
                   } finally {
                     setVerifying(false);
                   }

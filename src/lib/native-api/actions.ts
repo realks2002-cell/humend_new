@@ -80,7 +80,6 @@ export async function saveResume(formData: {
   accountNumber: string;
   rrnFront: string;
   rrnBack: string;
-  identityVerified: boolean;
   height: string;
   privacyAgreed: boolean;
   email: string;
@@ -104,7 +103,6 @@ export async function saveResume(formData: {
     account_number: formData.accountNumber || null,
     rrn_front: formData.rrnFront || null,
     rrn_back: formData.rrnBack || null,
-    identity_verified: formData.identityVerified,
     height: formData.height ? parseInt(formData.height) : null,
     privacy_agreed: formData.privacyAgreed,
     email: formData.email || null,

@@ -5,7 +5,8 @@ const config: CapacitorConfig = {
   appName: 'Humend HR',
   webDir: 'out',
   server: {
-    url: 'http://10.0.2.2:3000/jobs', // 개발용 — 배포 시 제거
+    url: 'https://humendhr.com/jobs',
+    cleartext: true,
     allowNavigation: [
       'https://humendhr.com/*',
       'https://*.supabase.co/*',
@@ -16,13 +17,14 @@ const config: CapacitorConfig = {
     ],
   },
   android: {
-    webContentsDebuggingEnabled: false,
-    allowMixedContent: false,
+    webContentsDebuggingEnabled: true,
+    allowMixedContent: true,
+    useLegacyBridge: true,
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 2000,
-      launchAutoHide: true,
+      launchAutoHide: false,
+      launchShowDuration: 0,
       backgroundColor: '#FFFFFF',
     },
     StatusBar: {

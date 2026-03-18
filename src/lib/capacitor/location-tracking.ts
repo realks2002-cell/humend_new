@@ -8,8 +8,27 @@ import { isNative } from "./native";
 import { calcDistanceMeters } from "./geolocation";
 
 // BackgroundGeolocation 플러그인 동적 로드
+interface BGLocation {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  altitude: number | null;
+  altitudeAccuracy: number | null;
+  bearing: number | null;
+  speed: number | null;
+  time: number;
+  simulated: boolean;
+}
+
+interface BGError {
+  code: string;
+}
+
 interface BackgroundGeolocationPlugin {
-  addWatcher(options: WatcherOptions): Promise<string>;
+  addWatcher(
+    options: WatcherOptions,
+    callback: (location: BGLocation | null, error: BGError | null) => void
+  ): Promise<string>;
   removeWatcher(options: { id: string }): Promise<void>;
 }
 
@@ -33,6 +52,7 @@ function getPlugin(): BackgroundGeolocationPlugin {
 }
 
 let watcherId: string | null = null;
+let lastSentAt = 0;
 
 export interface TrackingCallbacks {
   onLocation: (lat: number, lng: number, speed: number | null, accuracy: number | null) => void;
@@ -64,15 +84,8 @@ export async function startTracking(
   try {
     const plugin = getPlugin();
 
-    watcherId = await plugin.addWatcher({
-      backgroundMessage: "출근 위치를 확인하고 있습니다.",
-      backgroundTitle: "Humend HR 출근 추적",
-      requestPermissions: true,
-      stale: false,
-      distanceFilter: 50,
-    });
-
     let arrived = false;
+    lastSentAt = 0;
 
     async function getPosition() {
       const { Geolocation } = await import("@capacitor/geolocation");
@@ -83,22 +96,61 @@ export async function startTracking(
       return pos;
     }
 
-    // 출근 전: 1분 간격 폴링
+    function handleArrival() {
+      if (arrived) return;
+      arrived = true;
+      // 60초 보조 폴링 중지
+      const tid = (globalThis as Record<string, unknown>).__trackingInterval;
+      if (tid) {
+        clearInterval(tid as ReturnType<typeof setInterval>);
+        delete (globalThis as Record<string, unknown>).__trackingInterval;
+      }
+      callbacks.onArrival();
+      startPostArrivalTracking(callbacks, getPosition);
+    }
+
+    watcherId = await plugin.addWatcher(
+      {
+        backgroundMessage: "출근 위치를 확인하고 있습니다.",
+        backgroundTitle: "Humend HR 출근 추적",
+        requestPermissions: true,
+        stale: false,
+        distanceFilter: 10,
+      },
+      (location, error) => {
+        if (error || !location) return;
+        const now = Date.now();
+        if (now - lastSentAt < 20_000) return;
+        lastSentAt = now;
+        callbacks.onLocation(location.latitude, location.longitude, location.speed, location.accuracy);
+        if (!arrived) {
+          const dist = calcDistanceMeters(location.latitude, location.longitude, targetLat, targetLng);
+          if (dist <= geofenceRadius) {
+            handleArrival();
+          }
+        }
+      }
+    );
+
+    // 보조 폴링 (60초) — 정지 상태에서 distanceFilter 미달 시에도 갱신
     const intervalId = setInterval(async () => {
-      if (arrived) return; // 도착 후에는 별도 인터벌 사용
       try {
         const pos = await getPosition();
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
 
+        // 중복 방지: 네이티브 콜백과 20초 이내 중복이면 스킵
+        const now = Date.now();
+        if (now - lastSentAt < 20_000) return;
+        lastSentAt = now;
+
         callbacks.onLocation(lat, lng, pos.coords.speed, pos.coords.accuracy);
 
-        const dist = calcDistanceMeters(lat, lng, targetLat, targetLng);
-        if (dist <= geofenceRadius) {
-          arrived = true;
-          clearInterval(intervalId);
-          callbacks.onArrival();
-          startPostArrivalTracking(callbacks, getPosition);
+        if (!arrived) {
+          const dist = calcDistanceMeters(lat, lng, targetLat, targetLng);
+          if (dist <= geofenceRadius) {
+            handleArrival();
+          }
         }
       } catch (err) {
         callbacks.onError?.(err);
@@ -162,6 +214,7 @@ export async function stopTracking(): Promise<void> {
     // ignore
   }
   watcherId = null;
+  lastSentAt = 0;
 
   // 폴링 인터벌 정리
   const intervalId = (globalThis as Record<string, unknown>).__trackingInterval;

@@ -111,6 +111,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, arrived: true, offsite: isOffsite });
   }
 
+  // 출근 전에도 work_location_logs에 위치 기록 (관리자 맵 실시간 표시용)
+  const { data: preDistResult } = await admin.rpc("check_arrival_distance", {
+    p_shift_id: shiftId,
+    p_lat: lat,
+    p_lng: lng,
+    p_radius: 200,
+  }).maybeSingle() as { data: { is_arrived: boolean; distance_meters: number } | null };
+
+  const { error: logInsertError } = await admin.from("work_location_logs").insert({
+    shift_id: shiftId,
+    member_id: user.id,
+    lat,
+    lng,
+    distance_meters: preDistResult?.distance_meters ?? null,
+    is_offsite: false,
+  });
+  if (logInsertError) {
+    console.error("[location-log] pre-arrival log insert failed:", logInsertError.message);
+  }
+
   // daily_shifts 캐시 업데이트
   const updateData: Record<string, unknown> = {
     last_known_lat: lat,
@@ -132,13 +152,8 @@ export async function POST(req: NextRequest) {
     updateData.arrival_status = "tracking";
   }
 
-  // PostGIS 거리 계산으로 도착 판별 (200m)
-  const { data: distResult } = await admin.rpc("check_arrival_distance", {
-    p_shift_id: shiftId,
-    p_lat: lat,
-    p_lng: lng,
-    p_radius: 200,
-  }).maybeSingle() as { data: { is_arrived: boolean; distance_meters: number } | null };
+  // preDistResult 재사용 (위 work_location_logs INSERT에서 이미 계산)
+  const distResult = preDistResult;
 
   let arrived = false;
 

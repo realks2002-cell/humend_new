@@ -144,3 +144,16 @@ input, textarea, [contenteditable] {
 html, body {
   overscroll-behavior: none;
 }
+input[type="date"] {
+  color: #71717a !important;
+  -webkit-text-fill-color: #71717a !important;
+}
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  color: #71717a !important;
+  -webkit-text-fill-color: #71717a !important;
+}

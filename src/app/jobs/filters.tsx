@@ -81,8 +81,8 @@ export function JobFilters({ clientNames }: JobFiltersProps) {
           className="h-9 w-full gap-1 text-xs px-2"
           onClick={() => fromRef.current?.showPicker()}
         >
-          <Calendar className="h-3.5 w-3.5 shrink-0" />
-          {from ? formatDateShort(from) : "시작"}
+          <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="text-muted-foreground">{from ? formatDateShort(from) : "시작"}</span>
         </Button>
       </div>
 
@@ -103,8 +103,8 @@ export function JobFilters({ clientNames }: JobFiltersProps) {
           className="h-9 w-full gap-1 text-xs px-2"
           onClick={() => toRef.current?.showPicker()}
         >
-          <Calendar className="h-3.5 w-3.5 shrink-0" />
-          {to ? formatDateShort(to) : "종료"}
+          <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="text-muted-foreground">{to ? formatDateShort(to) : "종료"}</span>
         </Button>
       </div>
 

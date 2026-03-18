@@ -1,0 +1,219 @@
+[  734588ms] [ERROR] %o
+
+%s ReferenceError: ShiftForm is not defined
+    at Admin1Tabs (http://localhost:3001/_next/static/chunks/src_75f50055._.js?id=%255Bproject%255D%252Fsrc%252Fapp%252Fadmin%252Fadmin1%252Fadmin1-tabs.tsx+%255Bapp-client%255D+%2528ecmascript%2529:236:224)
+    at Object.react_stack_bottom_frame (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:14826:24)
+    at renderWithHooks (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:4651:24)
+    at updateFunctionComponent (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:6112:21)
+    at beginWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:6708:24)
+    at runWithFiberInDEV (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:965:74)
+    at performUnitOfWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9562:97)
+    at workLoopSync (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9456:40)
+    at renderRootSync (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9440:13)
+    at performWorkOnRoot (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9068:186)
+    at performSyncWorkOnRoot (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:10238:9)
+    at flushSyncWorkAcrossRoots_impl (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:10154:316)
+    at processRootScheduleInMicrotask (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:10175:106)
+    at http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:10249:158 The above error occurred in the <Admin1Tabs> component. It was handled by the <ErrorBoundaryHandler> error boundary. @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_client_17643121._.js:1342
+[  745287ms] [ERROR] %o
+
+%s ReferenceError: ShiftForm is not defined
+    at Admin1Tabs (http://localhost:3001/_next/static/chunks/src_75f50055._.js?id=%255Bproject%255D%252Fsrc%252Fapp%252Fadmin%252Fadmin1%252Fadmin1-tabs.tsx+%255Bapp-client%255D+%2528ecmascript%2529:242:224)
+    at Object.react_stack_bottom_frame (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:14826:24)
+    at renderWithHooks (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:4651:24)
+    at updateFunctionComponent (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:6112:21)
+    at beginWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:6687:639)
+    at runWithFiberInDEV (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:965:74)
+    at performUnitOfWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9562:97)
+    at workLoopSync (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9456:40)
+    at renderRootSync (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9440:13)
+    at performWorkOnRoot (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9105:47)
+    at performSyncWorkOnRoot (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:10238:9)
+    at flushSyncWorkAcrossRoots_impl (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:10154:316)
+    at flushSyncWork$1 (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9237:86)
+    at Object.scheduleRefresh (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:299:13)
+    at http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js:391:33
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js:384:38)
+    at applyUpdate (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js:878:31)
+    at http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js:886:13 The above error occurred in the <Admin1Tabs> component. It was handled by the <ErrorBoundaryHandler> error boundary. @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_client_17643121._.js:1342
+[ 1315996ms] [ERROR] ./src/app/admin/admin1/admin1-tabs.tsx:11:1
+Export InlineShiftForm doesn't exist in target module
+   9 | import { Button } from "@/components/ui/button";
+  10 | import { Input } from "@/components/ui/input";
+> 11 | import { InlineShiftForm } from "@/app/admin/shifts/shift-form";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  12 | import { ShiftTable } from "@/app/admin/shifts/shift-table";
+  13 | import { TrackingMap } from "@/app/admin/tracking/tracking-map";
+  14 | import { WorkerList } from "@/app/admin/tracking/worker-list";
+
+The export InlineShiftForm was not found in module [project]/src/app/admin/shifts/shift-form.tsx [app-client] (ecmascript).
+Did you mean to import InlineShiftCardForm?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/app/admin/admin1/admin1-tabs.tsx
+    ./src/app/admin/admin1/page.tsx @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[ 1315996ms] [ERROR] ./src/app/admin/admin1/admin1-tabs.tsx:11:1
+Export InlineShiftForm doesn't exist in target module
+   9 | import { Button } from "@/components/ui/button";
+  10 | import { Input } from "@/components/ui/input";
+> 11 | import { InlineShiftForm } from "@/app/admin/shifts/shift-form";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  12 | import { ShiftTable } from "@/app/admin/shifts/shift-table";
+  13 | import { TrackingMap } from "@/app/admin/tracking/tracking-map";
+  14 | import { WorkerList } from "@/app/admin/tracking/worker-list";
+
+The export InlineShiftForm was not found in module [project]/src/app/admin/shifts/shift-form.tsx [app-ssr] (ecmascript).
+Did you mean to import InlineShiftCardForm?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/app/admin/admin1/admin1-tabs.tsx
+    ./src/app/admin/admin1/page.tsx @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[ 1325131ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 1327429ms] [ERROR] %o
+
+%s ReferenceError: Users is not defined
+    at http://localhost:3001/_next/static/chunks/src_192975f1._.js:1280:264
+    at Array.map (<anonymous>)
+    at Admin1Tabs (http://localhost:3001/_next/static/chunks/src_192975f1._.js:1259:47)
+    at Object.react_stack_bottom_frame (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:14826:24)
+    at renderWithHooks (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:4651:24)
+    at updateFunctionComponent (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:6112:21)
+    at beginWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:6687:639)
+    at runWithFiberInDEV (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:965:74)
+    at performUnitOfWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9562:97)
+    at workLoopSync (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9456:40)
+    at renderRootSync (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9440:13)
+    at performWorkOnRoot (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9105:47)
+    at performWorkOnRootViaSchedulerTask (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:10230:9)
+    at MessagePort.performWorkUntilDeadline (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js:2647:64) The above error occurred in the <Admin1Tabs> component. It was handled by the <ErrorBoundaryHandler> error boundary. @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_client_17643121._.js:1342
+[ 1362335ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 1363926ms] [ERROR] %o
+
+%s ReferenceError: MapPin is not defined
+    at module evaluation (http://localhost:3001/_next/static/chunks/src_06f8aed6._.js:2017:15)
+    at http://localhost:3001/_next/static/chunks/turbopack-_23a915ee._.js:879:13
+    at runModuleExecutionHooks (http://localhost:3001/_next/static/chunks/turbopack-_23a915ee._.js:904:13)
+    at instantiateModule (http://localhost:3001/_next/static/chunks/turbopack-_23a915ee._.js:877:9)
+    at getOrInstantiateModuleFromParent (http://localhost:3001/_next/static/chunks/turbopack-_23a915ee._.js:830:12)
+    at DevContext.commonJsRequire [as r] (http://localhost:3001/_next/static/chunks/turbopack-_23a915ee._.js:259:12)
+    at requireModule (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:85:84)
+    at initializeModuleChunk (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1089:25)
+    at readChunk (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:829:17)
+    at Object.react_stack_bottom_frame (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:14890:20)
+    at resolveLazy (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:3895:20)
+    at beginWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:6687:77)
+    at runWithFiberInDEV (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:965:74)
+    at performUnitOfWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9562:97)
+    at workLoopConcurrentByScheduler (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9558:58)
+    at renderRootConcurrent (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9541:71)
+    at performWorkOnRoot (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9068:150)
+    at performWorkOnRootViaSchedulerTask (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:10230:9)
+    at MessagePort.performWorkUntilDeadline (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js:2647:64) The above error occurred in the <Lazy> component. It was handled by the <ErrorBoundaryHandler> error boundary. @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_client_17643121._.js:1342
+[ 1393162ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 1394600ms] Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <ScrollAndFocusHandler segmentPath={[...]}>
+      <InnerScrollAndFocusHandler segmentPath={[...]} focusAndScrollRef={{apply:false, ...}}>
+        <ErrorBoundary errorComponent={undefined} errorStyles={undefined} errorScripts={undefined}>
+          <LoadingBoundary name="admin1/" loading={null}>
+            <HTTPAccessFallbackBoundary notFound={undefined} forbidden={undefined} unauthorized={undefined}>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <InnerLayoutRouter url="/admin/admin1" tree={[...]} params={{}} cacheNode={{rsc:<Fragment>, ...}} ...>
+                    <SegmentViewNode type="page" pagePath="admin/admi...">
+                      <SegmentTrieNode>
+                      <Admin1Page>
+                        <Admin1Tabs shifts={[...]} postings={[...]} members={[...]} selectedDate="2026-03-06" ...>
+                          <div className="flex flex-...">
+                            <div>
+                            <div className="flex-1 ove...">
+                              <div className="flex items...">
+                                <div>
++                               <div className="flex items-center gap-2">
+-                               <span
+-                                 data-slot="badge"
+-                                 data-variant="default"
+-                                 className={"inline-flex items-center justify-center rounded-full border-transparent..."}
+-                               >
+                              ...
+                    ...
+                  ...
+        ...
+
+    at throwOnHydrationMismatch (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:3348:56)
+    at beginWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:6775:918)
+    at runWithFiberInDEV (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:965:74)
+    at performUnitOfWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9562:97)
+    at workLoopConcurrentByScheduler (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9558:58)
+    at renderRootConcurrent (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9541:71)
+    at performWorkOnRoot (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9068:150)
+    at performWorkOnRootViaSchedulerTask (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:10230:9)
+    at MessagePort.performWorkUntilDeadline (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js:2647:64)
+[ 2467952ms] [ERROR] %o
+
+%s ReferenceError: CheckCircle2 is not defined
+    at eval (http://localhost:3001/_next/static/chunks/src_90a9a01f._.js?id=%255Bproject%255D%252Fsrc%252Fapp%252Fadmin%252Fshifts%252Fshift-form.tsx+%255Bapp-client%255D+%2528ecmascript%2529:802:270)
+    at Array.map (<anonymous>)
+    at InlineShiftCardForm (http://localhost:3001/_next/static/chunks/src_90a9a01f._.js?id=%255Bproject%255D%252Fsrc%252Fapp%252Fadmin%252Fshifts%252Fshift-form.tsx+%255Bapp-client%255D+%2528ecmascript%2529:731:46)
+    at Object.react_stack_bottom_frame (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:14826:24)
+    at renderWithHooks (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:4651:24)
+    at updateFunctionComponent (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:6112:21)
+    at beginWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:6708:24)
+    at runWithFiberInDEV (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:965:74)
+    at performUnitOfWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9562:97)
+    at workLoopSync (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9456:40)
+    at renderRootSync (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9440:13)
+    at performWorkOnRoot (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9105:47)
+    at performSyncWorkOnRoot (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:10238:9)
+    at flushSyncWorkAcrossRoots_impl (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:10154:316)
+    at flushSyncWork$1 (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:9237:86)
+    at Object.scheduleRefresh (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:299:13)
+    at http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js:391:33
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js:384:38)
+    at applyUpdate (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js:878:31)
+    at http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js:886:13 The above error occurred in the <InlineShiftCardForm> component. It was handled by the <ErrorBoundaryHandler> error boundary. @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_client_17643121._.js:1342
+[ 2894010ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2894013ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2894027ms] [WARNING] WebSocket connection to 'wss://smfdsrinjtvsvtiimtqv.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtZmRzcmluanR2c3Z0aWltdHF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDQ3NjgsImV4cCI6MjA4NjM4MDc2OH0.4qu3Y_YHEUYmA6CJ5QNSz5y1afC1UIOmq7ZLveS2Agc&vsn=2.0.0' failed: WebSocket is closed before the connection is established. @ http://localhost:3001/_next/static/chunks/node_modules_fd60a9df._.js:8054
+[ 2894318ms] [WARNING] As of February 21st, 2024, google.maps.Marker is deprecated. Please use google.maps.marker.AdvancedMarkerElement instead. At this time, google.maps.Marker is not scheduled to be discontinued, but google.maps.marker.AdvancedMarkerElement is recommended over google.maps.Marker. While google.maps.Marker will continue to receive bug fixes for any major regressions, existing bugs in google.maps.Marker will not be addressed. At least 12 months notice will be given before support is discontinued. Please see https://developers.google.com/maps/deprecations for additional details and https://developers.google.com/maps/documentation/javascript/advanced-markers/migration for the migration guide. @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 2894677ms] [ERROR] Google Maps JavaScript API error: RefererNotAllowedMapError
+https://developers.google.com/maps/documentation/javascript/error-messages#referer-not-allowed-map-error
+Your site URL to be authorized: http://localhost:3001 @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127

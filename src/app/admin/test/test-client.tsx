@@ -15,10 +15,17 @@ import {
   removeTestMember,
   getTestMembers,
   cleanupTestClients,
+  bulkCreateTestMembers,
+  bulkCreateTestShifts,
+  sendBatchSimLocations,
+  markShiftsNoshow,
+  resetTestShifts,
+  diagnosePushStatus,
+  sendTestPushToMember,
 } from "./actions";
-import type { TestMember } from "./actions";
+import type { TestMember, PushDiagnosis } from "./actions";
 import type { DailyShiftWithDetails, ArrivalStatus } from "@/types/location";
-import { MapPin, Trash2, Plus, User, Phone, Search, Navigation, UserPlus, Check, AlertTriangle } from "lucide-react";
+import { MapPin, Trash2, Plus, User, Phone, Search, Navigation, UserPlus, Check, AlertTriangle, Play, Square, Users, RotateCcw, Bell, BellRing } from "lucide-react";
 import { TrackingMap } from "@/app/admin/tracking/tracking-map";
 
 const statusBadgeVariant: Record<ArrivalStatus, string> = {
@@ -55,10 +62,6 @@ function getDisplayStatus(shift: DailyShiftWithDetails, mounted: boolean): Arriv
   if (["arrived", "late", "noshow"].includes(status)) return status;
 
   const now = Date.now();
-  const startTimeNorm = shift.start_time.length === 5 ? shift.start_time + ":00" : shift.start_time;
-  const shiftStart = new Date(`${shift.work_date}T${startTimeNorm}+09:00`).getTime();
-  if (now > shiftStart) return "late";
-
   if (
     shift.last_seen_at &&
     ["tracking", "moving"].includes(status) &&
@@ -68,15 +71,57 @@ function getDisplayStatus(shift: DailyShiftWithDetails, mounted: boolean): Arriv
   return status;
 }
 
-const defaultSlot = (): SlotInput => ({
-  query: "",
-  placeName: "",
-  lat: 0,
-  lng: 0,
-  startTime: "09:00",
-  results: [],
-  searching: false,
-});
+type SimFate = "normal" | "late" | "noshow";
+
+function generateSimPath(
+  targetLat: number,
+  targetLng: number,
+  steps = 10,
+  fraction = 1.0
+): { lat: number; lng: number }[] {
+  const angle = Math.random() * 2 * Math.PI;
+  const distMeters = 500 + Math.random() * 500; // 500~1000m
+  const dLat = (distMeters * Math.cos(angle)) / 111320;
+  const dLng = (distMeters * Math.sin(angle)) / (111320 * Math.cos((targetLat * Math.PI) / 180));
+
+  const startLat = targetLat + dLat;
+  const startLng = targetLng + dLng;
+
+  const path: { lat: number; lng: number }[] = [];
+  for (let i = 0; i < steps; i++) {
+    const t = (i / (steps - 1)) * fraction;
+    const jitterM = (Math.random() - 0.5) * 30;
+    const jitterLat = jitterM / 111320;
+    const jitterLng = jitterM / (111320 * Math.cos((targetLat * Math.PI) / 180));
+
+    path.push({
+      lat: startLat + (targetLat - startLat) * t + jitterLat,
+      lng: startLng + (targetLng - startLng) * t + jitterLng,
+    });
+  }
+  if (fraction >= 1.0) {
+    path[path.length - 1] = { lat: targetLat, lng: targetLng };
+  }
+  return path;
+}
+
+const defaultSlot = (): SlotInput => {
+  // 기본 출근시간: 현재 시각 +20분 (KST)
+  const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const futureMs = now.getTime() + 20 * 60 * 1000;
+  const future = new Date(futureMs);
+  const hh = String(future.getUTCHours()).padStart(2, "0");
+  const mm = String(future.getUTCMinutes()).padStart(2, "0");
+  return {
+    query: "",
+    placeName: "",
+    lat: 0,
+    lng: 0,
+    startTime: `${hh}:${mm}`,
+    results: [],
+    searching: false,
+  };
+};
 
 export function TestClient({
   initialShifts,
@@ -109,6 +154,16 @@ export function TestClient({
   const [assigning, setAssigning] = useState<string | null>(null);
   const [sendingLocation, setSendingLocation] = useState<string | null>(null);
   const [cleaningUp, setCleaningUp] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [bulkAssigning, setBulkAssigning] = useState(false);
+  const [pushDiagnosis, setPushDiagnosis] = useState<PushDiagnosis | null>(null);
+  const [diagnosingPush, setDiagnosingPush] = useState<string | null>(null);
+  const [sendingTestPush, setSendingTestPush] = useState<string | null>(null);
+  const [simulating, setSimulating] = useState(false);
+  const [arrivedCount, setArrivedCount] = useState(0);
+  const [simTotal, setSimTotal] = useState(0);
+  const simTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const simPathsRef = useRef<Map<string, { path: { lat: number; lng: number }[]; currentStep: number; fate: SimFate }>>(new Map());
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
 
   const refreshShifts = async () => {
@@ -285,9 +340,160 @@ export function TestClient({
     }
   };
 
-  // 단일 타이머: 1분마다 모든 활성 shift에 위치 자동 전송
+  // 30명 일괄 배정
+  const handleBulkAssign = async (slot: SlotInput) => {
+    if (!slot.placeName || (slot.lat === 0 && slot.lng === 0)) return;
+    setBulkAssigning(true);
+    try {
+      const memberIds = await bulkCreateTestMembers(30);
+      await bulkCreateTestShifts(memberIds, slot.placeName, slot.lat, slot.lng, slot.startTime);
+      await refreshMembers();
+      await refreshShifts();
+      alert(`30명 일괄 배정 완료`);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "일괄 배정 실패");
+    } finally {
+      setBulkAssigning(false);
+    }
+  };
+
+  // 전체 시뮬레이션 시작 (80% 정상, 10% 지각, 10% 노쇼)
+  const startMassSimulation = () => {
+    const activeShifts = shifts.filter(
+      (s) => !["arrived", "late", "noshow"].includes(s.arrival_status)
+    );
+    if (activeShifts.length === 0) {
+      alert("시뮬레이션할 활성 배정이 없습니다.");
+      return;
+    }
+
+    const shuffled = [...activeShifts].sort(() => Math.random() - 0.5);
+    const total = shuffled.length;
+    const noshowCount = Math.max(1, Math.round(total * 0.1));
+    const lateCount = Math.max(1, Math.round(total * 0.1));
+
+    const paths = new Map<string, { path: { lat: number; lng: number }[]; currentStep: number; fate: SimFate }>();
+    shuffled.forEach((shift, i) => {
+      const clientLat = shift.clients?.latitude;
+      const clientLng = shift.clients?.longitude;
+      if (clientLat == null || clientLng == null) return;
+
+      let fate: SimFate;
+      if (i < noshowCount) fate = "noshow";
+      else if (i < noshowCount + lateCount) fate = "late";
+      else fate = "normal";
+
+      const steps = fate === "noshow" ? 12 : 8 + Math.floor(Math.random() * 8);
+      const fraction = fate === "noshow" ? 0.3 + Math.random() * 0.2 : 1.0;
+
+      paths.set(shift.id, {
+        path: generateSimPath(clientLat, clientLng, steps, fraction),
+        currentStep: 0,
+        fate,
+      });
+    });
+
+    simPathsRef.current = paths;
+    setSimulating(true);
+    setArrivedCount(0);
+    setSimTotal(paths.size);
+
+    const timer = setInterval(async () => {
+      const currentPaths = simPathsRef.current;
+      if (currentPaths.size === 0) {
+        stopMassSimulation();
+        return;
+      }
+
+      const entries: { shiftId: string; lat: number; lng: number; fate: SimFate }[] = [];
+      const noshowIds: string[] = [];
+
+      for (const [shiftId, state] of currentPaths) {
+        if (state.currentStep >= state.path.length) {
+          if (state.fate === "noshow") {
+            noshowIds.push(shiftId);
+            currentPaths.delete(shiftId);
+          }
+          continue;
+        }
+        const coord = state.path[state.currentStep];
+        entries.push({ shiftId, lat: coord.lat, lng: coord.lng, fate: state.fate });
+      }
+
+      // 노쇼 처리
+      if (noshowIds.length > 0) {
+        try {
+          await markShiftsNoshow(noshowIds);
+          setArrivedCount((prev) => prev + noshowIds.length);
+        } catch (e) {
+          console.error("노쇼 마킹 실패:", e);
+        }
+      }
+
+      if (entries.length === 0 && currentPaths.size === 0) {
+        await refreshShifts();
+        stopMassSimulation();
+        return;
+      }
+
+      if (entries.length > 0) {
+        try {
+          const results = await sendBatchSimLocations(entries);
+
+          let newCompleted = 0;
+          for (const r of results) {
+            const state = currentPaths.get(r.shiftId);
+            if (!state) continue;
+
+            if (r.arrived) {
+              currentPaths.delete(r.shiftId);
+              newCompleted++;
+            } else {
+              state.currentStep++;
+            }
+          }
+
+          if (newCompleted > 0) {
+            setArrivedCount((prev) => prev + newCompleted);
+          }
+        } catch (e) {
+          console.error("배치 시뮬 전송 실패:", e);
+        }
+      }
+
+      await refreshShifts();
+
+      if (currentPaths.size === 0) {
+        stopMassSimulation();
+      }
+    }, 3000);
+
+    simTimerRef.current = timer;
+  };
+
+  // 시뮬레이션 정지
+  const stopMassSimulation = () => {
+    if (simTimerRef.current) {
+      clearInterval(simTimerRef.current);
+      simTimerRef.current = null;
+    }
+    simPathsRef.current.clear();
+    setSimulating(false);
+  };
+
+  // 언마운트 시 클린업
+  useEffect(() => {
+    return () => {
+      if (simTimerRef.current) {
+        clearInterval(simTimerRef.current);
+      }
+    };
+  }, []);
+
+  // 단일 타이머: 1분마다 모든 활성 shift에 위치 자동 전송 (시뮬 중 비활성)
   const autoSendingRef = useRef(false);
   useEffect(() => {
+    if (simulating) return; // 시뮬레이션 중에는 자동 전송 비활성
     const activeShifts = shifts.filter(
       (s) => !["arrived", "late", "noshow"].includes(s.arrival_status)
     );
@@ -323,7 +529,7 @@ export function TestClient({
 
     const timer = setInterval(sendAll, 60_000);
     return () => clearInterval(timer);
-  }, [shifts]);
+  }, [shifts, simulating]);
 
   const handleDelete = async (shiftId: string) => {
     if (!confirm("이 배정을 삭제하시겠습니까?")) return;
@@ -599,6 +805,16 @@ export function TestClient({
                   <Plus className="mr-1 h-4 w-4" />
                   {loading === i ? "배정중..." : selectedMemberIds.size > 0 ? `${selectedMemberIds.size}명 배정` : "배정"}
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleBulkAssign(slot)}
+                  disabled={!slot.placeName || bulkAssigning}
+                  size="sm"
+                  className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                >
+                  <Users className="mr-1 h-4 w-4" />
+                  {bulkAssigning ? "생성중..." : "30명 일괄 배정"}
+                </Button>
               </div>
             </div>
           ))}
@@ -615,16 +831,71 @@ export function TestClient({
           <CardTitle className="text-base flex items-center justify-between">
             <span>오늘 배정 목록</span>
             <div className="flex items-center gap-2">
-              {(() => {
-                const activeCount = shifts.filter(
-                  (s) => !["arrived", "late", "noshow"].includes(s.arrival_status)
-                ).length;
-                return activeCount > 0 ? (
-                  <span className="text-xs font-normal text-green-600">
-                    자동 전송 중 ({activeCount}건, 1분 주기)
+              {simulating ? (
+                <>
+                  <span className="text-xs font-normal text-green-600 animate-pulse">
+                    시뮬 중 {arrivedCount}/{simTotal} 완료
                   </span>
-                ) : null;
-              })()}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 border-red-300 text-red-600 hover:bg-red-50"
+                    onClick={stopMassSimulation}
+                  >
+                    <Square className="mr-1 h-3 w-3" />
+                    정지
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {shifts.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 border-orange-300 text-orange-700 hover:bg-orange-50"
+                      disabled={resetting}
+                      onClick={async () => {
+                        if (!confirm("모든 테스트 배정을 pending 상태로 초기화하시겠습니까?")) return;
+                        stopMassSimulation();
+                        setResetting(true);
+                        try {
+                          const result = await resetTestShifts();
+                          await refreshShifts();
+                          alert(`${result.reset}건 초기화 완료`);
+                        } catch (e) {
+                          alert(e instanceof Error ? e.message : "초기화 실패");
+                        } finally {
+                          setResetting(false);
+                        }
+                      }}
+                    >
+                      <RotateCcw className="mr-1 h-3 w-3" />
+                      {resetting ? "초기화중..." : "초기화"}
+                    </Button>
+                  )}
+                  {(() => {
+                    const activeCount = shifts.filter(
+                      (s) => !["arrived", "late", "noshow"].includes(s.arrival_status)
+                    ).length;
+                    return activeCount > 0 ? (
+                      <>
+                        <span className="text-xs font-normal text-muted-foreground">
+                          자동 전송 중 ({activeCount}건, 1분 주기)
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 border-green-300 text-green-700 hover:bg-green-50"
+                          onClick={startMassSimulation}
+                        >
+                          <Play className="mr-1 h-3 w-3" />
+                          전체 시뮬레이션
+                        </Button>
+                      </>
+                    ) : null;
+                  })()}
+                </>
+              )}
               <Badge variant="secondary">{shifts.length}건</Badge>
             </div>
           </CardTitle>
@@ -690,6 +961,11 @@ export function TestClient({
                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeVariant[displayStatus]}`}>
                                   {statusLabels[displayStatus]}
                                 </span>
+                                {simulating && simPathsRef.current.has(shift.id) && (
+                                  <span className="text-xs text-green-600 animate-pulse font-medium">
+                                    시뮬중
+                                  </span>
+                                )}
                                 {shift.last_seen_at && (
                                   <span className="text-xs text-blue-600">
                                     {new Date(shift.last_seen_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
@@ -697,6 +973,26 @@ export function TestClient({
                                 )}
                               </div>
                               <div className="flex items-center gap-1">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={async () => {
+                                    setDiagnosingPush(shift.member_id);
+                                    try {
+                                      const result = await diagnosePushStatus(shift.member_id);
+                                      setPushDiagnosis(result);
+                                    } catch (e) {
+                                      alert(e instanceof Error ? e.message : "진단 실패");
+                                    } finally {
+                                      setDiagnosingPush(null);
+                                    }
+                                  }}
+                                  disabled={diagnosingPush === shift.member_id}
+                                >
+                                  <Bell className="mr-1 h-3 w-3" />
+                                  {diagnosingPush === shift.member_id ? "..." : "푸시"}
+                                </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -740,6 +1036,101 @@ export function TestClient({
         </CardContent>
       </Card>
 
+      {/* 푸시 진단 결과 */}
+      {pushDiagnosis && (
+        <Card className="border-blue-200">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <BellRing className="h-4 w-4" />
+                푸시 진단: {pushDiagnosis.memberName}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setPushDiagnosis(null)}
+              >
+                닫기
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-medium text-muted-foreground mb-1">FCM 토큰</p>
+                {pushDiagnosis.tokenCount === 0 ? (
+                  <p className="text-sm text-red-600 font-medium">등록된 토큰 없음</p>
+                ) : (
+                  <div className="space-y-1">
+                    {pushDiagnosis.tokens.map((t, i) => (
+                      <div key={i} className="text-xs">
+                        <span className="font-mono text-muted-foreground">
+                          {t.fcm_token.slice(0, 20)}...
+                        </span>
+                        <span className="ml-1 text-blue-600">{t.platform}</span>
+                        <span className="ml-1 text-muted-foreground">
+                          {new Date(t.updated_at).toLocaleDateString("ko-KR")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-medium text-muted-foreground mb-1">오늘 알림</p>
+                <p className="text-sm">
+                  마지막 알림: {pushDiagnosis.todayShiftAlertAt
+                    ? new Date(pushDiagnosis.todayShiftAlertAt).toLocaleTimeString("ko-KR")
+                    : "없음"}
+                </p>
+              </div>
+            </div>
+            {pushDiagnosis.recentNotifications.length > 0 && (
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-medium text-muted-foreground mb-1">최근 알림 이력</p>
+                <div className="space-y-1">
+                  {pushDiagnosis.recentNotifications.map((n, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs">
+                      <span className={n.success ? "text-green-600" : "text-red-600"}>
+                        {n.success ? "✓" : "✗"}
+                      </span>
+                      <span>{n.title}</span>
+                      <span className="ml-auto text-muted-foreground">
+                        {new Date(n.sent_at).toLocaleString("ko-KR")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <Button
+              size="sm"
+              disabled={pushDiagnosis.tokenCount === 0 || sendingTestPush === pushDiagnosis.memberId}
+              onClick={async () => {
+                const mid = pushDiagnosis.memberId;
+                setSendingTestPush(mid);
+                try {
+                  const result = await sendTestPushToMember(mid);
+                  if (result.noTokens) {
+                    alert("등록된 FCM 토큰이 없어 발송할 수 없습니다.");
+                  } else {
+                    alert(`테스트 푸시 발송: 성공 ${result.sent}, 실패 ${result.failed}`);
+                  }
+                } catch (e) {
+                  alert(e instanceof Error ? e.message : "테스트 푸시 실패");
+                } finally {
+                  setSendingTestPush(null);
+                }
+              }}
+            >
+              <BellRing className="mr-1 h-4 w-4" />
+              {sendingTestPush === pushDiagnosis.memberId ? "발송중..." : "테스트 푸시 발송"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* 테스트 데이터 정리 */}
       <Card className="border-red-200">
         <CardHeader className="pb-3">
@@ -758,6 +1149,7 @@ export function TestClient({
             disabled={cleaningUp}
             onClick={async () => {
               if (!confirm("테스트 고객사와 관련 배정/공고를 모두 삭제하시겠습니까?")) return;
+              stopMassSimulation();
               setCleaningUp(true);
               try {
                 const result = await cleanupTestClients();
