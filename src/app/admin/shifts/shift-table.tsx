@@ -10,6 +10,7 @@ import {
   Phone,
   Users,
   Map as MapIcon,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +33,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import type { ArrivalStatus } from "@/types/location";
-import { createShift, deleteShift } from "./actions";
+import { createShift, deleteShift, updateShiftGroup } from "./actions";
 import { ShiftMapModal } from "./shift-map-modal";
 
 function getDisplayStatus(shift: { arrival_status: ArrivalStatus; work_date: string; start_time: string; last_seen_at: string | null }, mounted: boolean): ArrivalStatus {
@@ -176,6 +177,22 @@ export function ShiftTable({
   const [formStartTime, setFormStartTime] = useState("08:00");
   const [formEndTime, setFormEndTime] = useState("17:00");
 
+  // 수정 다이얼로그 상태
+  const [editGroup, setEditGroup] = useState<{
+    shiftIds: string[];
+    clientId: string;
+    clientName: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    memberIds: string[];
+  } | null>(null);
+  const [editDate, setEditDate] = useState("");
+  const [editStartTime, setEditStartTime] = useState("");
+  const [editEndTime, setEditEndTime] = useState("");
+  const [editSelectedMembers, setEditSelectedMembers] = useState<string[]>([]);
+  const [editMemberSearch, setEditMemberSearch] = useState("");
+
   const statusCounts = useMemo(() => {
     const statuses = shifts.map((s) => getDisplayStatus(s, mounted));
     const moving = statuses.filter((st) =>
@@ -209,6 +226,14 @@ export function ShiftTable({
       (m) => m.name?.toLowerCase().includes(q) || m.phone.includes(q)
     );
   }, [members, memberSearch]);
+
+  const editFilteredMembers = useMemo(() => {
+    if (!editMemberSearch) return members;
+    const q = editMemberSearch.toLowerCase();
+    return members.filter(
+      (m) => m.name?.toLowerCase().includes(q) || m.phone.includes(q)
+    );
+  }, [members, editMemberSearch]);
 
   function handleApprovedPostingSelect(postingId: string) {
     const posting = approvedPostings.find((p) => p.postingId === postingId);
@@ -269,6 +294,56 @@ export function ShiftTable({
 
   const toggleMember = (memberId: string) => {
     setSelectedMembers((prev) =>
+      prev.includes(memberId)
+        ? prev.filter((id) => id !== memberId)
+        : [...prev, memberId]
+    );
+  };
+
+  function openEditDialog(groupShifts: ShiftWithDetails[]) {
+    const first = groupShifts[0];
+    setEditGroup({
+      shiftIds: groupShifts.map((s) => s.id),
+      clientId: first.client_id,
+      clientName: first.clients.company_name,
+      date: first.work_date,
+      startTime: first.start_time.slice(0, 5),
+      endTime: first.end_time.slice(0, 5),
+      memberIds: groupShifts.map((s) => s.member_id),
+    });
+    setEditDate(first.work_date);
+    setEditStartTime(first.start_time.slice(0, 5));
+    setEditEndTime(first.end_time.slice(0, 5));
+    setEditSelectedMembers(groupShifts.map((s) => s.member_id));
+    setEditMemberSearch("");
+  }
+
+  function closeEditDialog() {
+    setEditGroup(null);
+    setEditMemberSearch("");
+  }
+
+  async function handleUpdate() {
+    if (!editGroup || editSelectedMembers.length === 0) return;
+    startTransition(async () => {
+      const result = await updateShiftGroup(
+        editGroup.shiftIds,
+        editGroup.clientId,
+        editDate,
+        editStartTime,
+        editEndTime,
+        editSelectedMembers
+      );
+      if (result.error) {
+        alert(result.error);
+      } else {
+        closeEditDialog();
+      }
+    });
+  }
+
+  const toggleEditMember = (memberId: string) => {
+    setEditSelectedMembers((prev) =>
       prev.includes(memberId)
         ? prev.filter((id) => id !== memberId)
         : [...prev, memberId]
@@ -453,15 +528,26 @@ export function ShiftTable({
                     <p className="font-semibold truncate">
                       {first.clients.company_name}
                     </p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0 shrink-0"
-                      onClick={() => setMapShifts(groupShifts)}
-                      title="지도 보기"
-                    >
-                      <MapIcon className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        onClick={() => setMapShifts(groupShifts)}
+                        title="지도 보기"
+                      >
+                        <MapIcon className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        onClick={() => openEditDialog(groupShifts)}
+                        title="수정"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <MapPin className="h-3 w-3 shrink-0" />
@@ -549,6 +635,97 @@ export function ShiftTable({
           })}
         </div>
       )}
+
+      {/* 수정 다이얼로그 */}
+      <Dialog
+        open={editGroup !== null}
+        onOpenChange={(open) => {
+          if (!open) closeEditDialog();
+        }}
+      >
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>근무 배정 수정</DialogTitle>
+          </DialogHeader>
+          {editGroup && (
+            <div className="space-y-4">
+              <div>
+                <Label>고객사</Label>
+                <Input value={editGroup.clientName} disabled />
+              </div>
+              <div>
+                <Label>날짜</Label>
+                <Input
+                  type="date"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>시작 시간</Label>
+                  <Input
+                    type="time"
+                    value={editStartTime}
+                    onChange={(e) => setEditStartTime(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>종료 시간</Label>
+                  <Input
+                    type="time"
+                    value={editEndTime}
+                    onChange={(e) => setEditEndTime(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>회원 선택 ({editSelectedMembers.length}명)</Label>
+                <div className="relative mt-1">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="이름 또는 전화번호 검색"
+                    value={editMemberSearch}
+                    onChange={(e) => setEditMemberSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <div className="mt-2 max-h-48 overflow-y-auto rounded-md border p-2 space-y-1">
+                  {editFilteredMembers.map((m) => (
+                    <label
+                      key={m.id}
+                      className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-accent cursor-pointer text-sm"
+                    >
+                      <Checkbox
+                        checked={editSelectedMembers.includes(m.id)}
+                        onCheckedChange={() => toggleEditMember(m.id)}
+                      />
+                      <span>{m.name ?? "이름없음"}</span>
+                      <span className="text-muted-foreground">{m.phone}</span>
+                    </label>
+                  ))}
+                  {editFilteredMembers.length === 0 && (
+                    <p className="text-sm text-muted-foreground py-2 text-center">
+                      검색 결과가 없습니다
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={closeEditDialog}>
+              취소
+            </Button>
+            <Button
+              onClick={handleUpdate}
+              disabled={isPending || editSelectedMembers.length === 0}
+            >
+              {isPending ? "저장 중..." : "저장"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ShiftMapModal
         open={mapShifts !== null}

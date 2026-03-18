@@ -94,6 +94,115 @@ export async function deleteShift(shiftId: string) {
   return { error: null };
 }
 
+export async function updateShiftGroup(
+  shiftIds: string[],
+  clientId: string,
+  newDate: string,
+  newStartTime: string,
+  newEndTime: string,
+  newMemberIds: string[]
+) {
+  const supabase = createAdminClient();
+
+  // 기존 shifts 조회 → 현재 member_id 목록 추출
+  const { data: existingShifts, error: fetchError } = await supabase
+    .from("daily_shifts")
+    .select("id, member_id")
+    .in("id", shiftIds);
+
+  if (fetchError) return { error: fetchError.message };
+  if (!existingShifts || existingShifts.length === 0) {
+    return { error: "수정할 근무 배정을 찾을 수 없습니다." };
+  }
+
+  const existingMemberIds = existingShifts.map((s) => s.member_id);
+  const keepMemberIds = newMemberIds.filter((id) => existingMemberIds.includes(id));
+  const addMemberIds = newMemberIds.filter((id) => !existingMemberIds.includes(id));
+  const removeMemberIds = existingMemberIds.filter((id) => !newMemberIds.includes(id));
+
+  // 고객사 정보 (알림용)
+  const { data: client } = await supabase
+    .from("clients")
+    .select("company_name")
+    .eq("id", clientId)
+    .single();
+  const companyName = client?.company_name ?? "근무지";
+
+  // 유지할 회원: work_date, start_time, end_time UPDATE
+  if (keepMemberIds.length > 0) {
+    const keepShiftIds = existingShifts
+      .filter((s) => keepMemberIds.includes(s.member_id))
+      .map((s) => s.id);
+
+    const { error } = await supabase
+      .from("daily_shifts")
+      .update({
+        work_date: newDate,
+        start_time: newStartTime,
+        end_time: newEndTime,
+      })
+      .in("id", keepShiftIds);
+
+    if (error) {
+      if (error.code === "23505") {
+        return { error: "이미 해당 날짜에 배정된 회원이 있습니다." };
+      }
+      return { error: error.message };
+    }
+  }
+
+  // 추가할 회원: INSERT + FCM 알림
+  if (addMemberIds.length > 0) {
+    const newRecords = addMemberIds.map((memberId) => ({
+      client_id: clientId,
+      member_id: memberId,
+      work_date: newDate,
+      start_time: newStartTime,
+      end_time: newEndTime,
+      arrival_status: "pending" as const,
+      risk_level: 0,
+      location_consent: false,
+    }));
+
+    const { error } = await supabase.from("daily_shifts").insert(newRecords);
+    if (error) {
+      if (error.code === "23505") {
+        return { error: "이미 해당 날짜에 배정된 회원이 있습니다." };
+      }
+      return { error: error.message };
+    }
+
+    for (const memberId of addMemberIds) {
+      notifyShiftAssigned(memberId, companyName, newDate, newStartTime).catch(
+        console.error
+      );
+    }
+  }
+
+  // 제거할 회원: DELETE + FCM 취소 알림
+  if (removeMemberIds.length > 0) {
+    const removeShiftIds = existingShifts
+      .filter((s) => removeMemberIds.includes(s.member_id))
+      .map((s) => s.id);
+
+    const { error } = await supabase
+      .from("daily_shifts")
+      .delete()
+      .in("id", removeShiftIds);
+
+    if (error) return { error: error.message };
+
+    for (const memberId of removeMemberIds) {
+      notifyShiftCancelled(memberId, companyName, newDate, newStartTime).catch(
+        console.error
+      );
+    }
+  }
+
+  revalidatePath("/admin/shifts");
+  return { error: null };
+}
+
 export async function updateShiftStatus(
   shiftId: string,
   status: "arrived" | "noshow"
