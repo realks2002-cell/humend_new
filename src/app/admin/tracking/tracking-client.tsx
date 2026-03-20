@@ -6,7 +6,7 @@ import { WorkerList } from "./worker-list";
 import { getTrackingShifts } from "./actions";
 import type { DailyShiftWithDetails } from "@/types/location";
 
-const POLL_INTERVAL = 60_000; // 1분
+const POLL_INTERVAL = 15_000; // 15초
 
 export function TrackingClient({
   initialShifts,

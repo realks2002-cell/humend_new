@@ -12,6 +12,8 @@ import { Camera, Save, Loader2, ShieldCheck, AlertTriangle, User, CreditCard, Br
 import imageCompression from "browser-image-compression";
 import { saveResume, getResume, uploadProfilePhoto, verifyIdentity } from "@/lib/native-api/actions";
 import { AuthGuard } from "@/lib/native-api/auth-guard";
+import { pickPhoto } from "@/lib/capacitor/camera";
+import { isNative } from "@/lib/capacitor/native";
 
 function ResumeContent() {
   const router = useRouter();
@@ -83,25 +85,23 @@ function ResumeContent() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const compressAndUpload = async (file: File, skipCompression = false) => {
     setUploading(true);
     setMessage("");
 
     try {
       let uploadFile: File | Blob = file;
-      try {
-        uploadFile = await imageCompression(file, {
-          maxSizeMB: 0.5,
-          maxWidthOrHeight: 1024,
-          useWebWorker: true,
-          initialQuality: 0.85,
-        });
-      } catch {
-        // 압축 실패 시 원본 파일 사용
-        uploadFile = file;
+      if (!skipCompression && file.size > 500 * 1024) {
+        try {
+          uploadFile = await imageCompression(file, {
+            maxSizeMB: 0.5,
+            maxWidthOrHeight: 1024,
+            useWebWorker: true,
+            initialQuality: 0.85,
+          });
+        } catch {
+          uploadFile = file;
+        }
       }
 
       const result = await uploadProfilePhoto(uploadFile as File);
@@ -116,6 +116,21 @@ function ResumeContent() {
       }
     }
     setUploading(false);
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await compressAndUpload(file);
+  };
+
+  const handleCameraClick = async () => {
+    if (isNative()) {
+      const file = await pickPhoto();
+      if (file) await compressAndUpload(file, true);
+    } else {
+      fileInputRef.current?.click();
+    }
   };
 
   const fieldMap: { key: string; label: string; id: string }[] = [
@@ -249,7 +264,7 @@ function ResumeContent() {
           />
           <button
             className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-blue-500 shadow-sm transition-colors hover:bg-blue-600"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={handleCameraClick}
             disabled={uploading}
           >
             {uploading ? (

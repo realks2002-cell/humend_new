@@ -36,6 +36,7 @@ export async function sendLocationLog(payload: {
   lng: number;
   speed?: number;
   accuracy?: number;
+  recordedAt?: string;
 }) {
   const token = await getAuthToken();
   const res = await CapacitorHttp.post({

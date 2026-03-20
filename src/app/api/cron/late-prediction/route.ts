@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
       members (name)
     `)
     .eq("work_date", dateStr)
-    .in("arrival_status", ["tracking", "moving", "offline", "late_risk"]);
+    .in("arrival_status", ["pending", "tracking", "moving", "offline", "late_risk", "noshow_risk"]);
 
   if (!shifts || shifts.length === 0) {
     return NextResponse.json({ checked: 0 });
@@ -90,8 +90,8 @@ export async function GET(req: NextRequest) {
 
     if (!eta?.eta_minutes) continue;
 
-    // ETA가 남은 시간보다 크면 지각 예측
-    if (eta.eta_minutes > minutesUntil) {
+    // ETA가 남은 시간보다 크면 지각 예측 (noshow_risk는 더 심각한 상태이므로 다운그레이드 금지)
+    if (eta.eta_minutes > minutesUntil && shift.arrival_status !== "noshow_risk") {
       await admin
         .from("daily_shifts")
         .update({ arrival_status: "late_risk" })

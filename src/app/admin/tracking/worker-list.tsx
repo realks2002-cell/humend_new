@@ -84,7 +84,9 @@ export function WorkerList({ shifts: initialShifts }: { shifts: DailyShiftWithDe
           );
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[realtime:worker-list]', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);

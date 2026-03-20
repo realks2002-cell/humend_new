@@ -12,9 +12,9 @@ import HeroSection from "@/components/home/HeroSection";
 import KakaoFloatingButton from "@/components/home/KakaoFloatingButton";
 
 const stats = [
-  { label: "등록 회원", value: 12000, suffix: "+", icon: Users, color: "text-blue-500" },
-  { label: "제휴 고객사", value: 200, suffix: "+", icon: Building2, color: "text-green-500" },
-  { label: "매칭 완료", value: 30000, suffix: "+", icon: Handshake, color: "text-purple-500" },
+  { label: "등록 회원", value: 12000, suffix: "+", icon: Users, color: "text-gray-700" },
+  { label: "제휴 고객사", value: 200, suffix: "+", icon: Building2, color: "text-gray-700" },
+  { label: "매칭 완료", value: 30000, suffix: "+", icon: Handshake, color: "text-gray-700" },
 ];
 
 const services = [
@@ -22,19 +22,19 @@ const services = [
     title: "빠른 매칭",
     description: "원하는 날짜에 바로 지원하고, 빠르게 승인받으세요.",
     icon: Zap,
-    color: "bg-orange-500/10 text-orange-500",
+    color: "bg-gray-100 text-gray-700",
   },
   {
     title: "다양한 현장",
     description: "웨딩홀, 케이터링, 컨벤션 등 다양한 근무처를 제공합니다.",
     icon: MapPin,
-    color: "bg-blue-500/10 text-blue-500",
+    color: "bg-gray-100 text-gray-700",
   },
   {
     title: "투명한 급여",
     description: "시급 사전 공개, 근무 후 정확한 급여 정산을 보장합니다.",
     icon: Shield,
-    color: "bg-green-500/10 text-green-500",
+    color: "bg-gray-100 text-gray-700",
   },
 ];
 
@@ -141,7 +141,7 @@ export default async function Home() {
 
       {/* 기간제 알바 */}
       {fixedTermClients.length > 0 && (
-        <section className="px-4 py-20 -mt-[50px]">
+        <section className="px-4 py-20 -mt-[50px]" style={{ backgroundColor: "#FAFAFA" }}>
           <div className="mx-auto max-w-5xl">
             <div className="mb-10 flex items-center justify-between">
               <div>
@@ -159,10 +159,10 @@ export default async function Home() {
               {fixedTermClients.map((client) =>
                 client.job_postings.map((job) => (
                   <Link key={job.id} href={`/jobs/${client.id}`}>
-                    <Card className="group overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg rounded-[10px] border-2 border-violet-200">
+                    <Card className="group overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg rounded-[10px]">
                       <CardContent className="p-5">
                         <div className="flex items-start gap-4">
-                          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-violet-50 to-violet-100">
+                          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-blue-100 to-blue-200">
                             {client.main_image_url ? (
                               <img
                                 src={client.main_image_url}
@@ -171,17 +171,17 @@ export default async function Home() {
                               />
                             ) : (
                               <div className="flex h-full items-center justify-center">
-                                <Briefcase className="h-7 w-7 text-violet-400" />
+                                <Briefcase className="h-7 w-7 text-blue-600" />
                               </div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <Badge className="bg-violet-500/15 text-violet-700 border-0 text-[10px] font-semibold">
+                              <Badge className="bg-blue-600/20 text-blue-800 border-0 text-[10px] font-semibold">
                                 기간제
                               </Badge>
                               {job.title && (
-                                <span className="text-xs font-medium text-violet-700 truncate">
+                                <span className="text-xs font-medium text-blue-800 truncate">
                                   {job.title}
                                 </span>
                               )}
@@ -224,27 +224,9 @@ export default async function Home() {
         </section>
       )}
 
-      {/* Stats */}
-      <section className="border-y bg-muted/30 px-4 py-12">
-        <div className="mx-auto grid max-w-3xl grid-cols-3 gap-4">
-          {stats.map((stat) => (
-            <div key={stat.label} className="text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-background shadow-sm">
-                <stat.icon className={`h-6 w-6 ${stat.color}`} />
-              </div>
-              <p className="text-3xl font-bold md:text-4xl">
-                <CountUp end={stat.value} suffix={stat.suffix} />
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground md:text-sm">
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* Services */}
-      <section className="mx-auto max-w-5xl px-4 py-20">
+      <section className="px-4 py-20" style={{ backgroundColor: "#FFFFFF" }}>
+        <div className="mx-auto max-w-5xl">
         <h2 className="mb-2 text-center text-2xl font-bold md:text-3xl">서비스 소개</h2>
         <p className="mb-12 text-center text-muted-foreground">Humend가 제공하는 핵심 서비스</p>
         <div className="grid gap-6 md:grid-cols-3">
@@ -261,6 +243,24 @@ export default async function Home() {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        {/* Stats */}
+        <div className="mx-auto mt-16 grid max-w-3xl grid-cols-3 gap-4">
+          {stats.map((stat) => (
+            <div key={stat.label} className="text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-background shadow-sm">
+                <stat.icon className={`h-6 w-6 ${stat.color}`} />
+              </div>
+              <p className="text-3xl font-bold md:text-4xl">
+                <CountUp end={stat.value} suffix={stat.suffix} />
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground md:text-sm">
+                {stat.label}
+              </p>
+            </div>
+          ))}
+        </div>
         </div>
       </section>
     </div>

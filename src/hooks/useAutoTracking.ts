@@ -60,6 +60,7 @@ export function useAutoTracking() {
               lng,
               speed: speed ?? undefined,
               accuracy: accuracy ?? undefined,
+              recordedAt: new Date().toISOString(),
             });
             if (result.arrived) {
               stopTracking();
@@ -79,6 +80,7 @@ export function useAutoTracking() {
             lng: pos.lng,
             speed: pos.speed,
             accuracy: pos.accuracy,
+            recordedAt: new Date().toISOString(),
           });
         }
       } catch {

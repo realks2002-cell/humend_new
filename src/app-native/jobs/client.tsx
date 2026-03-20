@@ -222,15 +222,15 @@ export default function JobsClient() {
                 {allFixedTermJobs.map(({ client, job }) => (
                   <div
                     key={job.id}
-                    className="rounded-xl border-2 border-violet-200 bg-violet-50/40 p-4"
+                    className="rounded-xl border-2 border-[#134E8E]/30 bg-[#134E8E]/5 p-4"
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <Badge className="bg-violet-500/15 text-violet-700 border-0 text-[10px] font-semibold">
+                      <Badge className="bg-[#134E8E]/15 text-[#134E8E] border-0 text-[10px] font-semibold">
                         기간제
                       </Badge>
                       <span className="font-semibold text-sm">{client.company_name}</span>
                       {job.title && (
-                        <span className="text-xs font-medium text-violet-700 truncate">
+                        <span className="text-xs font-medium text-[#134E8E] truncate">
                           {job.title}
                         </span>
                       )}
@@ -239,7 +239,7 @@ export default function JobsClient() {
                       <MapPin className="h-3 w-3" />
                       {client.location}
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-violet-700">
+                    <div className="flex items-center gap-1 text-xs text-[#134E8E]">
                       <Calendar className="h-3 w-3" />
                       {job.start_date && job.end_date
                         ? formatDateRange(job.start_date, job.end_date)

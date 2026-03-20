@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Info, LogOut, LogIn, ChevronRight, Shield, MapPin } from "lucide-react";
+import { Info, LogOut, ChevronRight, Shield, MapPin } from "lucide-react";
 
 export default function MorePage() {
   const [user, setUser] = useState<{ id: string } | null>(null);
@@ -66,29 +66,16 @@ export default function MorePage() {
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </Link>
 
-        {!loading && (
-          user ? (
-            <button
-              onClick={handleSignOut}
-              className="flex w-full items-center justify-between px-4 py-3.5 text-left transition-colors active:bg-muted"
-            >
-              <span className="flex items-center gap-3 text-sm text-red-600">
-                <LogOut className="h-4 w-4" />
-                로그아웃
-              </span>
-            </button>
-          ) : (
-            <Link
-              href="/login"
-              className="flex items-center justify-between px-4 py-3.5 transition-colors active:bg-muted"
-            >
-              <span className="flex items-center gap-3 text-sm">
-                <LogIn className="h-4 w-4 text-muted-foreground" />
-                로그인
-              </span>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </Link>
-          )
+        {!loading && user && (
+          <button
+            onClick={handleSignOut}
+            className="flex w-full items-center justify-between px-4 py-3.5 text-left transition-colors active:bg-muted"
+          >
+            <span className="flex items-center gap-3 text-sm text-red-600">
+              <LogOut className="h-4 w-4" />
+              로그아웃
+            </span>
+          </button>
         )}
       </div>
 

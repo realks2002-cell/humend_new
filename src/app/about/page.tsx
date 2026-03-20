@@ -14,28 +14,28 @@ const steps = [
     icon: ClipboardList,
     title: "공고 등록",
     description: "고객사 정보와 근무 일정을 등록합니다.",
-    color: "bg-blue-500/10 text-blue-500",
+    color: "bg-gray-100 text-gray-700",
     step: "01",
   },
   {
     icon: Users,
     title: "인력 매칭",
     description: "등록된 인력 중 적합한 인원을 매칭합니다.",
-    color: "bg-green-500/10 text-green-500",
+    color: "bg-gray-100 text-gray-700",
     step: "02",
   },
   {
     icon: CheckCircle,
     title: "근무 확인",
     description: "매칭된 인력이 현장에서 근무합니다.",
-    color: "bg-orange-500/10 text-orange-500",
+    color: "bg-gray-100 text-gray-700",
     step: "03",
   },
   {
     icon: Banknote,
     title: "급여 정산",
     description: "근무 완료 후 투명하게 급여를 정산합니다.",
-    color: "bg-purple-500/10 text-purple-500",
+    color: "bg-gray-100 text-gray-700",
     step: "04",
   },
 ];
@@ -105,7 +105,7 @@ export default function AboutPage() {
       {/* Vision */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10 px-4 py-20 text-center md:py-28">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(0,0,0,0.02)_0%,transparent_50%)]" />
-        <div className="relative">
+        <div className="relative" style={{ marginTop: "30px" }}>
           <h1 className="text-3xl font-bold md:text-5xl">
             사람과 현장을 연결하는
             <br />

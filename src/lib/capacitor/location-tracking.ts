@@ -53,6 +53,10 @@ function getPlugin(): BackgroundGeolocationPlugin {
 
 let watcherId: string | null = null;
 let lastSentAt = 0;
+let isStarting = false;
+let trackingInterval: ReturnType<typeof setInterval> | null = null;
+let postArrivalInterval: ReturnType<typeof setInterval> | null = null;
+let autoStopTimer: ReturnType<typeof setTimeout> | null = null;
 
 export interface TrackingCallbacks {
   onLocation: (lat: number, lng: number, speed: number | null, accuracy: number | null) => void;
@@ -80,8 +84,13 @@ export async function startTracking(
 ): Promise<boolean> {
   if (!isNative()) return false;
   if (watcherId) return true; // 이미 추적 중
+  if (isStarting) return false; // 다른 호출이 시작 중
+  isStarting = true;
 
   try {
+    // 이전 추적 잔여물 정리 (defensive cleanup)
+    clearTimers();
+
     const plugin = getPlugin();
 
     let arrived = false;
@@ -99,11 +108,10 @@ export async function startTracking(
     function handleArrival() {
       if (arrived) return;
       arrived = true;
-      // 60초 보조 폴링 중지
-      const tid = (globalThis as Record<string, unknown>).__trackingInterval;
-      if (tid) {
-        clearInterval(tid as ReturnType<typeof setInterval>);
-        delete (globalThis as Record<string, unknown>).__trackingInterval;
+      // 30초 보조 폴링 중지
+      if (trackingInterval) {
+        clearInterval(trackingInterval);
+        trackingInterval = null;
       }
       callbacks.onArrival();
       startPostArrivalTracking(callbacks, getPosition);
@@ -132,8 +140,8 @@ export async function startTracking(
       }
     );
 
-    // 보조 폴링 (60초) — 정지 상태에서 distanceFilter 미달 시에도 갱신
-    const intervalId = setInterval(async () => {
+    // 보조 폴링 (30초) — 정지 상태에서 distanceFilter 미달 시에도 갱신
+    trackingInterval = setInterval(async () => {
       try {
         const pos = await getPosition();
         const lat = pos.coords.latitude;
@@ -155,9 +163,7 @@ export async function startTracking(
       } catch (err) {
         callbacks.onError?.(err);
       }
-    }, 60_000);
-
-    (globalThis as Record<string, unknown>).__trackingInterval = intervalId;
+    }, 30_000);
 
     // 자동 종료 타이머: endTime + 30분 또는 fallback 2시간
     let autoStopMs = 2 * 60 * 60 * 1000;
@@ -171,14 +177,15 @@ export async function startTracking(
       }
     }
 
-    const autoStopTimer = setTimeout(() => {
+    autoStopTimer = setTimeout(() => {
       stopTracking();
     }, autoStopMs);
-    (globalThis as Record<string, unknown>).__trackingAutoStop = autoStopTimer;
 
     return true;
   } catch {
     return false;
+  } finally {
+    isStarting = false;
   }
 }
 
@@ -186,7 +193,7 @@ function startPostArrivalTracking(
   callbacks: TrackingCallbacks,
   getPosition: () => Promise<{ coords: { latitude: number; longitude: number; speed: number | null; accuracy: number } }>,
 ) {
-  const postInterval = setInterval(async () => {
+  postArrivalInterval = setInterval(async () => {
     try {
       const pos = await getPosition();
       callbacks.onLocation(
@@ -199,8 +206,21 @@ function startPostArrivalTracking(
       callbacks.onError?.(err);
     }
   }, POST_ARRIVAL_INTERVAL_MS);
+}
 
-  (globalThis as Record<string, unknown>).__postArrivalInterval = postInterval;
+function clearTimers() {
+  if (trackingInterval) {
+    clearInterval(trackingInterval);
+    trackingInterval = null;
+  }
+  if (postArrivalInterval) {
+    clearInterval(postArrivalInterval);
+    postArrivalInterval = null;
+  }
+  if (autoStopTimer) {
+    clearTimeout(autoStopTimer);
+    autoStopTimer = null;
+  }
 }
 
 /** 추적 중지 */
@@ -215,27 +235,9 @@ export async function stopTracking(): Promise<void> {
   }
   watcherId = null;
   lastSentAt = 0;
+  isStarting = false;
 
-  // 폴링 인터벌 정리
-  const intervalId = (globalThis as Record<string, unknown>).__trackingInterval;
-  if (intervalId) {
-    clearInterval(intervalId as ReturnType<typeof setInterval>);
-    delete (globalThis as Record<string, unknown>).__trackingInterval;
-  }
-
-  // 근무 중 위치추적 인터벌 정리
-  const postInterval = (globalThis as Record<string, unknown>).__postArrivalInterval;
-  if (postInterval) {
-    clearInterval(postInterval as ReturnType<typeof setInterval>);
-    delete (globalThis as Record<string, unknown>).__postArrivalInterval;
-  }
-
-  // 자동 종료 타이머 정리
-  const autoStop = (globalThis as Record<string, unknown>).__trackingAutoStop;
-  if (autoStop) {
-    clearTimeout(autoStop as ReturnType<typeof setTimeout>);
-    delete (globalThis as Record<string, unknown>).__trackingAutoStop;
-  }
+  clearTimers();
 }
 
 /** 추적 중인지 여부 */

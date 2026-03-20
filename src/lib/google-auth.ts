@@ -25,6 +25,8 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleUser | null> {
     await SocialLogin.initialize({
       google: {
         webClientId: '133410524921-94i1t8skrfkfggmrpdhnfkclh9h8o4bv.apps.googleusercontent.com',
+        iOSClientId: '153271647846-8kvvkvqnvr1frrts9lqau817cifrtiu3.apps.googleusercontent.com',
+        iOSServerClientId: '133410524921-94i1t8skrfkfggmrpdhnfkclh9h8o4bv.apps.googleusercontent.com',
       },
     });
 
@@ -35,9 +37,14 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleUser | null> {
       },
     });
 
+    console.log('[nativeGoogleSignIn] login result:', JSON.stringify(res));
+
     const result = res?.result;
     const idToken = (result as { idToken?: string })?.idToken;
-    if (!idToken) return null;
+    if (!idToken) {
+      console.warn('[nativeGoogleSignIn] idToken 없음, result:', JSON.stringify(result));
+      return null;
+    }
 
     const profile = (result as { profile?: { email?: string; name?: string; givenName?: string } })?.profile;
 

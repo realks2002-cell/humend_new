@@ -64,6 +64,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const now = new Date();
+
   // 노쇼 확정이면 스킵
   if (shift.arrival_status === "noshow") {
     return NextResponse.json({ success: true, arrived: false });
@@ -71,18 +73,22 @@ export async function POST(req: NextRequest) {
 
   // 도착/지각 후 → 근무 중 위치 로그 처리
   if (["arrived", "late"].includes(shift.arrival_status)) {
-    const { data: distResult } = await admin.rpc("check_arrival_distance", {
+    const { data: distResult, error: rpcError } = await admin.rpc("check_arrival_distance", {
       p_shift_id: shiftId,
       p_lat: lat,
       p_lng: lng,
       p_radius: 200,
-    }).maybeSingle() as { data: { is_arrived: boolean; distance_meters: number } | null };
+    }).maybeSingle() as { data: { is_arrived: boolean; distance_meters: number } | null; error: { message: string } | null };
+
+    if (rpcError) {
+      console.error("[location-log] check_arrival_distance RPC failed (post-arrival):", rpcError.message, { shiftId });
+    }
 
     const distMeters = distResult?.distance_meters ?? null;
-    const isOffsite = distMeters != null && distMeters > 200;
+    const isOffsite = !rpcError && distMeters != null && distMeters > 200;
 
     // work_location_logs에 기록
-    await admin.from("work_location_logs").insert({
+    const { error: logError } = await admin.from("work_location_logs").insert({
       shift_id: shiftId,
       member_id: user.id,
       lat,
@@ -90,34 +96,44 @@ export async function POST(req: NextRequest) {
       distance_meters: distMeters,
       is_offsite: isOffsite,
     });
+    if (logError) {
+      console.error("[location-log] post-arrival insert failed:", logError.message, { shiftId, member_id: user.id });
+    }
 
     // daily_shifts 업데이트
     const postUpdateData: Record<string, unknown> = {
       last_known_lat: lat,
       last_known_lng: lng,
-      last_seen_at: new Date().toISOString(),
+      last_seen_at: now.toISOString(),
     };
 
     if (isOffsite) {
       // 최초 이탈 시각 기록
       if (!shift.left_site_at) {
-        postUpdateData.left_site_at = new Date().toISOString();
+        postUpdateData.left_site_at = now.toISOString();
       }
       postUpdateData.offsite_count = (shift.offsite_count ?? 0) + 1;
     }
 
-    await admin.from("daily_shifts").update(postUpdateData).eq("id", shiftId);
+    const { error: postUpdateError } = await admin.from("daily_shifts").update(postUpdateData).eq("id", shiftId);
+    if (postUpdateError) {
+      console.error("[location-log] daily_shifts update failed (post-arrival):", postUpdateError.message, { shiftId });
+    }
 
-    return NextResponse.json({ success: true, arrived: true, offsite: isOffsite });
+    return NextResponse.json({ success: true, arrived: true, offsite: isOffsite, logged: !logError });
   }
 
   // 출근 전에도 work_location_logs에 위치 기록 (관리자 맵 실시간 표시용)
-  const { data: preDistResult } = await admin.rpc("check_arrival_distance", {
+  const { data: preDistResult, error: preRpcError } = await admin.rpc("check_arrival_distance", {
     p_shift_id: shiftId,
     p_lat: lat,
     p_lng: lng,
     p_radius: 200,
-  }).maybeSingle() as { data: { is_arrived: boolean; distance_meters: number } | null };
+  }).maybeSingle() as { data: { is_arrived: boolean; distance_meters: number } | null; error: { message: string } | null };
+
+  if (preRpcError) {
+    console.error("[location-log] check_arrival_distance RPC failed (pre-arrival):", preRpcError.message, { shiftId });
+  }
 
   const { error: logInsertError } = await admin.from("work_location_logs").insert({
     shift_id: shiftId,
@@ -128,21 +144,21 @@ export async function POST(req: NextRequest) {
     is_offsite: false,
   });
   if (logInsertError) {
-    console.error("[location-log] pre-arrival log insert failed:", logInsertError.message);
+    console.error("[location-log] pre-arrival insert failed:", logInsertError.message, { shiftId, member_id: user.id });
   }
 
   // daily_shifts 캐시 업데이트
   const updateData: Record<string, unknown> = {
     last_known_lat: lat,
     last_known_lng: lng,
-    last_seen_at: new Date().toISOString(),
+    last_seen_at: now.toISOString(),
     last_speed: speed ?? null,
   };
 
   // 추적 시작 시 tracking_start 위치 기록
   if (shift.arrival_status === "pending") {
     updateData.arrival_status = "tracking";
-    updateData.tracking_started_at = new Date().toISOString();
+    updateData.tracking_started_at = now.toISOString();
     updateData.tracking_start_lat = lat;
     updateData.tracking_start_lng = lng;
   }
@@ -157,11 +173,11 @@ export async function POST(req: NextRequest) {
 
   let arrived = false;
 
-  if (distResult?.is_arrived) {
+  if (!preRpcError && distResult?.is_arrived) {
     // 최초 200m 진입 시각을 도착 시간으로 사용 (없으면 현재 시각)
     const firstInRangeAt = shift.first_in_range_at
       ? new Date(shift.first_in_range_at as string)
-      : new Date();
+      : now;
 
     // 최초 진입이면 first_in_range_at 기록
     if (!shift.first_in_range_at) {
@@ -183,11 +199,6 @@ export async function POST(req: NextRequest) {
       .single();
     const companyName = (clientInfo as unknown as { clients: { company_name: string } | null })?.clients?.company_name ?? "근무지";
     await notifyArrivalConfirmed(user.id, companyName);
-  } else if (distResult && distResult.distance_meters <= 200) {
-    // 200m 이내 최초 진입 시 first_in_range_at 기록
-    if (!shift.first_in_range_at) {
-      updateData.first_in_range_at = new Date().toISOString();
-    }
   }
 
   // 이동/미이동 판별 (도착 아닌 모든 상태)
@@ -211,21 +222,24 @@ export async function POST(req: NextRequest) {
     !["arrived", "late", "noshow"].includes(updateData.arrival_status as string ?? shift.arrival_status) &&
     shift.start_time && shift.work_date
   ) {
-    const now = new Date();
     const shiftStart = new Date(`${shift.work_date}T${shift.start_time}+09:00`);
     if (now > shiftStart) {
       updateData.arrival_status = "late";
     }
   }
 
-  await admin
+  const { error: updateError } = await admin
     .from("daily_shifts")
     .update(updateData)
     .eq("id", shiftId);
+  if (updateError) {
+    console.error("[location-log] daily_shifts update failed (pre-arrival):", updateError.message, { shiftId });
+  }
 
   return NextResponse.json({
     success: true,
     arrived,
     distance: distResult?.distance_meters ?? null,
+    logged: !logInsertError,
   });
 }

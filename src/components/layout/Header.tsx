@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
 const navLinks = [
-  { href: "/", label: "홈" },
+  { href: "https://humend-home.vercel.app/", label: "회사소개" },
   { href: "/jobs", label: "알바공고" },
   { href: "/about", label: "사업소개" },
 ];
@@ -58,23 +58,23 @@ export default function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 border-b bg-background/95 backdrop-blur transition-shadow supports-[backdrop-filter]:bg-background/60",
+        "absolute top-0 left-0 right-0 z-50 bg-transparent",
         scrolled && "shadow-sm"
       )}
       style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/" className="flex items-center">
+        <Link href="/" className="flex items-center" style={{ marginLeft: "-100px" }}>
           <Image src="/logo.png" alt="HUMAN:D" width={120} height={32} className="h-[16px] w-auto" priority />
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden items-center gap-10 md:flex">
+        <nav className="hidden items-center gap-10 md:flex" style={{ marginRight: "-50px" }}>
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-normal text-black transition-colors hover:text-black"
+              className="text-base font-normal text-black transition-colors hover:text-black"
             >
               {link.label}
             </Link>
@@ -95,7 +95,7 @@ export default function Header() {
           ) : (
             <div className="flex items-center gap-2">
               <Link href="/login">
-                <Button size="sm">로그인</Button>
+                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700">로그인</Button>
               </Link>
               <Link href="/signup">
                 <Button variant="outline" size="sm">회원가입</Button>

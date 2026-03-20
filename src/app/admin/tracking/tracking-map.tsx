@@ -220,7 +220,9 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
           );
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[realtime:tracking-map]', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);

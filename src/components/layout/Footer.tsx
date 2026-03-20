@@ -2,39 +2,39 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="border-t bg-muted/40" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+    <footer className="border-t text-white" style={{ backgroundColor: "#213C51", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="flex flex-col gap-6 md:flex-row md:justify-between">
           <div>
             <p className="text-lg font-bold">휴멘드 에이치알</p>
-            <p className="mt-1 text-base text-muted-foreground">
+            <p className="mt-1 text-base text-white/80">
               인력 매칭 플랫폼
             </p>
-            <div className="mt-2 space-y-0.5 text-base text-muted-foreground">
+            <div className="mt-2 space-y-0.5 text-base text-white/80">
               <p>서울특별시 구로구 디지털로34번길 55, 비201-비2(구로동, 코오롱 싸이언스밸리2차)</p>
               <p>Tel. 02-875-8332 | 사업자등록번호 396-87-03869</p>
             </div>
           </div>
-          <nav className="flex gap-6 text-base text-muted-foreground">
-            <Link href="/jobs" className="hover:text-foreground">
+          <nav className="flex gap-6 text-base text-white/80">
+            <Link href="/jobs" className="hover:text-white">
               채용공고
             </Link>
-            <Link href="/privacy" className="hover:text-foreground">
+            <Link href="/privacy" className="hover:text-white">
               개인정보처리방침
             </Link>
-            <Link href="/terms" className="hover:text-foreground">
+            <Link href="/terms" className="hover:text-white">
               이용약관
             </Link>
           </nav>
         </div>
-        <div className="mt-6 border-t pt-4 text-center">
-          <p className="text-base font-medium text-foreground/70">
+        <div className="mt-6 border-t border-white/30 pt-4 text-center">
+          <p className="text-base font-medium text-white/70">
             Developed by{" "}
-            <a href="https://www.bizstart.shop" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+            <a href="https://www.bizstart.shop" target="_blank" rel="noopener noreferrer" className="hover:text-white">
               Bizstart(비즈스타트)
             </a>
             ,{" "}
-            <a href="https://www.bizstart.shop" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+            <a href="https://www.bizstart.shop" target="_blank" rel="noopener noreferrer" className="hover:text-white">
               www.bizstart.shop
             </a>
           </p>

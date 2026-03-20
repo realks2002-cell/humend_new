@@ -134,6 +134,7 @@ function TrackingContent() {
           lng,
           speed: speed ?? undefined,
           accuracy: accuracy ?? undefined,
+          recordedAt: new Date().toISOString(),
         });
 
         // 거리 업데이트
@@ -162,6 +163,7 @@ function TrackingContent() {
           lng: pos.lng,
           speed: pos.speed,
           accuracy: pos.accuracy,
+          recordedAt: new Date().toISOString(),
         });
         const d = calcDistanceMeters(pos.lat, pos.lng, clientLat, clientLng);
         setDistance(Math.round(d));

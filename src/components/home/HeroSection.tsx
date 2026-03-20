@@ -118,10 +118,10 @@ export default function HeroSection() {
 
   return (
     <section
-      className="relative flex flex-col items-center justify-center overflow-hidden px-6 py-10 text-center"
+      className="relative flex flex-col items-center justify-center overflow-hidden px-6 py-[58px] text-center"
       style={{
         background:
-          "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(129,140,248,0.12) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 80%, rgba(56,189,248,0.08) 0%, transparent 50%), radial-gradient(ellipse 50% 40% at 10% 60%, rgba(251,191,36,0.06) 0%, transparent 50%), #FAFBFF",
+          "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.30) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 80%, rgba(14,165,233,0.19) 0%, transparent 50%), radial-gradient(ellipse 50% 40% at 10% 60%, rgba(234,160,8,0.15) 0%, transparent 50%), #F2F3FC",
       }}
     >
       {/* Grid pattern */}
@@ -129,29 +129,32 @@ export default function HeroSection() {
 
       {/* Gradient blobs */}
       <div
-        className="absolute -top-20 right-[10%] h-[400px] w-[400px] rounded-full opacity-50 blur-[80px]"
+        className="absolute -top-20 right-[10%] h-[400px] w-[400px] rounded-full blur-[80px]"
         style={{
-          background: "linear-gradient(135deg, #c7d2fe, #a5b4fc)",
+          opacity: 0.7,
+          background: "linear-gradient(135deg, #a0aaf7, #8490f3)",
           animation: "hero-blob-float 10s ease-in-out infinite",
         }}
       />
       <div
-        className="absolute -left-[5%] bottom-[5%] h-[350px] w-[350px] rounded-full opacity-30 blur-[80px]"
+        className="absolute -left-[5%] bottom-[5%] h-[350px] w-[350px] rounded-full blur-[80px]"
         style={{
-          background: "linear-gradient(135deg, #fde68a, #fbbf24)",
+          opacity: 0.7,
+          background: "linear-gradient(135deg, #f0c745, #daa520)",
           animation: "hero-blob-float 10s ease-in-out infinite -3s",
         }}
       />
       <div
-        className="absolute -right-[5%] top-[40%] h-[300px] w-[300px] rounded-full opacity-30 blur-[80px]"
+        className="absolute -right-[5%] top-[40%] h-[300px] w-[300px] rounded-full blur-[80px]"
         style={{
-          background: "linear-gradient(135deg, #99f6e4, #5eead4)",
+          opacity: 0.7,
+          background: "linear-gradient(135deg, #5ee89d, #3dd67a)",
           animation: "hero-blob-float 10s ease-in-out infinite -6s",
         }}
       />
 
       {/* Hero content */}
-      <div className="relative z-[2] max-w-[900px]">
+      <div className="relative z-[2] max-w-[900px]" style={{ marginTop: "100px" }}>
         {/* Badge with typing effect */}
         <div
           className="hero-badge mb-10 inline-flex items-center gap-2 rounded-full border border-indigo-600/12 bg-white px-5 py-2 text-sm font-semibold text-indigo-600 shadow-sm"
@@ -168,7 +171,7 @@ export default function HeroSection() {
 
         {/* Headline - per-character animation */}
         <h1
-          className="hero-headline mb-5 text-[clamp(2.34rem,6.5vw,5rem)] font-black leading-[1.2] text-indigo-950"
+          className="hero-headline mb-5 text-[clamp(1.89rem,5.27vw,4.05rem)] font-black leading-[1.2] text-indigo-950"
           style={{ letterSpacing: "-2px" }}
         >
           <span className="block overflow-hidden" ref={line1Ref} />
@@ -196,7 +199,7 @@ export default function HeroSection() {
         >
           <button
             onClick={handleSalaryRequest}
-            className="hero-cta-primary rounded-2xl px-11 py-4.5 text-lg font-bold text-white transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.03]"
+            className="hero-cta-primary rounded-2xl px-8 py-3.5 text-base font-bold text-white transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.03]"
             style={{
               background: "linear-gradient(135deg, #4F46E5, #6366F1, #818CF8)",
               boxShadow: "0 4px 20px rgba(79,70,229,0.3)",
@@ -205,40 +208,17 @@ export default function HeroSection() {
             회원 급여요청 →
           </button>
           <Link href="/jobs">
-            <button className="rounded-2xl border-[1.5px] border-indigo-600/15 bg-white px-11 py-4.5 text-lg font-bold text-indigo-950 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-indigo-600 hover:bg-indigo-600/3 hover:shadow-lg">
+            <button className="rounded-2xl border-[1.5px] border-indigo-600/15 bg-white px-8 py-3.5 text-base font-bold text-indigo-950 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-indigo-600 hover:bg-indigo-600/3 hover:shadow-lg">
               어떤 알바가 있을까?
             </button>
           </Link>
         </div>
 
-        {/* Stats - staggered slide-up + counter */}
-        <div className="mt-12 hidden flex-wrap justify-center overflow-hidden rounded-[14px] border border-indigo-600/8 bg-white shadow-md md:flex">
-          {[
-            { ref: counter1Ref, suffix: "%", label: "급여 정시 지급률", delay: "3s" },
-            { ref: counter2Ref, suffix: "★", label: "알바생 만족도", delay: "3.15s" },
-            { ref: counter3Ref, suffix: "초", label: "평균 매칭 시간", delay: "3.3s" },
-          ].map((stat, i) => (
-            <div
-              key={stat.label}
-              className="hero-stat group relative min-w-[120px] flex-1 px-5 py-4.5 text-center md:px-7"
-              style={{ opacity: 0, transform: "translateY(20px)", animation: `hero-slide-up 0.6s ease-out forwards ${stat.delay}` }}
-            >
-              {i > 0 && (
-                <div className="absolute bottom-[20%] left-0 top-[20%] w-px bg-indigo-600/8" />
-              )}
-              <div className="text-2xl font-extrabold tracking-tight text-indigo-950 group-hover:animate-[hero-wiggle_0.5s_ease-in-out]">
-                <span ref={stat.ref}>0</span>
-                <span className="text-indigo-600">{stat.suffix}</span>
-              </div>
-              <div className="mt-1 text-[0.7rem] font-semibold text-gray-400">{stat.label}</div>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Marquee - hover pause, seamless infinite loop */}
       <div
-        className="relative z-[2] mt-12 w-full overflow-hidden py-4"
+        className="relative z-[2] mt-12 w-full overflow-hidden border-y border-gray-200 py-4"
         style={{ opacity: 0, animation: "hero-slide-up 0.6s ease-out forwards 3.4s" }}
       >
         <div className="flex hover:[animation-play-state:paused] [&>*]:hover:[animation-play-state:paused]">
@@ -251,7 +231,7 @@ export default function HeroSection() {
               {marqueeChips.map((chip, i) => (
                 <span
                   key={i}
-                  className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-indigo-600/8 bg-white px-5 py-2.5 text-sm font-semibold text-gray-600 shadow-sm transition-all duration-300 hover:scale-105 hover:border-indigo-600 hover:text-indigo-600"
+                  className="inline-flex items-center gap-2 whitespace-nowrap px-5 py-2.5 text-sm font-semibold text-gray-600 transition-all duration-300 hover:text-indigo-600"
                 >
                   <span
                     className="h-1.5 w-1.5 shrink-0 rounded-full"
