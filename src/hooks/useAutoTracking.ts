@@ -10,7 +10,7 @@ import {
 import { getTodayShift } from '@/lib/native-api/location-queries';
 import {
   sendLocationLog,
-  updateLocationConsent,
+  getMemberLocationConsent,
 } from '@/lib/native-api/location-actions';
 import { getCurrentPosition } from '@/lib/capacitor/geolocation';
 
@@ -26,6 +26,10 @@ export function useAutoTracking() {
 
     (async () => {
       try {
+        // 회원 동의 여부 확인 (미동의 시 자동 추적 안 함)
+        const hasConsent = await getMemberLocationConsent();
+        if (!hasConsent) return;
+
         const shift = await getTodayShift();
         if (!shift) return;
         if (['arrived', 'late', 'noshow'].includes(shift.arrival_status)) return;
@@ -45,11 +49,6 @@ export function useAutoTracking() {
         const clientLat = shift.clients?.latitude;
         const clientLng = shift.clients?.longitude;
         if (!clientLat || !clientLng) return;
-
-        // 동의 저장
-        if (!shift.location_consent) {
-          await updateLocationConsent(shift.id, true);
-        }
 
         // 추적 시작
         await startTracking(clientLat, clientLng, {

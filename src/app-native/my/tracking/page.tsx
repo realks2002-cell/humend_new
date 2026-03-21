@@ -18,7 +18,6 @@ import { getTodayShift } from "@/lib/native-api/location-queries";
 import {
   sendLocationLog,
   confirmArrival,
-  updateLocationConsent,
 } from "@/lib/native-api/location-actions";
 import {
   requestLocationPermission,
@@ -109,11 +108,6 @@ function TrackingContent() {
       alert("위치 권한이 필요합니다. 설정에서 권한을 허용해주세요.");
       setSubmitting(false);
       return;
-    }
-
-    // 동의 저장
-    if (!shift.location_consent) {
-      await updateLocationConsent(shift.id, true);
     }
 
     const clientLat = shift.clients?.latitude;

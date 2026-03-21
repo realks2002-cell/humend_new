@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Shield, Clock, Eye, Loader2 } from "lucide-react";
+import { MapPin, Shield, Clock, Eye, Loader2, Smartphone } from "lucide-react";
 import { AuthGuard } from "@/lib/native-api/auth-guard";
 import { requestLocationPermission } from "@/lib/capacitor/geolocation";
+import { updateMemberLocationConsent } from "@/lib/native-api/location-actions";
 
 function ConsentContent() {
   const router = useRouter();
@@ -22,13 +23,14 @@ function ConsentContent() {
       return;
     }
 
+    await updateMemberLocationConsent(true);
     router.push("/my/tracking");
   };
 
   return (
     <div className="mx-auto max-w-lg px-4 py-8 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">위치 수집 동의</h1>
+        <h1 className="text-2xl font-bold tracking-tight">위치 정보 수집 동의</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           출근 확인을 위해 위치 정보 수집에 동의해주세요.
         </p>
@@ -36,16 +38,24 @@ function ConsentContent() {
 
       <Card className="py-0">
         <CardContent className="p-5 space-y-5">
-          {/* 수집 목적 */}
           <div className="space-y-3">
-            <h2 className="font-semibold text-base">수집 목적</h2>
+            <h2 className="font-semibold text-base">수집 안내</h2>
             <div className="space-y-2.5">
               <div className="flex gap-3">
                 <MapPin className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-medium">출근 위치 확인</p>
                   <p className="text-xs text-muted-foreground">
-                    근무지 100m 이내 도착 시 출근이 자동 처리됩니다.
+                    근무지 도착 시 출근이 자동 처리됩니다. 지각·노쇼 발생 시 대비인원을 신속히 투입하기 위한 목적으로 사용됩니다.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Smartphone className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium">백그라운드 위치 수집</p>
+                  <p className="text-xs text-muted-foreground">
+                    앱을 사용하지 않을 때에도(백그라운드에서) 위치를 수집합니다. 출근길 이동 중 앱을 닫아도 자동 출근 처리가 가능하고, 지각·노쇼 시 대비인원 투입 및 근무 중 근무지 이탈 확인에 사용됩니다.
                   </p>
                 </div>
               </div>
@@ -54,7 +64,7 @@ function ConsentContent() {
                 <div>
                   <p className="text-sm font-medium">수집 시간</p>
                   <p className="text-xs text-muted-foreground">
-                    출근 2시간 전부터 도착 확인까지만 수집합니다.
+                    출근 2시간 전부터 도착 확인까지만 수집합니다. 그 외 시간에는 위치를 수집하지 않습니다.
                   </p>
                 </div>
               </div>
