@@ -15,7 +15,7 @@ const MOVING_THRESHOLD_METERS = 50;
 
 /**
  * POST /api/native/location/log
- * 위치 로그 저장 + 자동 도착 판별 (200m 지오펜스)
+ * 위치 로그 저장 + 자동 도착 판별 (200m 도착, 300m 이탈)
  */
 export async function POST(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -71,13 +71,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, arrived: false });
   }
 
-  // 도착/지각 후 → 근무 중 위치 로그 처리
+  // 도착/지각 후 → 근무 중 위치 로그 처리 (300m 이탈 감지)
   if (["arrived", "late"].includes(shift.arrival_status)) {
     const { data: distResult, error: rpcError } = await admin.rpc("check_arrival_distance", {
       p_shift_id: shiftId,
       p_lat: lat,
       p_lng: lng,
-      p_radius: 200,
+      p_radius: 300,
     }).maybeSingle() as { data: { is_arrived: boolean; distance_meters: number } | null; error: { message: string } | null };
 
     if (rpcError) {
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     }
 
     const distMeters = distResult?.distance_meters ?? null;
-    const isOffsite = !rpcError && distMeters != null && distMeters > 200;
+    const isOffsite = !rpcError && distMeters != null && distMeters > 300;
 
     // work_location_logs에 기록
     const { error: logError } = await admin.from("work_location_logs").insert({

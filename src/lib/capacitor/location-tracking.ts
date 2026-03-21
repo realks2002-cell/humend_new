@@ -77,7 +77,7 @@ const MAX_ACCURACY_SLC = 200;
 const KEEPALIVE_MS = 5 * 60 * 1000;      // 5분
 const DF_CHANGE_COOLDOWN_MS = 60_000;     // 1분
 const DEBOUNCE_MS = 20_000;               // 20초 중복 방지
-const POST_ARRIVAL_INTERVAL_MS = 15 * 60 * 1000; // 15분
+const DF_POST_ARRIVAL = 300; // 도착 후 이탈 감지용 distanceFilter
 
 // ─── 모듈 상태 ───
 
@@ -85,7 +85,7 @@ let watcherId: string | null = null;
 let lastSentAt = 0;
 let isStarting = false;
 let keepAliveTimer: ReturnType<typeof setTimeout> | null = null;
-let postArrivalInterval: ReturnType<typeof setInterval> | null = null;
+let postArrivalActive = false;
 let autoStopTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 위치 / DF 상태
@@ -333,7 +333,8 @@ export async function startTracking(
       prevLocation = curLoc;
 
       // distanceFilter 변경 (비동기, fire-and-forget)
-      if (!arrived) {
+      // 도착 후에는 이탈 감지용 DF_POST_ARRIVAL(300m) 유지
+      if (!arrived && !postArrivalActive) {
         maybeUpdateDistanceFilter(newDF);
       }
 
@@ -356,7 +357,7 @@ export async function startTracking(
         if (dist <= geofenceRadius) {
           arrived = true;
           callbacks.onArrival();
-          startPostArrivalTracking(callbacks);
+          startPostArrivalTracking();
         }
       }
     };
@@ -392,26 +393,10 @@ export async function startTracking(
   }
 }
 
-/** 도착 후 15분 간격 위치 전송 + keep-alive 병행 */
-function startPostArrivalTracking(callbacks: TrackingCallbacks): void {
-  postArrivalInterval = setInterval(async () => {
-    try {
-      const { Geolocation } = await import("@capacitor/geolocation");
-      const pos = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 10000,
-      });
-      const { latitude, longitude, speed, accuracy } = pos.coords;
-
-      lastKnownLocation = { lat: latitude, lng: longitude, speed, accuracy };
-      lastSentAt = Date.now();
-      callbacks.onLocation(latitude, longitude, speed, accuracy);
-
-      resetKeepAlive(callbacks);
-    } catch (err) {
-      callbacks.onError?.(err);
-    }
-  }, POST_ARRIVAL_INTERVAL_MS);
+/** 도착 후 이탈 감지: distanceFilter를 300m로 전환 (이동 시에만 이벤트) */
+function startPostArrivalTracking(): void {
+  postArrivalActive = true;
+  maybeUpdateDistanceFilter(DF_POST_ARRIVAL);
 }
 
 // ─── 정리 ───
@@ -421,10 +406,7 @@ function clearTimers(): void {
     clearTimeout(keepAliveTimer);
     keepAliveTimer = null;
   }
-  if (postArrivalInterval) {
-    clearInterval(postArrivalInterval);
-    postArrivalInterval = null;
-  }
+  postArrivalActive = false;
   if (autoStopTimer) {
     clearTimeout(autoStopTimer);
     autoStopTimer = null;
