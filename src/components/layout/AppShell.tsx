@@ -15,7 +15,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const cap = (window as unknown as Record<string, unknown>).Capacitor as { isNativePlatform?: () => boolean } | undefined;
-    if (cap?.isNativePlatform?.()) setIsNative(true);
+    if (cap?.isNativePlatform?.()) {
+      setIsNative(true);
+      document.body.dataset.native = 'true';
+    }
   }, []);
 
   useEffect(() => {
@@ -30,14 +33,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    document.body.classList.remove('loaded');
-
-    import('@capacitor/splash-screen')
-      .then(({ SplashScreen }) => SplashScreen.hide())
-      .catch(() => {});
-
-    const timer = setTimeout(() => document.body.classList.add('loaded'), 2000);
-    return () => clearTimeout(timer);
+    const cap = (window as unknown as Record<string, unknown>).Capacitor as { isNativePlatform?: () => boolean } | undefined;
+    if (cap?.isNativePlatform?.()) {
+      document.body.classList.remove('loaded');
+      import('@capacitor/splash-screen')
+        .then(({ SplashScreen }) => SplashScreen.hide())
+        .catch(() => {});
+      const timer = setTimeout(() => document.body.classList.add('loaded'), 2000);
+      return () => clearTimeout(timer);
+    } else {
+      document.body.classList.add('loaded');
+    }
   }, []);
 
   if (isNative) {

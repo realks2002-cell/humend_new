@@ -81,7 +81,7 @@ export default async function MyPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 space-y-8">
+    <div className="mx-auto max-w-3xl px-4 pt-20 pb-8 space-y-8">
       {/* Profile Hero Section */}
       <div className="relative overflow-hidden rounded-[13px] border border-slate-300 bg-slate-50 p-6">
         <div className="flex items-start gap-5">

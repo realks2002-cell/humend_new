@@ -18,21 +18,6 @@ const marqueeChips = [
   { label: "공연 스탭", color: "#8B5CF6" },
 ];
 
-function makeCharsHTML(text: string, baseDelay: number): string {
-  let html = "";
-  let idx = 0;
-  for (const char of text) {
-    const delay = baseDelay + idx * 40;
-    if (char === " ") {
-      html += `<span class="hero-char hero-char-space" style="animation-delay:${delay}ms">&nbsp;</span>`;
-    } else {
-      html += `<span class="hero-char" style="animation-delay:${delay}ms">${char}</span>`;
-    }
-    idx++;
-  }
-  return html;
-}
-
 export default function HeroSection() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -75,33 +60,108 @@ export default function HeroSection() {
   );
 
   useEffect(() => {
-    // Character-by-character headline
-    if (line1Ref.current) {
-      line1Ref.current.innerHTML = makeCharsHTML("일할 준비 됐으면,", 500);
-    }
-    if (line2Ref.current) {
-      line2Ref.current.innerHTML =
-        '<span class="hero-highlight"><span class="hero-accent-primary">' +
-        makeCharsHTML("탭 한 번", 900) +
-        "</span></span>" +
-        makeCharsHTML("이면 끝.", 900 + 4 * 40);
+    const line1Text = "일할 준비 됐으면,";
+    const line2Text = "탭 한 번이면 끝.";
+    const accentText = "탭 한 번";
+    const charInterval = 115;
+    const lineGap = 200;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const intervals: ReturnType<typeof setInterval>[] = [];
+    let cancelled = false;
+
+    // Wait for page load, then 500ms delay before starting
+    function boot() {
+      if (cancelled) return;
+      const bootTimer = setTimeout(() => {
+        if (cancelled) return;
+        startTyping();
+      }, 500);
+      timers.push(bootTimer);
     }
 
-    // Word-by-word description
-    if (descRef.current) {
-      const words = "쉬운 지원, 확실한 급여. 첫 알바도 걱정 없어.".split(" ");
-      descRef.current.innerHTML = words
-        .map((word, i) => {
-          const delay = 2000 + i * 120;
-          return `<span class="hero-desc-word" style="animation-delay:${delay}ms">${word}</span> `;
-        })
-        .join("");
+    let onLoad: (() => void) | null = null;
+    if (document.readyState === 'complete') {
+      boot();
+    } else {
+      onLoad = () => { boot(); window.removeEventListener('load', onLoad!); };
+      window.addEventListener('load', onLoad);
+    }
+
+    function startTyping() {
+      // Show cursor on line 1
+      if (line1Ref.current) {
+        line1Ref.current.innerHTML = '<span class="hero-cursor">|</span>';
+      }
+
+      // Phase 1: Type line 1
+      let line1Index = 0;
+      const iv1 = setInterval(() => {
+        if (!line1Ref.current) return;
+        line1Index++;
+        line1Ref.current.innerHTML = line1Text.slice(0, line1Index) + '<span class="hero-cursor">|</span>';
+
+        if (line1Index >= line1Text.length) {
+          clearInterval(iv1);
+
+          // Phase 2: Pause, then move cursor to line 2
+          const startLine2 = setTimeout(() => {
+            if (line1Ref.current) line1Ref.current.textContent = line1Text;
+            if (line2Ref.current) {
+              line2Ref.current.innerHTML = '<span class="hero-cursor">|</span>';
+            }
+
+            // Phase 3: Type line 2
+            let line2Index = 0;
+            const iv2 = setInterval(() => {
+              if (!line2Ref.current) return;
+              line2Index++;
+              line2Ref.current.innerHTML = line2Text.slice(0, line2Index) + '<span class="hero-cursor">|</span>';
+
+              if (line2Index >= line2Text.length) {
+                clearInterval(iv2);
+
+                // Phase 4: Apply accent styling
+                if (line2Ref.current) {
+                  line2Ref.current.innerHTML =
+                    '<span class="hero-highlight"><span class="hero-accent-primary">' +
+                    accentText + '</span></span>이면 끝.' +
+                    '<span class="hero-cursor">|</span>';
+                  const hl = line2Ref.current.querySelector('.hero-highlight') as HTMLElement;
+                  if (hl) hl.style.setProperty('--hero-draw-delay', '0s');
+                }
+
+                // Phase 5: Remove cursor (5초 더 깜빡인 후 제거)
+                const removeCursor = setTimeout(() => {
+                  line2Ref.current?.querySelector('.hero-cursor')?.classList.add('done');
+                }, 5500);
+                timers.push(removeCursor);
+              }
+            }, charInterval);
+            intervals.push(iv2);
+          }, lineGap);
+          timers.push(startLine2);
+        }
+      }, charInterval);
+      intervals.push(iv1);
+
+      // Word-by-word description (synced from typing start, not mount)
+      const descDelay = line1Text.length * charInterval + lineGap + line2Text.length * charInterval;
+      if (descRef.current) {
+        const words = "쉬운 지원, 확실한 급여. 첫 알바도 걱정 없어.".split(" ");
+        descRef.current.innerHTML = words
+          .map((word, i) => {
+            const delay = descDelay + i * 120;
+            return `<span class="hero-desc-word" style="animation-delay:${delay}ms">${word}</span> `;
+          })
+          .join("");
+      }
     }
 
     // Badge cursor removal
     const cursorTimer = setTimeout(() => {
       badgeTextRef.current?.classList.add("done");
     }, 2000);
+    timers.push(cursorTimer);
 
     // Counter animation
     const counterTimer = setTimeout(() => {
@@ -109,10 +169,16 @@ export default function HeroSection() {
       if (counter2Ref.current) animateCounter(counter2Ref.current, 4.8, 1, 1200);
       if (counter3Ref.current) animateCounter(counter3Ref.current, 30, 0, 1000);
     }, 3000);
+    timers.push(counterTimer);
 
     return () => {
-      clearTimeout(cursorTimer);
-      clearTimeout(counterTimer);
+      cancelled = true;
+      timers.forEach(clearTimeout);
+      intervals.forEach(clearInterval);
+      if (onLoad) window.removeEventListener('load', onLoad);
+      // DOM 리셋 (Strict Mode 대응)
+      if (line1Ref.current) line1Ref.current.textContent = '';
+      if (line2Ref.current) line2Ref.current.textContent = '';
     };
   }, [animateCounter]);
 

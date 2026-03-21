@@ -71,9 +71,9 @@ export default async function JobsPage({ searchParams }: Props) {
   const noResults = dailyClients.length === 0 && fixedTermClients.length === 0;
 
   return (
-    <div className="mx-auto max-w-7xl animate-in fade-in duration-500 px-4 py-8 overflow-hidden">
+    <div className="jobs-page-container mx-auto max-w-7xl animate-in fade-in duration-500 px-4 py-8 overflow-hidden">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold md:text-3xl">알바공고</h1>
+        <h1 className="text-xl font-bold md:text-2xl">알바공고</h1>
         <p className="mt-1 text-muted-foreground">
           원하는 날짜에 지원하고, 바로 일하세요.
         </p>

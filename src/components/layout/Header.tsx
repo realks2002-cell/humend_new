@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Menu, X, User, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -64,7 +64,7 @@ export default function Header() {
       style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/" className="flex items-center" style={{ marginLeft: "-100px" }}>
+        <Link href="/" className="flex items-center">
           <Image src="/logo.png" alt="HUMAN:D" width={120} height={32} className="h-[16px] w-auto" priority />
         </Link>
 
@@ -107,12 +107,13 @@ export default function Header() {
         {/* Mobile Hamburger */}
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild className="md:hidden">
-            <Button variant="ghost" size="icon">
-              <Menu className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="!size-9 [&_svg]:!size-6">
+              <Menu />
               <span className="sr-only">메뉴 열기</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-64">
+          <SheetContent side="right" className="w-64" aria-describedby={undefined}>
+            <SheetTitle className="sr-only">메뉴</SheetTitle>
             <div className="flex items-center justify-between pb-4">
               <Image src="/logo.png" alt="HUMAN:D" width={120} height={32} className="h-[16px] w-auto" />
               <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>

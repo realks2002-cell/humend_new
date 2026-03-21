@@ -168,15 +168,10 @@ html, body {
   to { max-width: 400px; }
 }
 
-/* Per-character bounce entrance */
-@keyframes hero-char-in {
-  to { opacity: 1; transform: translateY(0) rotateX(0deg); }
-}
-
-/* Shimmer brightness on accent chars */
-@keyframes hero-shimmer-color {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.4); }
+/* Shimmer on accent text (gradient shift) */
+@keyframes hero-accent-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 /* Highlight underline draw */
@@ -239,24 +234,27 @@ html, body {
   border-right-color: transparent;
 }
 
-/* Per-character animation */
-.hero-char {
+/* Typewriter blinking cursor */
+.hero-cursor {
   display: inline-block;
-  opacity: 0;
-  transform: translateY(60px) rotateX(40deg);
-  animation: hero-char-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  color: #4F46E5;
+  font-weight: 300;
+  animation: hero-cursor-blink 0.6s steps(1) infinite;
 }
-.hero-char-space { width: 0.25em; }
+.hero-cursor.done { opacity: 0; animation: none; }
+@keyframes hero-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
 
-/* Accent primary per-char colors + shimmer */
-.hero-accent-primary .hero-char:nth-child(1) { color: #EF4444; }
-.hero-accent-primary .hero-char:nth-child(2) { color: #F43F5E; }
-.hero-accent-primary .hero-char:nth-child(3) { color: #F97316; }
-.hero-accent-primary .hero-char:nth-child(4) { color: #FB7185; }
-.hero-accent-primary .hero-char:nth-child(5) { color: #FF6154; }
-.hero-accent-primary .hero-char {
-  animation: hero-char-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
-             hero-shimmer-color 3s ease-in-out 2s infinite;
+/* Accent primary color + shimmer */
+.hero-accent-primary {
+  background: linear-gradient(90deg, #EF4444, #F97316, #F43F5E, #EF4444);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: hero-accent-shimmer 3s ease-in-out 0.5s infinite;
 }
 
 /* Highlight underline (gradient yellow→coral) */
@@ -276,7 +274,7 @@ html, body {
   z-index: -1;
   transform: scaleX(0);
   transform-origin: left;
-  animation: hero-draw-line 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards 1.6s;
+  animation: hero-draw-line 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards var(--hero-draw-delay, 99s);
 }
 
 /* Description word-by-word */
@@ -305,6 +303,10 @@ html, body {
 .hero-cta-primary:hover {
   box-shadow: 0 12px 40px rgba(79,70,229,0.4) !important;
 }
+
+/* ── Jobs page: web/native padding ── */
+.jobs-page-container { padding-top: 110px; }
+body[data-native] .jobs-page-container { padding-top: 8px; }
 
 /* ── Scrollbar hide (horizontal slide) ── */
 .scrollbar-hide {

@@ -43,17 +43,6 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <style dangerouslySetInnerHTML={{ __html: `
-          @keyframes splash-slide{0%{transform:translateX(-100%)}50%{transform:translateX(150%)}100%{transform:translateX(350%)}}
-          #splash{position:fixed;inset:0;background:#fff;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;transition:opacity .4s ease}
-          #splash-bar{width:120px;height:3px;background:#e5e7eb;border-radius:2px;overflow:hidden}
-          #splash-bar::after{content:'';display:block;width:40%;height:100%;background:#3b82f6;border-radius:2px;animation:splash-slide 1.2s ease-in-out infinite}
-          body.loaded #splash{opacity:0;pointer-events:none}
-        `}} />
-        <div id="splash">
-          <img src="/logo.png" alt="HUMAN:D" style={{height:'24px',width:'auto'}} />
-          <div id="splash-bar" />
-        </div>
         <NativeAppProvider>
           <TooltipProvider>
             <AppShell>{children}</AppShell>
