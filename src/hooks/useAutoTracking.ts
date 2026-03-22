@@ -4,7 +4,6 @@ import { useEffect, useRef } from 'react';
 import { isNative } from '@/lib/capacitor/native';
 import {
   startTracking,
-  stopTracking,
   isTracking,
 } from '@/lib/capacitor/location-tracking';
 import { getTodayShift } from '@/lib/native-api/location-queries';
@@ -50,10 +49,10 @@ export function useAutoTracking() {
         const clientLng = shift.clients?.longitude;
         if (!clientLat || !clientLng) return;
 
-        // 추적 시작
+        // 추적 시작 (하트비트 + 자동 종료 타이머 포함)
         await startTracking(clientLat, clientLng, {
           onLocation: async (lat, lng, speed, accuracy) => {
-            const result = await sendLocationLog({
+            await sendLocationLog({
               shiftId: shift.id,
               lat,
               lng,
@@ -61,14 +60,11 @@ export function useAutoTracking() {
               accuracy: accuracy ?? undefined,
               recordedAt: new Date().toISOString(),
             });
-            if (result.arrived) {
-              stopTracking();
-            }
           },
           onArrival: () => {
-            stopTracking();
+            // 도착 후에도 추적 유지 (이탈 감지용)
           },
-        });
+        }, 200, shift.end_time, shift.work_date, shift.id);
 
         // 즉시 현재 위치 1회 전송
         const pos = await getCurrentPosition();
