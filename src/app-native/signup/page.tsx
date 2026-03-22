@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { CheckCircle, Loader2, User, Phone, Lock, Eye, EyeOff, MapPin, Shield } from "lucide-react";
 import { toast } from "sonner";
-import { memberSignup } from "@/lib/native-api/auth";
+import { memberSignup, memberLogin } from "@/lib/native-api/auth";
 import { isNative } from "@/lib/capacitor/native";
+import { updateMemberLocationConsent } from "@/lib/native-api/location-actions";
 
 function formatPhoneDisplay(value: string): string {
   const nums = value.replace(/\D/g, "").slice(0, 11);
@@ -75,6 +76,9 @@ export default function SignupPage() {
       const granted = await requestLocationPermission();
       setLocationGranted(granted);
       if (granted) {
+        // 가입 직후 세션이 없으므로 자동 로그인 후 동의 저장
+        await memberLogin(rawPhone, password);
+        await updateMemberLocationConsent(true);
         toast.success("위치 권한이 허용되었습니다.");
         setLocationStep(false);
       } else {
