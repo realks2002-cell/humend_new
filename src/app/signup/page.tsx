@@ -97,9 +97,9 @@ export default function SignupPage() {
               <Link href="/my/resume">
                 <Button className="w-full">회원정보 등록하기</Button>
               </Link>
-              <Link href="/">
+              <Link href="/jobs">
                 <Button variant="ghost" className="w-full">
-                  홈으로
+                  일자리 보기
                 </Button>
               </Link>
             </div>

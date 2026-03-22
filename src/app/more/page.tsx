@@ -42,10 +42,8 @@ export default function MorePage() {
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </Link>
 
-        <a
-          href="https://humendhr.com/privacy"
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href="/privacy"
           className="flex items-center justify-between px-4 py-3.5 transition-colors active:bg-muted"
         >
           <span className="flex items-center gap-3 text-sm">
@@ -53,7 +51,7 @@ export default function MorePage() {
             개인정보처리방침
           </span>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </a>
+        </Link>
 
         <Link
           href="/my/location-consent"
