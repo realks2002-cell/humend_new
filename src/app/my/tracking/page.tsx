@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   MapPin,
@@ -15,21 +14,8 @@ import {
 } from "lucide-react";
 import { AuthGuard } from "@/lib/native-api/auth-guard";
 import { getTodayShift } from "@/lib/native-api/location-queries";
-import {
-  sendLocationLog,
-  confirmArrival,
-} from "@/lib/native-api/location-actions";
-import {
-  requestLocationPermission,
-  getCurrentPosition,
-  calcDistanceMeters,
-} from "@/lib/capacitor/geolocation";
-import {
-  startTracking,
-  stopTracking,
-  isTracking as checkIsTracking,
-} from "@/lib/capacitor/location-tracking";
-import type { DailyShiftWithDetails, ArrivalStatus } from "@/types/location";
+import { isTracking as checkIsTracking } from "@/lib/capacitor/location-tracking";
+import type { ArrivalStatus } from "@/types/location";
 
 const statusConfig: Record<
   ArrivalStatus,
@@ -85,11 +71,8 @@ const statusConfig: Record<
 
 function TrackingContent() {
   const [loading, setLoading] = useState(true);
-  const [shift, setShift] = useState<DailyShiftWithDetails | null>(null);
+  const [shift, setShift] = useState<Awaited<ReturnType<typeof getTodayShift>>>(null);
   const [tracking, setTracking] = useState(false);
-  const [distance, setDistance] = useState<number | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [webIntervalId, setWebIntervalId] = useState<ReturnType<typeof setInterval> | null>(null);
 
   const loadShift = useCallback(async () => {
     setLoading(true);
@@ -100,163 +83,16 @@ function TrackingContent() {
   }, []);
 
   useEffect(() => {
-    loadShift();
+    void loadShift();
   }, [loadShift]);
 
-  // 웹 자동 전송 interval 정리
+  // 30초마다 상태 갱신
   useEffect(() => {
-    return () => {
-      if (webIntervalId) clearInterval(webIntervalId);
-    };
-  }, [webIntervalId]);
-
-  // 위치추적 시작
-  const handleStartTracking = async () => {
-    if (!shift) return;
-    setSubmitting(true);
-
-    const permitted = await requestLocationPermission();
-    if (!permitted) {
-      alert("위치 권한이 필요합니다. 설정에서 권한을 허용해주세요.");
-      setSubmitting(false);
-      return;
-    }
-
-    const clientLat = shift.clients?.latitude;
-    const clientLng = shift.clients?.longitude;
-
-    if (!clientLat || !clientLng) {
-      alert("근무지 위치 정보가 없습니다.");
-      setSubmitting(false);
-      return;
-    }
-
-    const started = await startTracking(clientLat, clientLng, {
-      onLocation: async (lat, lng, speed, accuracy) => {
-        // 서버에 위치 전송
-        const result = await sendLocationLog({
-          shiftId: shift.id,
-          lat,
-          lng,
-          speed: speed ?? undefined,
-          accuracy: accuracy ?? undefined,
-        });
-
-        // 거리 업데이트
-        const d = calcDistanceMeters(lat, lng, clientLat, clientLng);
-        setDistance(Math.round(d));
-
-        // 자동 도착 처리됨
-        if (result.arrived) {
-          setTracking(false);
-          loadShift();
-        }
-      },
-      onArrival: () => {
-        setTracking(false);
-        loadShift();
-      },
-    });
-
-    if (started) {
-      setTracking(true);
-      // 즉시 현재 위치 전송
-      const pos = await getCurrentPosition();
-      if (pos) {
-        await sendLocationLog({
-          shiftId: shift.id,
-          lat: pos.lat,
-          lng: pos.lng,
-          speed: pos.speed,
-          accuracy: pos.accuracy,
-        });
-        const d = calcDistanceMeters(pos.lat, pos.lng, clientLat, clientLng);
-        setDistance(Math.round(d));
-      }
-    } else {
-      // 웹 환경: 브라우저 geolocation으로 1분 간격 자동 전송
-      setTracking(true);
-
-      const sendWebLocation = async () => {
-        try {
-          const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-              timeout: 10000,
-            })
-          );
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-
-          const result = await sendLocationLog({
-            shiftId: shift.id,
-            lat,
-            lng,
-            speed: pos.coords.speed ?? undefined,
-            accuracy: pos.coords.accuracy ?? undefined,
-          });
-
-          const d = calcDistanceMeters(lat, lng, clientLat, clientLng);
-          setDistance(Math.round(d));
-
-          if (result.arrived) {
-            setTracking(false);
-            if (webIntervalId) clearInterval(webIntervalId);
-            setWebIntervalId(null);
-            loadShift();
-          }
-        } catch {
-          // 위치 획득 실패 시 무시
-        }
-      };
-
-      // 즉시 1회 전송
-      await sendWebLocation();
-
-      // 1분 간격 반복
-      const intervalId = setInterval(sendWebLocation, 60_000);
-      setWebIntervalId(intervalId);
-    }
-
-    setSubmitting(false);
-  };
-
-  // 추적 중지
-  const handleStopTracking = async () => {
-    await stopTracking();
-    if (webIntervalId) {
-      clearInterval(webIntervalId);
-      setWebIntervalId(null);
-    }
-    setTracking(false);
-  };
-
-  // 수동 도착
-  const handleManualArrival = async () => {
-    if (!shift) return;
-    setSubmitting(true);
-
-    const pos = await getCurrentPosition();
-    const result = await confirmArrival({
-      shiftId: shift.id,
-      lat: pos?.lat,
-      lng: pos?.lng,
-    });
-
-    if (result.success) {
-      await stopTracking();
-      if (webIntervalId) {
-        clearInterval(webIntervalId);
-        setWebIntervalId(null);
-      }
-      setTracking(false);
+    const timer = setInterval(() => {
       loadShift();
-    } else {
-      alert(result.error || "도착 확인에 실패했습니다.");
-    }
-
-    setSubmitting(false);
-  };
+    }, 30_000);
+    return () => clearInterval(timer);
+  }, [loadShift]);
 
   if (loading) {
     return (
@@ -284,9 +120,8 @@ function TrackingContent() {
 
   const status = statusConfig[shift.arrival_status] ?? statusConfig.pending;
   const StatusIcon = status.icon;
-  const isFinished = ["arrived", "late", "noshow"].includes(
-    shift.arrival_status
-  );
+  const isArrived = ["arrived", "late"].includes(shift.arrival_status);
+  const isFinished = isArrived || shift.arrival_status === "noshow";
 
   return (
     <div className="mx-auto max-w-lg px-4 py-8 space-y-4">
@@ -317,17 +152,8 @@ function TrackingContent() {
               <Clock className="h-3.5 w-3.5" />
               {shift.start_time.slice(0, 5)} ~ {shift.end_time.slice(0, 5)}
             </span>
-            {distance != null && (
-              <span className="flex items-center gap-1">
-                <Navigation className="h-3.5 w-3.5" />
-                {distance >= 1000
-                  ? `${(distance / 1000).toFixed(1)}km`
-                  : `${distance}m`}
-              </span>
-            )}
           </div>
 
-          {/* 연락처 */}
           {shift.clients?.contact_phone && (
             <a
               href={`tel:${shift.clients.contact_phone}`}
@@ -381,55 +207,34 @@ function TrackingContent() {
         </Card>
       )}
 
-      {/* 액션 버튼 */}
-      {!isFinished && (
-        <div className="space-y-3">
-          {!tracking ? (
-            <Button
-              onClick={handleStartTracking}
-              disabled={submitting}
-              className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700"
-            >
-              {submitting ? (
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
-              ) : (
-                <Navigation className="h-5 w-5 mr-2" />
-              )}
-              위치 추적 시작
-            </Button>
-          ) : (
-            <>
-              <div className="flex items-center justify-center gap-2 text-sm text-blue-600">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
-                </span>
-                위치를 추적하고 있습니다
-              </div>
+      {/* 추적 상태 표시 */}
+      {!isFinished && tracking && (
+        <Card className="overflow-hidden py-0">
+          <div className="h-1 bg-gradient-to-r from-blue-400 to-cyan-400" />
+          <CardContent className="py-4 text-center space-y-2">
+            <div className="flex items-center justify-center gap-2 text-sm text-blue-600">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+              </span>
+              위치를 추적하고 있습니다
+            </div>
+            <p className="text-xs text-muted-foreground">
+              근무지 도착 시 자동으로 출근 처리됩니다
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
-              <Button
-                onClick={handleManualArrival}
-                disabled={submitting}
-                className="w-full h-12 text-base bg-emerald-600 hover:bg-emerald-700"
-              >
-                {submitting ? (
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                ) : (
-                  <CheckCircle2 className="h-5 w-5 mr-2" />
-                )}
-                수동 도착 확인
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={handleStopTracking}
-                className="w-full"
-              >
-                추적 중지
-              </Button>
-            </>
-          )}
-        </div>
+      {/* 추적 대기 상태 */}
+      {!isFinished && !tracking && (
+        <Card className="overflow-hidden py-0">
+          <CardContent className="py-4 text-center space-y-2">
+            <p className="text-sm text-muted-foreground">
+              출근 2시간 전에 자동으로 추적이 시작됩니다
+            </p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
