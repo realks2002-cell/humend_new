@@ -17,7 +17,8 @@ export const statusColorMap: Record<ArrivalStatus, MarkerColor> = {
   pending: "gray",
   tracking: "blue",
   moving: "blue",
-  offline: "gray",
+  offline: "red",
+  no_signal: "orange",
   late_risk: "orange",
   noshow_risk: "red",
   arrived: "green",
@@ -56,6 +57,7 @@ export const statusLabels: Record<ArrivalStatus, string> = {
   tracking: "추적중",
   moving: "이동중",
   offline: "오프라인",
+  no_signal: "미수신",
   late_risk: "지각위험",
   noshow_risk: "노쇼위험",
   arrived: "도착",
@@ -68,11 +70,19 @@ function getDisplayStatus(shift: DailyShiftWithDetails, mounted: boolean): Arriv
   const status = shift.arrival_status;
   if (["arrived", "late", "noshow"].includes(status)) return status;
   const now = Date.now();
-  if (
-    shift.last_seen_at &&
-    ["tracking", "moving"].includes(status) &&
-    now - new Date(shift.last_seen_at).getTime() > 5 * 60 * 1000
-  ) return "offline";
+
+  if (["tracking", "moving"].includes(status)) {
+    const locationStale = shift.last_seen_at &&
+      now - new Date(shift.last_seen_at).getTime() > 5 * 60 * 1000;
+    const heartbeatStale = !shift.last_heartbeat_at ||
+      now - new Date(shift.last_heartbeat_at).getTime() > 3 * 60 * 1000;
+
+    if (locationStale) {
+      // 위치 끊김: 하트비트로 오프라인 vs 미수신 구분
+      return heartbeatStale ? "offline" : "no_signal";
+    }
+  }
+
   return status;
 }
 
@@ -214,6 +224,7 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
                     last_known_lat: payload.new.last_known_lat,
                     last_known_lng: payload.new.last_known_lng,
                     last_seen_at: payload.new.last_seen_at,
+                    last_heartbeat_at: payload.new.last_heartbeat_at,
                   }
                 : s
             )
@@ -263,7 +274,8 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
         {[
           { color: "#9ca3af", label: "대기" },
           { color: "#3b82f6", label: "추적중·이동중" },
-          { color: "#f97316", label: "지각위험·지각" },
+          { color: "#f97316", label: "미수신·지각위험" },
+          { color: "#ef4444", label: "오프라인" },
           { color: "#22c55e", label: "도착" },
         ].map(({ color, label }) => (
           <div key={color} className="flex items-center gap-2">

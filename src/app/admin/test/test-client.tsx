@@ -22,17 +22,19 @@ import {
   resetTestShifts,
   diagnosePushStatus,
   sendTestPushToMember,
+  sendTestHeartbeat,
 } from "./actions";
 import type { TestMember, PushDiagnosis } from "./actions";
 import type { DailyShiftWithDetails, ArrivalStatus } from "@/types/location";
-import { MapPin, Trash2, Plus, User, Phone, Search, Navigation, UserPlus, Check, AlertTriangle, Play, Square, Users, RotateCcw, Bell, BellRing } from "lucide-react";
+import { MapPin, Trash2, Plus, User, Phone, Search, Navigation, UserPlus, Check, AlertTriangle, Play, Square, Users, RotateCcw, Bell, BellRing, Heart, HeartOff } from "lucide-react";
 import { TrackingMap } from "@/app/admin/tracking/tracking-map";
 
 const statusBadgeVariant: Record<ArrivalStatus, string> = {
   pending: "bg-gray-100 text-gray-700",
   tracking: "bg-blue-100 text-blue-700",
   moving: "bg-blue-100 text-blue-700",
-  offline: "bg-gray-100 text-gray-500",
+  offline: "bg-red-100 text-red-600",
+  no_signal: "bg-yellow-100 text-yellow-700",
   late_risk: "bg-orange-100 text-orange-700",
   noshow_risk: "bg-red-100 text-red-700",
   arrived: "bg-green-100 text-green-700",
@@ -62,11 +64,16 @@ function getDisplayStatus(shift: DailyShiftWithDetails, mounted: boolean): Arriv
   if (["arrived", "late", "noshow"].includes(status)) return status;
 
   const now = Date.now();
-  if (
-    shift.last_seen_at &&
-    ["tracking", "moving"].includes(status) &&
-    now - new Date(shift.last_seen_at).getTime() > 5 * 60 * 1000
-  ) return "offline";
+  if (["tracking", "moving"].includes(status)) {
+    const locationStale = shift.last_seen_at &&
+      now - new Date(shift.last_seen_at).getTime() > 5 * 60 * 1000;
+    const heartbeatStale = !shift.last_heartbeat_at ||
+      now - new Date(shift.last_heartbeat_at).getTime() > 3 * 60 * 1000;
+
+    if (locationStale) {
+      return heartbeatStale ? "offline" : "no_signal";
+    }
+  }
 
   return status;
 }
@@ -163,8 +170,41 @@ export function TestClient({
   const [arrivedCount, setArrivedCount] = useState(0);
   const [simTotal, setSimTotal] = useState(0);
   const simTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [heartbeatShiftIds, setHeartbeatShiftIds] = useState<Set<string>>(new Set());
+  const heartbeatTimersRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const simPathsRef = useRef<Map<string, { path: { lat: number; lng: number }[]; currentStep: number; fate: SimFate }>>(new Map());
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
+
+  // 하트비트 토글
+  const toggleHeartbeat = (shiftId: string) => {
+    if (heartbeatShiftIds.has(shiftId)) {
+      // 중지
+      const timer = heartbeatTimersRef.current.get(shiftId);
+      if (timer) clearInterval(timer);
+      heartbeatTimersRef.current.delete(shiftId);
+      setHeartbeatShiftIds((prev) => {
+        const next = new Set(prev);
+        next.delete(shiftId);
+        return next;
+      });
+    } else {
+      // 시작: 즉시 1회 + 30초 간격
+      sendTestHeartbeat(shiftId).catch(console.error);
+      const timer = setInterval(() => {
+        sendTestHeartbeat(shiftId).catch(console.error);
+      }, 30_000);
+      heartbeatTimersRef.current.set(shiftId, timer);
+      setHeartbeatShiftIds((prev) => new Set(prev).add(shiftId));
+    }
+  };
+
+  // 하트비트 타이머 cleanup
+  useEffect(() => {
+    return () => {
+      heartbeatTimersRef.current.forEach((timer) => clearInterval(timer));
+      heartbeatTimersRef.current.clear();
+    };
+  }, []);
 
   const refreshShifts = async () => {
     const updated = await getTestShifts();
@@ -1002,6 +1042,18 @@ export function TestClient({
                                 >
                                   <Navigation className="mr-1 h-3 w-3" />
                                   {sendingLocation === shift.id ? "전송중..." : "위치"}
+                                </Button>
+                                <Button
+                                  variant={heartbeatShiftIds.has(shift.id) ? "default" : "outline"}
+                                  size="sm"
+                                  className={`h-7 text-xs ${heartbeatShiftIds.has(shift.id) ? "bg-pink-500 hover:bg-pink-600" : ""}`}
+                                  onClick={() => toggleHeartbeat(shift.id)}
+                                >
+                                  {heartbeatShiftIds.has(shift.id) ? (
+                                    <><Heart className="mr-1 h-3 w-3" />HB ON</>
+                                  ) : (
+                                    <><HeartOff className="mr-1 h-3 w-3" />HB</>
+                                  )}
                                 </Button>
                                 <Button
                                   variant="ghost"

@@ -98,6 +98,20 @@ export async function updateMemberLocationConsent(consent: boolean) {
   return { success: true };
 }
 
+/** 하트비트 전송 (앱 alive 신호, GPS와 무관) */
+export async function sendHeartbeat(shiftId: string) {
+  const token = await getAuthToken();
+  const res = await CapacitorHttp.post({
+    url: `${API_BASE}/api/native/heartbeat`,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    data: { shiftId },
+  });
+  return res.data;
+}
+
 /** 회원 위치 수집 동의 여부 조회 */
 export async function getMemberLocationConsent(): Promise<boolean> {
   const supabase = createClient();

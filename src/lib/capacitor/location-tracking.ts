@@ -74,6 +74,7 @@ const MAX_ACCURACY = 50;
 const MAX_ACCURACY_SLC = 200;
 
 // 타이머
+const HEARTBEAT_MS = 60 * 1000;           // 1분 (하트비트)
 const KEEPALIVE_MS = 5 * 60 * 1000;      // 5분
 const DF_CHANGE_COOLDOWN_MS = 60_000;     // 1분
 const DEBOUNCE_MS = 20_000;               // 20초 중복 방지
@@ -85,6 +86,7 @@ let watcherId: string | null = null;
 let lastSentAt = 0;
 let isStarting = false;
 let keepAliveTimer: ReturnType<typeof setTimeout> | null = null;
+let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 let postArrivalActive = false;
 let autoStopTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -298,6 +300,7 @@ export async function startTracking(
   geofenceRadius = 200,
   endTime?: string,
   workDate?: string,
+  shiftId?: string,
 ): Promise<boolean> {
   if (!isNative()) return false;
   if (watcherId) return true;
@@ -369,6 +372,11 @@ export async function startTracking(
     // keep-alive 시작
     resetKeepAlive(callbacks);
 
+    // 하트비트 타이머 시작 (1분 간격, GPS와 무관하게 앱 alive 신호)
+    if (shiftId) {
+      startHeartbeat(shiftId);
+    }
+
     // 자동 종료 타이머: endTime + 30분 또는 fallback 2시간
     let autoStopMs = 2 * 60 * 60 * 1000;
     if (endTime && workDate) {
@@ -399,6 +407,28 @@ function startPostArrivalTracking(): void {
   maybeUpdateDistanceFilter(DF_POST_ARRIVAL);
 }
 
+// ─── 하트비트 ───
+
+/** 1분 간격 하트비트 시작 (GPS와 독립적으로 동작) */
+function startHeartbeat(shiftId: string): void {
+  stopHeartbeat();
+  // 모듈 한 번만 resolve 후 재사용
+  import("@/lib/native-api/location-actions").then(({ sendHeartbeat }) => {
+    if (!watcherId) return; // startHeartbeat 후 즉시 stopTracking된 경우 방지
+    sendHeartbeat(shiftId).catch(() => {});
+    heartbeatTimer = setInterval(() => {
+      sendHeartbeat(shiftId).catch(() => {});
+    }, HEARTBEAT_MS);
+  });
+}
+
+function stopHeartbeat(): void {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+}
+
 // ─── 정리 ───
 
 function clearTimers(): void {
@@ -406,6 +436,7 @@ function clearTimers(): void {
     clearTimeout(keepAliveTimer);
     keepAliveTimer = null;
   }
+  stopHeartbeat();
   postArrivalActive = false;
   if (autoStopTimer) {
     clearTimeout(autoStopTimer);

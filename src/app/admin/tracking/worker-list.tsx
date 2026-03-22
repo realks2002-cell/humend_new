@@ -11,14 +11,24 @@ function getDisplayStatus(shift: DailyShiftWithDetails, mounted: boolean): Arriv
   const status = shift.arrival_status;
   if (["arrived", "late", "noshow"].includes(status)) return status;
   const now = Date.now();
+
+  // 오프라인/미수신 판별 (출근시간 전후 모두 적용)
+  if (["tracking", "moving"].includes(status)) {
+    const locationStale = shift.last_seen_at &&
+      now - new Date(shift.last_seen_at).getTime() > 5 * 60 * 1000;
+    const heartbeatStale = !shift.last_heartbeat_at ||
+      now - new Date(shift.last_heartbeat_at).getTime() > 3 * 60 * 1000;
+
+    if (locationStale) {
+      return heartbeatStale ? "offline" : "no_signal";
+    }
+  }
+
+  // 출근시간 경과 시 지각 표시
   const startTimeNorm = shift.start_time.length === 5 ? shift.start_time + ":00" : shift.start_time;
   const shiftStart = new Date(`${shift.work_date}T${startTimeNorm}+09:00`).getTime();
   if (now > shiftStart) return "late";
-  if (
-    shift.last_seen_at &&
-    ["tracking", "moving"].includes(status) &&
-    now - new Date(shift.last_seen_at).getTime() > 5 * 60 * 1000
-  ) return "offline";
+
   return status;
 }
 
@@ -29,7 +39,8 @@ export const statusConfig: Record<
   pending: { label: "대기", color: "text-gray-600", bgColor: "bg-gray-100" },
   tracking: { label: "추적중", color: "text-blue-600", bgColor: "bg-blue-50" },
   moving: { label: "이동중", color: "text-blue-700", bgColor: "bg-blue-100" },
-  offline: { label: "오프라인", color: "text-gray-500", bgColor: "bg-gray-50" },
+  offline: { label: "오프라인", color: "text-red-600", bgColor: "bg-red-50" },
+  no_signal: { label: "미수신", color: "text-yellow-600", bgColor: "bg-yellow-50" },
   late_risk: { label: "지각위험", color: "text-orange-600", bgColor: "bg-orange-50" },
   noshow_risk: { label: "노쇼위험", color: "text-red-600", bgColor: "bg-red-50" },
   arrived: { label: "도착", color: "text-green-700", bgColor: "bg-green-50" },
@@ -78,6 +89,7 @@ export function WorkerList({ shifts: initialShifts }: { shifts: DailyShiftWithDe
                     last_known_lat: payload.new.last_known_lat,
                     last_known_lng: payload.new.last_known_lng,
                     last_seen_at: payload.new.last_seen_at,
+                    last_heartbeat_at: payload.new.last_heartbeat_at,
                   }
                 : s
             )

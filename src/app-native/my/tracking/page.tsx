@@ -51,6 +51,11 @@ const statusConfig: Record<
     color: "bg-gray-100 text-gray-500",
     icon: AlertTriangle,
   },
+  no_signal: {
+    label: "미수신",
+    color: "bg-yellow-100 text-yellow-700",
+    icon: AlertTriangle,
+  },
   late_risk: {
     label: "지각 위험",
     color: "bg-orange-100 text-orange-700",
@@ -144,7 +149,7 @@ function TrackingContent() {
         // 도착 후에도 추적 계속 (15분 간격으로 전환됨)
         loadShift();
       },
-    }, 200, shift.end_time, shift.work_date);
+    }, 200, shift.end_time, shift.work_date, shift.id);
 
     if (started) {
       setTracking(true);

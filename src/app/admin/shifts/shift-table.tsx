@@ -126,7 +126,12 @@ const statusConfig: Record<
   offline: {
     label: "오프라인",
     variant: "outline",
-    className: "border-gray-400 text-gray-500",
+    className: "border-red-400 text-red-600",
+  },
+  no_signal: {
+    label: "미수신",
+    variant: "outline",
+    className: "border-yellow-400 text-yellow-600",
   },
   late_risk: {
     label: "지각위험",
