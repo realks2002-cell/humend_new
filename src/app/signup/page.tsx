@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, Loader2, User, Phone, Lock, Eye, EyeOff } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { CheckCircle, Loader2, User, Phone, Lock, Eye, EyeOff, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { memberSignup } from "@/lib/supabase/auth";
 
@@ -26,6 +27,18 @@ export default function SignupPage() {
   const [done, setDone] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [agreeLocation, setAgreeLocation] = useState(false);
+  const [agreeNotification, setAgreeNotification] = useState(false);
+
+  const allAgreed = agreeTerms && agreePrivacy && agreeLocation && agreeNotification;
+  const handleAgreeAll = (checked: boolean) => {
+    setAgreeTerms(checked);
+    setAgreePrivacy(checked);
+    setAgreeLocation(checked);
+    setAgreeNotification(checked);
+  };
 
   const rawPhone = phone.replace(/\D/g, "");
 
@@ -178,7 +191,59 @@ export default function SignupPage() {
               <p className="mt-1 text-xs text-destructive">비밀번호가 일치하지 않습니다</p>
             )}
           </div>
-          <Button className="w-full" onClick={handleSignup} disabled={loading}>
+          {/* 동의 체크박스 */}
+          <div className="rounded-lg border p-3 space-y-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={allAgreed}
+                onCheckedChange={(v) => handleAgreeAll(v === true)}
+              />
+              <span className="text-sm font-semibold">전체 동의</span>
+            </label>
+            <div className="border-t" />
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={agreeTerms}
+                onCheckedChange={(v) => setAgreeTerms(v === true)}
+              />
+              <span className="text-xs text-muted-foreground flex-1">[필수] 이용약관 동의</span>
+              <a href="/terms" target="_blank" className="text-xs text-blue-500">
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={agreePrivacy}
+                onCheckedChange={(v) => setAgreePrivacy(v === true)}
+              />
+              <span className="text-xs text-muted-foreground flex-1">[필수] 개인정보 처리방침 동의</span>
+              <a href="/privacy" target="_blank" className="text-xs text-blue-500">
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={agreeLocation}
+                onCheckedChange={(v) => setAgreeLocation(v === true)}
+              />
+              <span className="text-xs text-muted-foreground flex-1">[필수] 위치정보 수집·이용 동의</span>
+            </label>
+            <p className="text-[10px] text-muted-foreground/70 pl-6">
+              출근 확인을 위해 배정된 근무일 출근 2시간 전부터 도착 확인까지 위치를 수집합니다. 90일 후 자동 삭제됩니다.
+            </p>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={agreeNotification}
+                onCheckedChange={(v: boolean | "indeterminate") => setAgreeNotification(v === true)}
+              />
+              <span className="text-xs text-muted-foreground flex-1">[필수] 알림 수신 동의</span>
+            </label>
+            <p className="text-[10px] text-muted-foreground/70 pl-6">
+              근무 배정, 출근 안내, 급여 확정 등 주요 알림을 푸시로 받습니다.
+            </p>
+          </div>
+
+          <Button className="w-full" onClick={handleSignup} disabled={loading || !allAgreed}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {loading ? "가입 중..." : "가입하기"}
           </Button>
