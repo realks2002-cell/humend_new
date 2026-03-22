@@ -1,14 +1,14 @@
 'use client';
 
 import { usePathname, useRouter } from "next/navigation";
-import { Briefcase, ClipboardList, User, Menu } from "lucide-react";
+import { Briefcase, ClipboardList, User, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { href: "/jobs", label: "채용공고", icon: Briefcase },
   { href: "/my/applications", label: "지원내역", icon: ClipboardList },
   { href: "/my", label: "마이페이지", icon: User },
-  { href: "/more", label: "더보기", icon: Menu },
+  { href: "/signup", label: "회원가입", icon: UserPlus },
 ] as const;
 
 function isActive(pathname: string, tab: typeof tabs[number]) {
