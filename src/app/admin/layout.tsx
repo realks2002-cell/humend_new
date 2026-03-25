@@ -25,7 +25,6 @@ import {
   PanelLeft,
   Settings,
   CalendarDays,
-  MapPin,
   FlaskConical,
 } from "lucide-react";
 
@@ -42,7 +41,6 @@ const sidebarLinks = [
   { href: "/admin/notifications", label: "알림 관리", icon: Bell },
   { href: "/admin/settings", label: "관리자 설정", icon: Settings },
   { href: "/admin/shifts", label: "근무표 관리", icon: CalendarDays },
-  { href: "/admin/tracking", label: "출근 추적", icon: MapPin },
   { href: "/admin/test", label: "테스트", icon: FlaskConical },
 ];
 

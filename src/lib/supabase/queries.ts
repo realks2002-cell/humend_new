@@ -624,30 +624,55 @@ export interface SignedContract {
   payments: Payment | null;
 }
 
-export async function getSignedContracts(page = 1, pageSize = 50) {
+export async function getSignedContracts(
+  page = 1,
+  pageSize = 50,
+  filters?: { search?: string; startDate?: string; endDate?: string }
+) {
   const admin = createAdminClient();
   const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
 
-  const { data, count } = await admin
+  const selectStr =
+    "id, work_date, start_time, end_time, client_name, hourly_wage, base_pay, gross_pay, net_pay, wage_type, signature_url, signed_at, members(name, phone, rrn_front, rrn_back, region), payments(*)";
+
+  function unwrap(data: unknown[]) {
+    return data.map((r: unknown) => {
+      const rec = r as Record<string, unknown>;
+      const members = Array.isArray(rec.members) ? rec.members[0] ?? null : rec.members ?? null;
+      const payments = Array.isArray(rec.payments) ? rec.payments[0] ?? null : rec.payments ?? null;
+      return { ...rec, members, payments } as SignedContract;
+    });
+  }
+
+  let query = admin
     .from("work_records")
-    .select(
-      "id, work_date, start_time, end_time, client_name, hourly_wage, base_pay, gross_pay, net_pay, wage_type, signature_url, signed_at, members(name, phone, rrn_front, rrn_back, region), payments(*)",
-      { count: "exact" }
-    )
+    .select(selectStr, { count: "exact" })
     .not("signature_url", "is", null)
-    .order("work_date", { ascending: false })
-    .range(from, to);
+    .order("work_date", { ascending: false });
 
-  // Supabase returns joined tables as arrays, unwrap to single
-  const contracts = ((data ?? []) as unknown[]).map((r: unknown) => {
-    const rec = r as Record<string, unknown>;
-    const members = Array.isArray(rec.members) ? rec.members[0] ?? null : rec.members ?? null;
-    const payments = Array.isArray(rec.payments) ? rec.payments[0] ?? null : rec.payments ?? null;
-    return { ...rec, members, payments } as SignedContract;
-  });
+  if (filters?.startDate) {
+    query = query.gte("work_date", filters.startDate);
+  }
+  if (filters?.endDate) {
+    query = query.lte("work_date", filters.endDate);
+  }
 
-  return { data: contracts, total: count ?? 0 };
+  if (filters?.search) {
+    // 이름/전화번호/고객사 OR 검색은 PostgREST 단일 쿼리로 불가 → 전체 조회 후 필터
+    const { data } = await query.limit(5000);
+    const contracts = unwrap(data ?? []);
+    const s = filters.search.replace(/-/g, "");
+    const filtered = contracts.filter((r) => {
+      const name = r.members?.name ?? "";
+      const phone = (r.members?.phone ?? "").replace(/-/g, "");
+      return name.includes(filters.search!) || phone.includes(s) || r.client_name.includes(filters.search!);
+    });
+    const paginated = filtered.slice(from, from + pageSize);
+    return { data: paginated, total: filtered.length };
+  }
+
+  const { data, count } = await query.range(from, from + pageSize - 1);
+  return { data: unwrap(data ?? []), total: count ?? 0 };
 }
 
 // ========== Payment 쿼리 ==========

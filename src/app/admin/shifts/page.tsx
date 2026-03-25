@@ -23,9 +23,8 @@ export default async function AdminShiftsPage({
     .select(
       `
       id, client_id, member_id, work_date, start_time, end_time,
-      arrival_status, risk_level, arrived_at, left_site_at, offsite_count,
-      last_known_lat, last_known_lng, last_seen_at,
-      location_consent, tracking_started_at,
+      arrival_status, arrived_at, confirmed_at, nearby_at,
+      alert_minutes_before, notification_sent_count,
       created_at, updated_at,
       clients!inner (company_name, location, latitude, longitude, contact_phone),
       members (name, phone)

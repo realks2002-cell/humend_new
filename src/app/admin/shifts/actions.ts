@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import {
   notifyShiftAssigned,
   notifyShiftCancelled,
-} from "@/lib/push/location-notify";
+} from "@/lib/push/attendance-notify";
 
 export async function createShift(
   clientId: string,
@@ -30,8 +30,6 @@ export async function createShift(
     start_time: startTime,
     end_time: endTime,
     arrival_status: "pending" as const,
-    risk_level: 0,
-    location_consent: false,
   }));
 
   const { error } = await supabase.from("daily_shifts").insert(records);
@@ -160,8 +158,6 @@ export async function updateShiftGroup(
       start_time: newStartTime,
       end_time: newEndTime,
       arrival_status: "pending" as const,
-      risk_level: 0,
-      location_consent: false,
     }));
 
     const { error } = await supabase.from("daily_shifts").insert(newRecords);
@@ -216,10 +212,6 @@ export async function updateShiftStatus(
   if (status === "arrived") {
     updateData.arrived_at = new Date().toISOString();
   }
-  if (status === "noshow") {
-    updateData.risk_level = 3;
-  }
-
   const { error } = await supabase
     .from("daily_shifts")
     .update(updateData)
@@ -230,6 +222,5 @@ export async function updateShiftStatus(
   }
 
   revalidatePath("/admin/shifts");
-  revalidatePath("/admin/tracking");
   return { error: null };
 }

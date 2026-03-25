@@ -23,12 +23,40 @@ export async function registerPush(): Promise<string | null> {
   });
 }
 
-/** 알림 탭 리스너 — data.url이 있으면 해당 페이지로 이동 */
+/** 알림 탭 리스너 — 출근 의사 확인 + URL 이동 */
 export function setupPushListeners() {
   PushNotifications.addListener(
     "pushNotificationActionPerformed",
-    (notification) => {
-      const url = notification.notification.data?.url;
+    async (notification) => {
+      const data = notification.notification.data;
+
+      // 출근 의사 확인 알림 탭
+      if (data?.action === "confirm_attendance" && data?.shiftId) {
+        try {
+          // @ts-expect-error — 네이티브 전용 모듈
+          const { Preferences } = await import("@capacitor/preferences");
+          const { value: token } = await Preferences.get({
+            key: "access_token",
+          });
+
+          if (token) {
+            const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
+            await fetch(`${API_BASE}/api/native/attendance/confirm`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ shiftId: data.shiftId }),
+            });
+          }
+        } catch (e) {
+          console.error("[Push] 출근 확인 실패:", e);
+        }
+      }
+
+      // URL 이동
+      const url = data?.url;
       if (url && typeof url === "string") {
         window.location.href = url;
       }

@@ -1,19 +1,8 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/server";
-import { notifyShiftAssigned } from "@/lib/push/location-notify";
+import { notifyShiftAssigned } from "@/lib/push/attendance-notify";
 import { sendPush } from "@/lib/push/fcm";
-
-function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371000;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-const MOVING_THRESHOLD_METERS = 50;
 
 const SEED_MEMBERS = [
   { name: "이강석", phone: "01034061921" },
@@ -183,17 +172,11 @@ export async function createTestShift(
         start_time: startTime,
         end_time: endTime,
         arrival_status: "pending",
-        risk_level: 0,
         arrived_at: null,
-        last_known_lat: null,
-        last_known_lng: null,
-        last_seen_at: null,
-        location_consent: false,
-        tracking_started_at: null,
-        first_in_range_at: null,
-        tracking_start_lat: null,
-        tracking_start_lng: null,
-        last_speed: null,
+        confirmed_at: null,
+        nearby_at: null,
+        notification_sent_count: 0,
+        last_notification_at: null,
       })
       .eq("id", existingShift.id);
 
@@ -218,97 +201,6 @@ export async function createTestShift(
   if (shiftError) throw new Error(`배정 생성 실패: ${shiftError.message}`);
   notifyShiftAssigned(memberId, placeName, today, startTime).catch(console.error);
   return shift.id as string;
-}
-
-export async function sendTestLocation(
-  shiftId: string,
-  lat: number,
-  lng: number
-) {
-  const supabase = createAdminClient();
-
-  const { data: shift, error: shiftError } = await supabase
-    .from("daily_shifts")
-    .select("id, member_id, client_id, arrival_status, start_time, work_date, last_known_lat, last_known_lng, first_in_range_at")
-    .eq("id", shiftId)
-    .single();
-
-  if (shiftError || !shift) throw new Error("배정을 찾을 수 없습니다");
-
-  if (["arrived", "late", "noshow"].includes(shift.arrival_status)) {
-    return { arrived: true, status: shift.arrival_status, distance: null };
-  }
-
-  const updateData: Record<string, unknown> = {
-    last_known_lat: lat,
-    last_known_lng: lng,
-    last_seen_at: new Date().toISOString(),
-  };
-
-  if (shift.arrival_status === "pending") {
-    updateData.arrival_status = "tracking";
-    updateData.tracking_started_at = new Date().toISOString();
-    updateData.tracking_start_lat = lat;
-    updateData.tracking_start_lng = lng;
-  }
-
-  const { data: distResult, error: rpcError } = await supabase
-    .rpc("check_arrival_distance", {
-      p_shift_id: shiftId,
-      p_lat: lat,
-      p_lng: lng,
-      p_radius: 100,
-    })
-    .maybeSingle() as { data: { is_arrived: boolean; distance_meters: number } | null; error: unknown };
-  if (rpcError) console.error("check_arrival_distance RPC error:", rpcError);
-
-  let arrived = false;
-
-  if (distResult?.is_arrived) {
-    const firstInRangeAt = shift.first_in_range_at
-      ? new Date(shift.first_in_range_at as string)
-      : new Date();
-
-    if (!shift.first_in_range_at) {
-      updateData.first_in_range_at = firstInRangeAt.toISOString();
-    }
-
-    const shiftStart = new Date(`${shift.work_date}T${shift.start_time}+09:00`);
-    const isLate = firstInRangeAt > shiftStart;
-
-    updateData.arrival_status = isLate ? "late" : "arrived";
-    updateData.arrived_at = firstInRangeAt.toISOString();
-    arrived = true;
-  } else if (distResult && distResult.distance_meters <= 200 && !shift.first_in_range_at) {
-    updateData.first_in_range_at = new Date().toISOString();
-  }
-
-  if (!arrived && !["arrived", "late", "noshow"].includes(shift.arrival_status)) {
-    const prevLat = shift.last_known_lat as number | null;
-    const prevLng = shift.last_known_lng as number | null;
-    if (prevLat != null && prevLng != null) {
-      const moved = haversineMeters(prevLat, prevLng, lat, lng) >= MOVING_THRESHOLD_METERS;
-      if (moved) {
-        updateData.arrival_status = "moving";
-      } else if (shift.arrival_status === "moving") {
-        updateData.arrival_status = "tracking";
-      }
-    }
-  }
-
-  const { error: updateError } = await supabase
-    .from("daily_shifts")
-    .update(updateData)
-    .eq("id", shiftId);
-  if (updateError) throw new Error(`위치 업데이트 실패: ${updateError.message}`);
-
-  return {
-    arrived,
-    status: updateData.arrival_status as string,
-    distance: distResult?.distance_meters ?? null,
-    lat,
-    lng,
-  };
 }
 
 export async function cleanupTestClients() {
@@ -501,17 +393,11 @@ export async function bulkCreateTestShifts(
         start_time: startTime,
         end_time: endTime,
         arrival_status: "pending",
-        risk_level: 0,
         arrived_at: null,
-        last_known_lat: null,
-        last_known_lng: null,
-        last_seen_at: null,
-        location_consent: false,
-        tracking_started_at: null,
-        first_in_range_at: null,
-        tracking_start_lat: null,
-        tracking_start_lng: null,
-        last_speed: null,
+        confirmed_at: null,
+        nearby_at: null,
+        notification_sent_count: 0,
+        last_notification_at: null,
       })
       .in("id", toUpdate);
   }
@@ -546,112 +432,6 @@ export async function markShiftsNoshow(shiftIds: string[]) {
   if (error) throw new Error(`노쇼 마킹 실패: ${error.message}`);
 }
 
-export async function sendBatchSimLocations(
-  entries: { shiftId: string; lat: number; lng: number; fate?: "normal" | "late" | "noshow" }[]
-): Promise<{ shiftId: string; arrived: boolean; status: string }[]> {
-  const supabase = createAdminClient();
-
-  const shiftIds = entries.map((e) => e.shiftId);
-  const entryMap = new Map(entries.map((e) => [e.shiftId, e]));
-
-  // 일괄 조회
-  const { data: shiftsData, error: fetchError } = await supabase
-    .from("daily_shifts")
-    .select("id, member_id, client_id, arrival_status, start_time, work_date, last_known_lat, last_known_lng, first_in_range_at, clients(latitude, longitude)")
-    .in("id", shiftIds);
-
-  if (fetchError) throw new Error(`일괄 조회 실패: ${fetchError.message}`);
-
-  const results: { shiftId: string; arrived: boolean; status: string }[] = [];
-
-  const updatePromises = (shiftsData ?? []).map(async (shift) => {
-    const entry = entryMap.get(shift.id as string);
-    if (!entry) return;
-
-    if (["arrived", "late", "noshow"].includes(shift.arrival_status)) {
-      results.push({ shiftId: shift.id as string, arrived: true, status: shift.arrival_status });
-      return;
-    }
-
-    const client = shift.clients as unknown as { latitude: number; longitude: number } | null;
-    const clientLat = client?.latitude;
-    const clientLng = client?.longitude;
-
-    const updateData: Record<string, unknown> = {
-      last_known_lat: entry.lat,
-      last_known_lng: entry.lng,
-      last_seen_at: new Date().toISOString(),
-    };
-
-    if (shift.arrival_status === "pending") {
-      updateData.arrival_status = "tracking";
-      updateData.tracking_started_at = new Date().toISOString();
-      updateData.tracking_start_lat = entry.lat;
-      updateData.tracking_start_lng = entry.lng;
-    }
-
-    let arrived = false;
-
-    // JS haversine으로 거리 계산 (RPC 대신)
-    if (clientLat != null && clientLng != null) {
-      const distance = haversineMeters(entry.lat, entry.lng, clientLat, clientLng);
-
-      if (distance <= 100) {
-        const firstInRangeAt = shift.first_in_range_at
-          ? new Date(shift.first_in_range_at as string)
-          : new Date();
-
-        if (!shift.first_in_range_at) {
-          updateData.first_in_range_at = firstInRangeAt.toISOString();
-        }
-
-        if (entry.fate) {
-          updateData.arrival_status = entry.fate === "late" ? "late" : "arrived";
-        } else {
-          const shiftStart = new Date(`${shift.work_date}T${shift.start_time}+09:00`);
-          const isLate = firstInRangeAt > shiftStart;
-          updateData.arrival_status = isLate ? "late" : "arrived";
-        }
-        updateData.arrived_at = firstInRangeAt.toISOString();
-        arrived = true;
-      } else if (distance <= 200 && !shift.first_in_range_at) {
-        updateData.first_in_range_at = new Date().toISOString();
-      }
-    }
-
-    // 이동 감지
-    if (!arrived && !["arrived", "late", "noshow"].includes(shift.arrival_status)) {
-      const prevLat = shift.last_known_lat as number | null;
-      const prevLng = shift.last_known_lng as number | null;
-      if (prevLat != null && prevLng != null) {
-        const moved = haversineMeters(prevLat, prevLng, entry.lat, entry.lng) >= MOVING_THRESHOLD_METERS;
-        if (moved) {
-          updateData.arrival_status = "moving";
-        } else if (shift.arrival_status === "moving") {
-          updateData.arrival_status = "tracking";
-        }
-      }
-    }
-
-    const { error: updateError } = await supabase
-      .from("daily_shifts")
-      .update(updateData)
-      .eq("id", shift.id);
-
-    if (updateError) console.error(`shift ${shift.id} 업데이트 실패:`, updateError.message);
-
-    results.push({
-      shiftId: shift.id as string,
-      arrived,
-      status: (updateData.arrival_status as string) ?? shift.arrival_status,
-    });
-  });
-
-  await Promise.allSettled(updatePromises);
-
-  return results;
-}
-
 export async function resetTestShifts() {
   const supabase = createAdminClient();
 
@@ -678,18 +458,11 @@ export async function resetTestShifts() {
     .from("daily_shifts")
     .update({
       arrival_status: "pending",
-      risk_level: 0,
       arrived_at: null,
-      last_known_lat: null,
-      last_known_lng: null,
-      last_seen_at: null,
-      location_consent: false,
-      tracking_started_at: null,
-      first_in_range_at: null,
-      tracking_start_lat: null,
-      tracking_start_lng: null,
-      last_speed: null,
-      last_alert_at: null,
+      confirmed_at: null,
+      nearby_at: null,
+      notification_sent_count: 0,
+      last_notification_at: null,
     })
     .in("id", shiftIds);
 
@@ -735,7 +508,7 @@ export async function diagnosePushStatus(memberId: string): Promise<PushDiagnosi
 
   const { data: todayShift } = await supabase
     .from("daily_shifts")
-    .select("last_alert_at")
+    .select("last_notification_at")
     .eq("member_id", memberId)
     .eq("work_date", today)
     .single();
@@ -746,7 +519,7 @@ export async function diagnosePushStatus(memberId: string): Promise<PushDiagnosi
     tokenCount: tokens?.length ?? 0,
     tokens: (tokens ?? []) as PushDiagnosis["tokens"],
     recentNotifications: (logs ?? []) as PushDiagnosis["recentNotifications"],
-    todayShiftAlertAt: (todayShift?.last_alert_at as string) ?? null,
+    todayShiftAlertAt: (todayShift?.last_notification_at as string) ?? null,
   };
 }
 
@@ -778,17 +551,6 @@ export async function sendTestPushToMember(memberId: string): Promise<{ sent: nu
   return { sent, failed, noTokens: false };
 }
 
-export async function sendTestHeartbeat(shiftId: string) {
-  const supabase = createAdminClient();
-
-  const { error } = await supabase
-    .from("daily_shifts")
-    .update({ last_heartbeat_at: new Date().toISOString() })
-    .eq("id", shiftId);
-
-  if (error) throw new Error(`하트비트 전송 실패: ${error.message}`);
-}
-
 export async function getTestShifts() {
   const supabase = createAdminClient();
 
@@ -807,9 +569,8 @@ export async function getTestShifts() {
     .select(
       `
       id, client_id, member_id, work_date, start_time, end_time,
-      arrival_status, risk_level, arrived_at,
-      last_known_lat, last_known_lng, last_seen_at, last_heartbeat_at,
-      location_consent, tracking_started_at,
+      arrival_status, arrived_at, confirmed_at, nearby_at,
+      alert_minutes_before, notification_sent_count,
       created_at, updated_at,
       clients (company_name, location, latitude, longitude, contact_phone),
       members (name, phone)

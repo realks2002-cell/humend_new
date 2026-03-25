@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo, useEffect } from "react";
+import { useState, useTransition, useMemo } from "react";
 import {
   Plus,
   Trash2,
@@ -32,24 +32,12 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import type { ArrivalStatus } from "@/types/location";
+import type { AttendanceStatus } from "@/types/location";
 import { createShift, deleteShift, updateShiftGroup } from "./actions";
 import { ShiftMapModal } from "./shift-map-modal";
 
-function getDisplayStatus(shift: { arrival_status: ArrivalStatus; work_date: string; start_time: string; last_seen_at: string | null }, mounted: boolean): ArrivalStatus {
-  if (!mounted) return shift.arrival_status;
-  const status = shift.arrival_status;
-  if (["arrived", "late", "noshow"].includes(status)) return status;
-  const now = Date.now();
-  const startTimeNorm = shift.start_time.length === 5 ? shift.start_time + ":00" : shift.start_time;
-  const shiftStart = new Date(`${shift.work_date}T${startTimeNorm}+09:00`).getTime();
-  if (now > shiftStart) return "late";
-  if (
-    shift.last_seen_at &&
-    ["tracking", "moving"].includes(status) &&
-    now - new Date(shift.last_seen_at).getTime() > 5 * 60 * 1000
-  ) return "offline";
-  return status;
+function getDisplayStatus(shift: { arrival_status: AttendanceStatus }): AttendanceStatus {
+  return shift.arrival_status;
 }
 
 export interface ShiftWithDetails {
@@ -59,15 +47,12 @@ export interface ShiftWithDetails {
   work_date: string;
   start_time: string;
   end_time: string;
-  arrival_status: ArrivalStatus;
-  risk_level: number;
+  arrival_status: AttendanceStatus;
   arrived_at: string | null;
-  left_site_at: string | null;
-  offsite_count: number;
-  last_known_lat: number | null;
-  last_known_lng: number | null;
-  last_seen_at: string | null;
-  location_consent: boolean;
+  confirmed_at: string | null;
+  nearby_at: string | null;
+  alert_minutes_before: number;
+  notification_sent_count: number;
   clients: {
     company_name: string;
     location: string;
@@ -105,7 +90,7 @@ export interface ApprovedPosting {
 }
 
 const statusConfig: Record<
-  ArrivalStatus,
+  AttendanceStatus,
   {
     label: string;
     variant: "default" | "secondary" | "destructive" | "outline";
@@ -113,41 +98,20 @@ const statusConfig: Record<
   }
 > = {
   pending: { label: "대기", variant: "secondary" },
-  tracking: {
-    label: "출근중",
-    variant: "outline",
-    className: "border-blue-300 text-blue-600",
-  },
-  moving: {
-    label: "출근중",
-    variant: "outline",
-    className: "border-blue-500 text-blue-700",
-  },
-  offline: {
-    label: "오프라인",
-    variant: "outline",
-    className: "border-red-400 text-red-600",
-  },
-  no_signal: {
-    label: "미수신",
+  notified: {
+    label: "알림발송",
     variant: "outline",
     className: "border-yellow-400 text-yellow-600",
   },
-  late_risk: {
-    label: "지각위험",
+  confirmed: {
+    label: "출근예정",
     variant: "outline",
-    className: "border-orange-400 text-orange-600",
+    className: "border-blue-500 text-blue-700",
   },
-  noshow_risk: { label: "노쇼위험", variant: "destructive" },
   arrived: {
     label: "출근완료",
     variant: "default",
     className: "bg-green-600",
-  },
-  late: {
-    label: "지각출근",
-    variant: "outline",
-    className: "border-orange-500 text-orange-700",
   },
   noshow: {
     label: "노쇼",
@@ -170,8 +134,6 @@ export function ShiftTable({
   approvedPostings?: ApprovedPosting[];
 }) {
   const [isPending, startTransition] = useTransition();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
   const [showForm, setShowForm] = useState(false);
   const [mapShifts, setMapShifts] = useState<ShiftWithDetails[] | null>(null);
 
@@ -199,15 +161,13 @@ export function ShiftTable({
   const [editMemberSearch, setEditMemberSearch] = useState("");
 
   const statusCounts = useMemo(() => {
-    const statuses = shifts.map((s) => getDisplayStatus(s, mounted));
-    const moving = statuses.filter((st) =>
-      ["tracking", "moving", "late_risk", "noshow_risk"].includes(st)
-    ).length;
+    const statuses = shifts.map((s) => getDisplayStatus(s));
+    const pending = statuses.filter((st) => st === "pending").length;
+    const notified = statuses.filter((st) => st === "notified").length;
+    const confirmed = statuses.filter((st) => st === "confirmed").length;
     const arrived = statuses.filter((st) => st === "arrived").length;
-    const late = statuses.filter((st) => st === "late").length;
     const noshow = statuses.filter((st) => st === "noshow").length;
-    const offline = statuses.filter((st) => st === "offline").length;
-    return { moving, arrived, late, noshow, offline };
+    return { pending, notified, confirmed, arrived, noshow };
   }, [shifts]);
 
   const groupedShifts = useMemo(() => {
@@ -363,17 +323,17 @@ export function ShiftTable({
           <Badge variant="secondary" className="text-sm">
             총 {shifts.length}명
           </Badge>
-          <Badge variant="outline" className="text-sm border-gray-400 text-gray-500">
-            오프라인 {statusCounts.offline}
+          <Badge variant="secondary" className="text-sm">
+            대기 {statusCounts.pending}
+          </Badge>
+          <Badge variant="outline" className="text-sm border-yellow-400 text-yellow-600">
+            알림발송 {statusCounts.notified}
           </Badge>
           <Badge variant="outline" className="text-sm border-blue-500 text-blue-700">
-            이동중 {statusCounts.moving}
+            출근예정 {statusCounts.confirmed}
           </Badge>
           <Badge className="text-sm bg-green-600">
             출근완료 {statusCounts.arrived}
-          </Badge>
-          <Badge variant="outline" className="text-sm border-orange-500 text-orange-700">
-            지각 {statusCounts.late}
           </Badge>
           <Badge variant="destructive" className="text-sm bg-red-700">
             노쇼 {statusCounts.noshow}
@@ -571,20 +531,17 @@ export function ShiftTable({
                     <Badge variant="secondary" className="text-[11px] px-1.5 py-0">
                       총 {groupShifts.length}명
                     </Badge>
-                    <Badge variant="outline" className="text-[11px] px-1.5 py-0 border-gray-400 text-gray-500">
-                      오프라인 {groupShifts.filter((s) => getDisplayStatus(s, mounted) === "offline").length}
+                    <Badge variant="outline" className="text-[11px] px-1.5 py-0 border-yellow-400 text-yellow-600">
+                      알림 {groupShifts.filter((s) => getDisplayStatus(s) === "notified").length}
                     </Badge>
                     <Badge variant="outline" className="text-[11px] px-1.5 py-0 border-blue-500 text-blue-700">
-                      이동중 {groupShifts.filter((s) => ["tracking", "moving", "late_risk", "noshow_risk"].includes(getDisplayStatus(s, mounted))).length}
+                      출근예정 {groupShifts.filter((s) => getDisplayStatus(s) === "confirmed").length}
                     </Badge>
                     <Badge className="text-[11px] px-1.5 py-0 bg-green-600">
-                      출근완료 {groupShifts.filter((s) => getDisplayStatus(s, mounted) === "arrived").length}
-                    </Badge>
-                    <Badge variant="outline" className="text-[11px] px-1.5 py-0 border-orange-500 text-orange-700">
-                      지각 {groupShifts.filter((s) => getDisplayStatus(s, mounted) === "late").length}
+                      출근완료 {groupShifts.filter((s) => getDisplayStatus(s) === "arrived").length}
                     </Badge>
                     <Badge variant="destructive" className="text-[11px] px-1.5 py-0 bg-red-700">
-                      노쇼 {groupShifts.filter((s) => getDisplayStatus(s, mounted) === "noshow").length}
+                      노쇼 {groupShifts.filter((s) => getDisplayStatus(s) === "noshow").length}
                     </Badge>
                   </div>
                 </div>
@@ -592,7 +549,7 @@ export function ShiftTable({
                 {/* 회원 리스트 */}
                 <div className="border-t divide-y">
                   {groupShifts.map((shift) => {
-                    const config = statusConfig[getDisplayStatus(shift, mounted)];
+                    const config = statusConfig[getDisplayStatus(shift)];
                     return (
                       <div
                         key={shift.id}
@@ -614,9 +571,13 @@ export function ShiftTable({
                         >
                           {config.label}
                         </Badge>
-                        {shift.left_site_at ? (
-                          <span className="text-orange-600 text-xs shrink-0 tabular-nums">
-                            {new Date(shift.left_site_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                        {shift.nearby_at && shift.arrival_status !== "arrived" ? (
+                          <span className="text-blue-600 text-xs shrink-0 tabular-nums">
+                            접근 {new Date(shift.nearby_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        ) : shift.arrived_at ? (
+                          <span className="text-green-600 text-xs shrink-0 tabular-nums">
+                            {new Date(shift.arrived_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
                           </span>
                         ) : (
                           <span className="text-muted-foreground/40 text-xs shrink-0">—</span>

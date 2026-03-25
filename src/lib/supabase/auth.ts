@@ -32,6 +32,20 @@ export async function memberSignup(formData: FormData) {
   const supabase = await createClient();
   const email = phoneToEmail(phone);
 
+  // 전화번호 중복 체크 (구글 연동 회원 포함)
+  const { createAdminClient } = await import("@/lib/supabase/server");
+  const adminCheck = createAdminClient();
+  const cleanedPhone = phone.replace(/[^0-9]/g, "");
+  const { data: existingMember } = await adminCheck
+    .from("members")
+    .select("id")
+    .eq("phone", cleanedPhone)
+    .maybeSingle();
+
+  if (existingMember) {
+    return { error: "이미 가입된 전화번호입니다." };
+  }
+
   // Supabase Auth 회원가입 (트리거가 members 테이블 자동 생성)
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -137,20 +151,22 @@ export async function memberLogin(formData: FormData) {
       .eq("phone", cleaned)
       .maybeSingle();
 
-    if (member) {
-      const { data: authUser } = await admin.auth.admin.getUserById(member.id);
-      if (authUser?.user?.email && authUser.user.email !== email) {
-        const { error: retryError } = await supabase.auth.signInWithPassword({
-          email: authUser.user.email,
-          password,
-        });
-        if (!retryError) {
-          return { success: true };
-        }
+    if (!member) {
+      return { error: "가입되지 않은 전화번호입니다. 회원가입을 진행해주세요." };
+    }
+
+    const { data: authUser } = await admin.auth.admin.getUserById(member.id);
+    if (authUser?.user?.email && authUser.user.email !== email) {
+      const { error: retryError } = await supabase.auth.signInWithPassword({
+        email: authUser.user.email,
+        password,
+      });
+      if (!retryError) {
+        return { success: true };
       }
     }
 
-    return { error: "전화번호 또는 비밀번호가 올바르지 않습니다." };
+    return { error: "비밀번호가 올바르지 않습니다." };
   }
 
   return { success: true };
@@ -201,44 +217,52 @@ export async function createGoogleMember(formData: FormData) {
   if (phoneExists) {
     const oldId = phoneExists.id;
     const newId = user.id;
-
-    // 1. 새 member 먼저 생성 (FK 참조 대상 확보)
     const { id: _, created_at: __, updated_at: ___, ...rest } = phoneExists;
-    await admin.from("members").insert({
+
+    // 1. 기존 회원 phone 임시 변경 (UNIQUE 충돌 방지)
+    const { error: tempError } = await admin
+      .from("members")
+      .update({ phone: `_mig_${oldId.slice(0, 8)}` })
+      .eq("id", oldId);
+
+    if (tempError) {
+      console.error("[createGoogleMember] temp phone update error:", tempError.message);
+      return { error: "계정 전환에 실패했습니다. 다시 시도해주세요." };
+    }
+
+    // 2. 새 member 생성
+    const { error: insertError } = await admin.from("members").insert({
       ...rest,
       id: newId,
+      phone: cleanedPhone,
       name: name || phoneExists.name,
     });
 
-    // 2. FK 테이블 마이그레이션 (member_id를 구글 user ID로 이전)
-    // payments는 work_records.member_id를 통해 자동 연결되므로 제외
+    if (insertError) {
+      console.error("[createGoogleMember] new member insert error:", insertError.message);
+      await admin.from("members").update({ phone: cleanedPhone }).eq("id", oldId);
+      return { error: "계정 전환에 실패했습니다. 다시 시도해주세요." };
+    }
+
+    // 3. FK 테이블 마이그레이션
     await Promise.all([
       admin.from("applications").update({ member_id: newId }).eq("member_id", oldId),
       admin.from("work_records").update({ member_id: newId }).eq("member_id", oldId),
       admin.from("device_tokens").update({ member_id: newId }).eq("member_id", oldId),
       admin.from("parental_consents").update({ member_id: newId }).eq("member_id", oldId),
+      admin.from("notification_logs").update({ target_member_id: newId }).eq("target_member_id", oldId),
+      admin.from("daily_shifts").update({ member_id: newId }).eq("member_id", oldId),
     ]);
 
-    // 3. 기존 member 삭제 + auth user 삭제
+    // 4. 기존 member 삭제 + auth user 삭제
     await admin.from("members").delete().eq("id", oldId);
     await admin.auth.admin.deleteUser(oldId);
 
     return { success: true };
   }
 
-  // members 테이블에 레코드 생성
-  const { error: memberError } = await admin.from("members").insert({
-    id: user.id,
-    phone: cleanedPhone,
-    name,
-  });
-
-  if (memberError) {
-    console.error("[createGoogleMember] members insert error:", memberError.message);
-    return { error: "회원 정보 저장에 실패했습니다." };
-  }
-
-  return { success: true };
+  // 기존에 가입된 전화번호가 없으면 에러 (구글은 기존 회원 연동 전용)
+  return { error: "등록되지 않은 전화번호입니다. 먼저 전화번호로 가입해주세요." };
 }
 
 // ========== 관리자 ==========

@@ -2,20 +2,8 @@
   "regions": ["icn1"],
   "crons": [
     {
-      "path": "/api/cron/noshow-check",
-      "schedule": "*/10 * * * *"
-    },
-    {
-      "path": "/api/cron/late-prediction",
+      "path": "/api/cron/attendance-check",
       "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/noshow-confirm",
-      "schedule": "*/10 * * * *"
-    },
-    {
-      "path": "/api/cron/pre-shift-alert",
-      "schedule": "*/10 * * * *"
     }
   ]
 }

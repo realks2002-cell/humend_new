@@ -161,7 +161,7 @@ export default function SignupCompletePage() {
           </div>
           <Button className="w-full" onClick={handleSubmit} disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {loading ? "가입 중..." : "가입 완료"}
+            {loading ? "제출 중..." : "제출"}
           </Button>
         </CardContent>
       </Card>

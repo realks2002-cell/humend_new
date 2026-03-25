@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,19 +23,66 @@ interface ContractsTableProps {
   page: number;
   pageSize: number;
   total: number;
+  initialSearch?: string;
+  initialStartDate?: string;
+  initialEndDate?: string;
 }
 
-export function ContractsTable({ records, page, pageSize, total }: ContractsTableProps) {
+export function ContractsTable({ records, page, pageSize, total, initialSearch = "", initialStartDate = "", initialEndDate = "" }: ContractsTableProps) {
   const router = useRouter();
-  const [search, setSearch] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [search, setSearch] = useState(initialSearch);
+  const [startDate, setStartDate] = useState(initialStartDate);
+  const [endDate, setEndDate] = useState(initialEndDate);
   const [selectedRecord, setSelectedRecord] = useState<SignedContract | null>(null);
   const [selectedSignatureUrl, setSelectedSignatureUrl] = useState<string | null>(null);
   const [payslipRecord, setPayslipRecord] = useState<SignedContract | null>(null);
   const [isPending, startTransition] = useTransition();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const totalPages = Math.ceil(total / pageSize);
+
+  const navigateWithFilters = useCallback((overrides: { search?: string; startDate?: string; endDate?: string; page?: number }) => {
+    const params = new URLSearchParams();
+    const s = overrides.search ?? search;
+    const sd = overrides.startDate ?? startDate;
+    const ed = overrides.endDate ?? endDate;
+    const p = overrides.page ?? 1;
+    if (s) params.set("search", s);
+    if (sd) params.set("startDate", sd);
+    if (ed) params.set("endDate", ed);
+    if (p > 1) params.set("page", String(p));
+    const qs = params.toString();
+    router.push(`/admin/contracts${qs ? `?${qs}` : ""}`);
+  }, [router, search, startDate, endDate]);
+
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      navigateWithFilters({ search: value, page: 1 });
+    }, 400);
+  }
+
+  function handleDateChange(type: "start" | "end", value: string) {
+    if (type === "start") {
+      setStartDate(value);
+      navigateWithFilters({ startDate: value, page: 1 });
+    } else {
+      setEndDate(value);
+      navigateWithFilters({ endDate: value, page: 1 });
+    }
+  }
+
+  function handleReset() {
+    setSearch("");
+    setStartDate("");
+    setEndDate("");
+    router.push("/admin/contracts");
+  }
+
+  useEffect(() => {
+    return () => clearTimeout(debounceRef.current);
+  }, []);
 
   function handleContractView(record: SignedContract) {
     startTransition(async () => {
@@ -46,58 +93,41 @@ export function ContractsTable({ records, page, pageSize, total }: ContractsTabl
   }
 
   function goToPage(p: number) {
-    router.push(`/admin/contracts?page=${p}`);
+    navigateWithFilters({ page: p });
   }
-
-  const filtered = useMemo(() => {
-    return records.filter((r) => {
-      const d = r.work_date;
-      if (startDate && d < startDate) return false;
-      if (endDate && d > endDate) return false;
-      if (!search) return true;
-      const name = r.members?.name ?? "";
-      const phone = (r.members?.phone ?? "").replace(/-/g, "");
-      const s = search.replace(/-/g, "");
-      return (
-        name.includes(search) ||
-        phone.includes(s) ||
-        r.client_name.includes(search)
-      );
-    });
-  }, [records, search, startDate, endDate]);
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
         <Input
-          placeholder="이름, 전화번호 검색..."
+          placeholder="이름, 전화번호, 고객사 검색..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           className="w-[180px] h-9 text-sm"
         />
         <Input
           type="date"
           value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
+          onChange={(e) => handleDateChange("start", e.target.value)}
           className="w-[145px] h-9 text-sm"
         />
         <span className="text-xs text-muted-foreground">~</span>
         <Input
           type="date"
           value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
+          onChange={(e) => handleDateChange("end", e.target.value)}
           className="w-[145px] h-9 text-sm"
         />
         {(search || startDate || endDate) && (
           <button
             type="button"
             className="text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => { setSearch(""); setStartDate(""); setEndDate(""); }}
+            onClick={handleReset}
           >
             초기화
           </button>
         )}
-        <span className="ml-auto text-xs text-muted-foreground">{filtered.length}건</span>
+        <span className="ml-auto text-xs text-muted-foreground">{total}건</span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm table-fixed">
@@ -122,14 +152,14 @@ export function ContractsTable({ records, page, pageSize, total }: ContractsTabl
             </tr>
           </thead>
           <tbody className="divide-y">
-            {filtered.length === 0 ? (
+            {records.length === 0 ? (
               <tr>
                 <td colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
                   검색 결과가 없습니다.
                 </td>
               </tr>
             ) : (
-              filtered.map((r) => {
+              records.map((r) => {
                 const rawPhone = ((r.members?.phone as string) ?? "").replace(/\D/g, "");
                 const phone = rawPhone.length === 11
                   ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 7)}-${rawPhone.slice(7)}`

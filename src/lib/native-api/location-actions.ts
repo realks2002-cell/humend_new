@@ -68,7 +68,7 @@ export async function confirmArrival(payload: {
   return res.data;
 }
 
-/** 위치 수집 동의 업데이트 (shift 단위 — 레거시 호환) */
+/** 위치 수집 동의 업데이트 (Supabase 직접 호출이므로 fetch 그대로 사용) */
 export async function updateLocationConsent(shiftId: string, consent: boolean) {
   const supabase = createClient();
   const { error } = await supabase
@@ -78,51 +78,4 @@ export async function updateLocationConsent(shiftId: string, consent: boolean) {
 
   if (error) return { error: error.message };
   return { success: true };
-}
-
-/** 회원 위치 수집 동의 (1회, Google Play 심사 대응) */
-export async function updateMemberLocationConsent(consent: boolean) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "로그인이 필요합니다." };
-
-  const { error } = await supabase
-    .from("members")
-    .update({
-      location_consent: consent,
-      location_consent_at: consent ? new Date().toISOString() : null,
-    })
-    .eq("id", user.id);
-
-  if (error) return { error: error.message };
-  return { success: true };
-}
-
-/** 하트비트 전송 (앱 alive 신호, GPS와 무관) */
-export async function sendHeartbeat(shiftId: string) {
-  const token = await getAuthToken();
-  const res = await CapacitorHttp.post({
-    url: `${API_BASE}/api/native/heartbeat`,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    data: { shiftId },
-  });
-  return res.data;
-}
-
-/** 회원 위치 수집 동의 여부 조회 */
-export async function getMemberLocationConsent(): Promise<boolean> {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  const { data } = await supabase
-    .from("members")
-    .select("location_consent")
-    .eq("id", user.id)
-    .single();
-
-  return data?.location_consent ?? false;
 }

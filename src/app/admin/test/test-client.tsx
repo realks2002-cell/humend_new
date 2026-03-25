@@ -5,42 +5,40 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { statusLabels } from "@/app/admin/tracking/tracking-map";
 import {
   createTestShift,
   deleteTestShift,
   getTestShifts,
-  sendTestLocation,
   addTestMember,
   removeTestMember,
   getTestMembers,
   cleanupTestClients,
   bulkCreateTestMembers,
   bulkCreateTestShifts,
-  sendBatchSimLocations,
   markShiftsNoshow,
   resetTestShifts,
   diagnosePushStatus,
   sendTestPushToMember,
-  sendTestHeartbeat,
 } from "./actions";
 import type { TestMember, PushDiagnosis } from "./actions";
-import type { DailyShiftWithDetails, ArrivalStatus } from "@/types/location";
-import { MapPin, Trash2, Plus, User, Phone, Search, Navigation, UserPlus, Check, AlertTriangle, Play, Square, Users, RotateCcw, Bell, BellRing, Heart, HeartOff } from "lucide-react";
-import { TrackingMap } from "@/app/admin/tracking/tracking-map";
+import type { DailyShiftWithDetails, AttendanceStatus } from "@/types/location";
+import { MapPin, Trash2, Plus, User, Phone, Search, UserPlus, Check, AlertTriangle, Users, RotateCcw, Bell, BellRing } from "lucide-react";
 
-const statusBadgeVariant: Record<ArrivalStatus, string> = {
+const statusBadgeVariant: Record<AttendanceStatus, string> = {
   pending: "bg-gray-100 text-gray-700",
-  tracking: "bg-blue-100 text-blue-700",
-  moving: "bg-blue-100 text-blue-700",
-  offline: "bg-red-100 text-red-600",
-  no_signal: "bg-yellow-100 text-yellow-700",
-  late_risk: "bg-orange-100 text-orange-700",
-  noshow_risk: "bg-red-100 text-red-700",
+  notified: "bg-yellow-100 text-yellow-700",
+  confirmed: "bg-blue-100 text-blue-700",
   arrived: "bg-green-100 text-green-700",
-  late: "bg-orange-100 text-orange-700",
   noshow: "bg-red-100 text-red-700",
 };
+
+// 위치 시뮬레이션 관련 함수 (위치추적 제거됨 — stub)
+async function sendTestLocation(_shiftId: string, _lat: number, _lng: number) {
+  return { arrived: false, status: "pending", distance: null };
+}
+async function sendBatchSimLocations(entries: { shiftId: string; lat: number; lng: number; fate?: string }[]) {
+  return entries.map((e) => ({ shiftId: e.shiftId, arrived: false, status: "pending" }));
+}
 
 interface AddressResult {
   address: string;
@@ -58,27 +56,13 @@ interface SlotInput {
   searching: boolean;
 }
 
-function getDisplayStatus(shift: DailyShiftWithDetails, mounted: boolean): ArrivalStatus {
-  if (!mounted) return shift.arrival_status;
-  const status = shift.arrival_status;
-  if (["arrived", "late", "noshow"].includes(status)) return status;
-
-  const now = Date.now();
-  if (["tracking", "moving"].includes(status)) {
-    const locationStale = shift.last_seen_at &&
-      now - new Date(shift.last_seen_at).getTime() > 5 * 60 * 1000;
-    const heartbeatStale = !shift.last_heartbeat_at ||
-      now - new Date(shift.last_heartbeat_at).getTime() > 3 * 60 * 1000;
-
-    if (locationStale) {
-      return heartbeatStale ? "offline" : "no_signal";
-    }
-  }
-
-  return status;
-}
-
-type SimFate = "normal" | "late" | "noshow";
+const statusLabels: Record<AttendanceStatus, string> = {
+  pending: "대기",
+  notified: "알림발송",
+  confirmed: "출근예정",
+  arrived: "출근완료",
+  noshow: "노쇼",
+};
 
 function generateSimPath(
   targetLat: number,
@@ -170,40 +154,14 @@ export function TestClient({
   const [arrivedCount, setArrivedCount] = useState(0);
   const [simTotal, setSimTotal] = useState(0);
   const simTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [heartbeatShiftIds, setHeartbeatShiftIds] = useState<Set<string>>(new Set());
-  const heartbeatTimersRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
-  const simPathsRef = useRef<Map<string, { path: { lat: number; lng: number }[]; currentStep: number; fate: SimFate }>>(new Map());
+  const simPathsRef = useRef<Map<string, { path: { lat: number; lng: number }[]; currentStep: number; fate: string }>>(new Map());
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
 
-  // 하트비트 토글
-  const toggleHeartbeat = (shiftId: string) => {
-    if (heartbeatShiftIds.has(shiftId)) {
-      // 중지
-      const timer = heartbeatTimersRef.current.get(shiftId);
-      if (timer) clearInterval(timer);
-      heartbeatTimersRef.current.delete(shiftId);
-      setHeartbeatShiftIds((prev) => {
-        const next = new Set(prev);
-        next.delete(shiftId);
-        return next;
-      });
-    } else {
-      // 시작: 즉시 1회 + 30초 간격
-      sendTestHeartbeat(shiftId).catch(console.error);
-      const timer = setInterval(() => {
-        sendTestHeartbeat(shiftId).catch(console.error);
-      }, 30_000);
-      heartbeatTimersRef.current.set(shiftId, timer);
-      setHeartbeatShiftIds((prev) => new Set(prev).add(shiftId));
-    }
-  };
-
-  // 하트비트 타이머 cleanup
+  // 1분마다 re-render하여 오프라인 상태 재계산
+  const [, setTick] = useState(0);
   useEffect(() => {
-    return () => {
-      heartbeatTimersRef.current.forEach((timer) => clearInterval(timer));
-      heartbeatTimersRef.current.clear();
-    };
+    const timer = setInterval(() => setTick(t => t + 1), 60_000);
+    return () => clearInterval(timer);
   }, []);
 
   const refreshShifts = async () => {
@@ -370,7 +328,8 @@ export function TestClient({
       );
       await refreshShifts();
       if (result.arrived) {
-        alert(`도착 확인! (${result.status === "late" ? "지각" : "정상"}, 거리: ${result.distance?.toFixed(1) ?? "?"}m)`);
+        alert(`도착 확인! (${result.status})`);
+
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -412,13 +371,13 @@ export function TestClient({
     const noshowCount = Math.max(1, Math.round(total * 0.1));
     const lateCount = Math.max(1, Math.round(total * 0.1));
 
-    const paths = new Map<string, { path: { lat: number; lng: number }[]; currentStep: number; fate: SimFate }>();
+    const paths = new Map<string, { path: { lat: number; lng: number }[]; currentStep: number; fate: string }>();
     shuffled.forEach((shift, i) => {
       const clientLat = shift.clients?.latitude;
       const clientLng = shift.clients?.longitude;
       if (clientLat == null || clientLng == null) return;
 
-      let fate: SimFate;
+      let fate: string;
       if (i < noshowCount) fate = "noshow";
       else if (i < noshowCount + lateCount) fate = "late";
       else fate = "normal";
@@ -445,7 +404,7 @@ export function TestClient({
         return;
       }
 
-      const entries: { shiftId: string; lat: number; lng: number; fate: SimFate }[] = [];
+      const entries: { shiftId: string; lat: number; lng: number; fate: string }[] = [];
       const noshowIds: string[] = [];
 
       for (const [shiftId, state] of currentPaths) {
@@ -882,7 +841,7 @@ export function TestClient({
                     className="h-7 border-red-300 text-red-600 hover:bg-red-50"
                     onClick={stopMassSimulation}
                   >
-                    <Square className="mr-1 h-3 w-3" />
+                    <AlertTriangle className="mr-1 h-3 w-3" />
                     정지
                   </Button>
                 </>
@@ -928,7 +887,7 @@ export function TestClient({
                           className="h-7 border-green-300 text-green-700 hover:bg-green-50"
                           onClick={startMassSimulation}
                         >
-                          <Play className="mr-1 h-3 w-3" />
+                          <Check className="mr-1 h-3 w-3" />
                           전체 시뮬레이션
                         </Button>
                       </>
@@ -993,22 +952,17 @@ export function TestClient({
                       {/* 멤버 목록 */}
                       <div className="space-y-1">
                         {groupShifts.map((shift) => {
-                          const displayStatus = getDisplayStatus(shift, mounted);
+                          const displayStatus = shift.arrival_status;
                           return (
                             <div key={shift.id} className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium">{shift.members?.name ?? "알 수 없음"}</span>
-                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeVariant[displayStatus]}`}>
-                                  {statusLabels[displayStatus]}
+                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeVariant[displayStatus] ?? "bg-gray-100 text-gray-700"}`}>
+                                  {statusLabels[displayStatus] ?? displayStatus}
                                 </span>
                                 {simulating && simPathsRef.current.has(shift.id) && (
                                   <span className="text-xs text-green-600 animate-pulse font-medium">
                                     시뮬중
-                                  </span>
-                                )}
-                                {shift.last_seen_at && (
-                                  <span className="text-xs text-blue-600">
-                                    {new Date(shift.last_seen_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
                                   </span>
                                 )}
                               </div>
@@ -1040,20 +994,8 @@ export function TestClient({
                                   onClick={() => handleSendLocation(shift.id)}
                                   disabled={sendingLocation === shift.id}
                                 >
-                                  <Navigation className="mr-1 h-3 w-3" />
+                                  <MapPin className="mr-1 h-3 w-3" />
                                   {sendingLocation === shift.id ? "전송중..." : "위치"}
-                                </Button>
-                                <Button
-                                  variant={heartbeatShiftIds.has(shift.id) ? "default" : "outline"}
-                                  size="sm"
-                                  className={`h-7 text-xs ${heartbeatShiftIds.has(shift.id) ? "bg-pink-500 hover:bg-pink-600" : ""}`}
-                                  onClick={() => toggleHeartbeat(shift.id)}
-                                >
-                                  {heartbeatShiftIds.has(shift.id) ? (
-                                    <><Heart className="mr-1 h-3 w-3" />HB ON</>
-                                  ) : (
-                                    <><HeartOff className="mr-1 h-3 w-3" />HB</>
-                                  )}
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -1081,10 +1023,10 @@ export function TestClient({
       {/* 트래킹 맵 */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">실시간 트래킹 맵</CardTitle>
+          <CardTitle className="text-base">출근 현황</CardTitle>
         </CardHeader>
         <CardContent>
-          <TrackingMap shifts={shifts} />
+          <p className="text-sm text-muted-foreground">위치추적 맵이 제거되었습니다. /admin/shifts에서 출근 상태를 확인하세요.</p>
         </CardContent>
       </Card>
 

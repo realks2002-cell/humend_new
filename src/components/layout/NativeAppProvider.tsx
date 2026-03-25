@@ -2,11 +2,11 @@
 
 import { useNativeApp } from '@/hooks/useNativeApp';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
-import { useAutoTracking } from '@/hooks/useAutoTracking';
+import { useAttendance } from '@/hooks/useAttendance';
 
 export default function NativeAppProvider({ children }: { children: React.ReactNode }) {
   useNativeApp();
   usePushNotifications();
-  useAutoTracking();
+  useAttendance();
   return <>{children}</>;
 }

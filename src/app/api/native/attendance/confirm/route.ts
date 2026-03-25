@@ -2,8 +2,8 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * POST /api/native/heartbeat
- * 앱 alive 신호 — GPS와 무관하게 last_heartbeat_at 갱신
+ * POST /api/native/attendance/confirm
+ * 출근 의사 확인 — FCM 알림 탭 시 호출
  */
 export async function POST(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -21,9 +21,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json();
-  const { shiftId } = body as { shiftId?: string };
-
+  const { shiftId } = (await req.json()) as { shiftId?: string };
   if (!shiftId) {
     return NextResponse.json(
       { error: "shiftId is required" },
@@ -31,31 +29,36 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { data: shift, error: shiftError } = await admin
+  // shift 소유권 확인
+  const { data: shift } = await admin
     .from("daily_shifts")
-    .select("id, member_id")
+    .select("id, member_id, arrival_status")
     .eq("id", shiftId)
     .single();
 
-  if (shiftError || !shift) {
+  if (!shift) {
     return NextResponse.json({ error: "Shift not found" }, { status: 404 });
   }
-
   if (shift.member_id !== user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-
-  const { error: updateError } = await admin
-    .from("daily_shifts")
-    .update({ last_heartbeat_at: new Date().toISOString() })
-    .eq("id", shiftId);
-
-  if (updateError) {
+  if (shift.arrival_status === "arrived") {
+    return NextResponse.json({ success: true, status: "already_arrived" });
+  }
+  if (shift.arrival_status === "noshow") {
     return NextResponse.json(
-      { error: "Update failed" },
-      { status: 500 }
+      { error: "Already marked as noshow" },
+      { status: 409 }
     );
   }
+
+  await admin
+    .from("daily_shifts")
+    .update({
+      arrival_status: "confirmed",
+      confirmed_at: new Date().toISOString(),
+    })
+    .eq("id", shiftId);
 
   return NextResponse.json({ success: true });
 }

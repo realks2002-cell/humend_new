@@ -11,11 +11,16 @@ const PAGE_SIZE = 50;
 export default async function AdminContractsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; search?: string; startDate?: string; endDate?: string }>;
 }) {
   const params = await searchParams;
   const page = Math.max(1, Number(params.page) || 1);
-  const { data: signed, total } = await getSignedContracts(page, PAGE_SIZE);
+  const filters = {
+    search: params.search || undefined,
+    startDate: params.startDate || undefined,
+    endDate: params.endDate || undefined,
+  };
+  const { data: signed, total } = await getSignedContracts(page, PAGE_SIZE, filters);
 
   return (
     <div className="p-6 space-y-6">
@@ -34,7 +39,7 @@ export default async function AdminContractsPage({
 
       <Card className="overflow-hidden py-0">
         <CardContent className="p-0">
-          {signed.length === 0 && page === 1 ? (
+          {signed.length === 0 && page === 1 && !params.search && !params.startDate && !params.endDate ? (
             <div className="py-16 text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
                 <FileText className="h-7 w-7 text-muted-foreground/50" />
@@ -47,6 +52,9 @@ export default async function AdminContractsPage({
               page={page}
               pageSize={PAGE_SIZE}
               total={total}
+              initialSearch={params.search ?? ""}
+              initialStartDate={params.startDate ?? ""}
+              initialEndDate={params.endDate ?? ""}
             />
           )}
         </CardContent>

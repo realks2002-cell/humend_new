@@ -59,7 +59,8 @@ function ResumeContent() {
         }
         setMemberPhone(data.phone ?? "");
         setMemberName(data.name ?? "");
-        setIdentityVerified(data.identity_verified ?? false);
+        const hasRrn = !!(data.rrn_front && data.rrn_back);
+        setIdentityVerified((data.identity_verified ?? false) && hasRrn);
         setForm({
           birthDate: data.birth_date ?? "",
           gender: data.gender ?? "",
