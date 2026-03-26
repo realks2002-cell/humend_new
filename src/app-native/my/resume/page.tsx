@@ -319,7 +319,7 @@ function ResumeContent() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-foreground">생년월일</label>
               {(() => {
@@ -533,8 +533,10 @@ function ResumeContent() {
                     } else {
                       setVerifyMessage(data.error || "본인인증에 실패했습니다.");
                     }
-                  } catch {
-                    setVerifyMessage("본인인증 처리 중 오류가 발생했습니다.");
+                  } catch (err: unknown) {
+                    const msg = err instanceof Error ? err.message : "본인인증 처리 중 오류가 발생했습니다.";
+                    console.error("[verifyIdentity]", err);
+                    setVerifyMessage(msg);
                   } finally {
                     setVerifying(false);
                   }

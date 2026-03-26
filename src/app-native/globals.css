@@ -175,6 +175,15 @@ body { font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSy
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
+/* 입력 요소: placeholder 흐리게 + 글씨 축소 */
+::placeholder {
+  opacity: 0.35 !important;
+}
+input, select, textarea {
+  font-size: 13px !important;
+  height: 2rem !important;
+}
+
 @keyframes marquee-scroll {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }

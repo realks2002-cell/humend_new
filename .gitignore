@@ -57,3 +57,6 @@ release-signing.properties
 *.tsbuildinfo
 next-env.d.ts
 .env*.local
+
+# APK는 git 제외 (수동 배포)
+public/humend-hr.apk

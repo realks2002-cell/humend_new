@@ -58,9 +58,11 @@ export default function NativeHomePage() {
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
         <img src="/logo.png" alt="HUMAN:D" className="h-4 w-auto" />
-        <Link href={user ? "/my" : "/login"} className="absolute right-6 text-sm font-medium text-slate-600">
-          로그인 →
-        </Link>
+        {!user && (
+          <Link href="/login" className="absolute right-6 text-sm font-medium text-slate-600">
+            로그인 →
+          </Link>
+        )}
       </header>
 
       <main className="pt-16 pb-24">

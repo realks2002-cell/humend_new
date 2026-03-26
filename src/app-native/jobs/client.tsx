@@ -92,9 +92,9 @@ export default function JobsClient() {
       <div className="px-4 py-6 pb-32">
       <h1 className="text-2xl font-bold mb-3">알바공고</h1>
 
-      <div className="mb-4 flex items-center gap-1.5 overflow-hidden">
+      <div className="mb-4 flex items-center gap-1">
         <Select value={filterClient} onValueChange={setFilterClient}>
-          <SelectTrigger className="h-8 w-0 min-w-[90px] flex-1 text-xs">
+          <SelectTrigger className="h-8 min-w-[70px] flex-1 text-xs">
             <SelectValue placeholder="근무지" />
           </SelectTrigger>
           <SelectContent>
@@ -107,18 +107,18 @@ export default function JobsClient() {
         </Select>
         <Input
           type="date"
-          className="h-8 w-0 min-w-[100px] flex-1 text-xs px-1.5 opacity-50"
+          className="h-8 w-[85px] shrink-0 text-[10px] px-1 opacity-50"
           value={filterFrom}
           onChange={(e) => setFilterFrom(e.target.value)}
         />
-        <span className="text-xs text-muted-foreground">~</span>
+        <span className="text-[10px] text-muted-foreground">~</span>
         <Input
           type="date"
-          className="h-8 w-0 min-w-[100px] flex-1 text-xs px-1.5 opacity-50"
+          className="h-8 w-[85px] shrink-0 text-[10px] px-1 opacity-50"
           value={filterTo}
           onChange={(e) => setFilterTo(e.target.value)}
         />
-        <Button size="sm" className="h-8 shrink-0 bg-red-400 hover:bg-red-500 text-white text-xs px-2.5" onClick={() => {}}>
+        <Button size="sm" className="h-8 shrink-0 bg-[#830020] hover:bg-[#a61d33] text-white text-[10px] px-2" onClick={() => {}}>
           검색
         </Button>
         {hasFilters && (

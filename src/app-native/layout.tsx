@@ -1,6 +1,7 @@
 import "./globals.css";
 import NativeAppProvider from "@/components/layout/NativeAppProvider";
 import BottomNav from "@/components/layout/BottomNav";
+import TermsAgreement from "@/components/layout/TermsAgreement";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -43,8 +44,10 @@ export default function RootLayout({
         `}} />
         <NativeAppProvider>
           <TooltipProvider>
-            <main className="min-h-screen pb-16" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>{children}</main>
-            <BottomNav />
+            <TermsAgreement>
+              <main className="min-h-screen pb-16" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>{children}</main>
+              <BottomNav />
+            </TermsAgreement>
             <Toaster position="top-center" richColors />
           </TooltipProvider>
         </NativeAppProvider>
