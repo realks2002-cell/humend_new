@@ -91,7 +91,47 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="mb-2 text-base font-semibold text-foreground">제9조 (계약 해지 및 이용 제한)</h2>
+          <h2 className="mb-2 text-base font-semibold text-foreground">제9조 (위치정보의 수집 및 이용)</h2>
+          <ul className="list-decimal space-y-1 pl-5">
+            <li>회사는 출근 확인 서비스를 위해 회원의 위치정보를 수집·이용합니다.</li>
+            <li>위치정보의 수집 목적: 배정된 근무일에 근무지 도착 여부 확인 (지오펜싱 기반)</li>
+            <li>수집 항목: GPS 좌표, 수집 시점</li>
+            <li>보관 기간: 수집일로부터 15일 후 자동 삭제</li>
+            <li>회원은 서비스 내 위치정보 수집 동의 관리 페이지에서 언제든지 동의를 철회할 수 있습니다.</li>
+            <li>동의 철회 시 위치 기반 출석체크 서비스를 이용할 수 없습니다.</li>
+            <li>수집된 위치정보는 제3자에게 제공되지 않습니다.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="mb-2 text-base font-semibold text-foreground">제10조 (푸시 알림)</h2>
+          <ul className="list-decimal space-y-1 pl-5">
+            <li>회사는 서비스 운영에 필요한 알림을 푸시 알림으로 발송할 수 있습니다.</li>
+            <li>푸시 알림의 종류: 근무 배정 안내, 출근 확인 요청, 급여 확정 안내, 노쇼 처리 안내 등</li>
+            <li>회원은 기기 설정에서 푸시 알림 수신을 거부할 수 있으며, 거부 시 출근 확인 알림을 받을 수 없어 노쇼로 처리될 수 있습니다.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="mb-2 text-base font-semibold text-foreground">제11조 (카메라 및 사진 접근)</h2>
+          <ul className="list-decimal space-y-1 pl-5">
+            <li>회사는 프로필 사진 등록을 위해 카메라 및 사진 라이브러리 접근 권한을 요청할 수 있습니다.</li>
+            <li>촬영 또는 선택된 사진은 프로필 사진 용도로만 사용되며, 회원 탈퇴 시 삭제됩니다.</li>
+            <li>회원은 기기 설정에서 카메라 권한을 언제든지 해제할 수 있습니다.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="mb-2 text-base font-semibold text-foreground">제12조 (계정 삭제 및 데이터 처리)</h2>
+          <ul className="list-decimal space-y-1 pl-5">
+            <li>회원은 서비스 내 마이페이지에서 언제든지 회원 탈퇴를 요청할 수 있습니다.</li>
+            <li>탈퇴 시 회원의 개인정보, 지원내역, 근무내역, 급여내역, 위치정보가 영구적으로 삭제되며 복구할 수 없습니다.</li>
+            <li>단, 관련 법령에 의해 보존이 필요한 정보는 해당 기간 동안 보관 후 파기합니다.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="mb-2 text-base font-semibold text-foreground">제13조 (계약 해지 및 이용 제한)</h2>
           <ul className="list-decimal space-y-1 pl-5">
             <li>회원은 언제든지 서비스 내에서 탈퇴를 요청할 수 있으며, 회사는 즉시 처리합니다.</li>
             <li>회사는 회원이 다음 각 호에 해당하는 경우 서비스 이용을 제한하거나 이용계약을 해지할 수 있습니다.
@@ -106,7 +146,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="mb-2 text-base font-semibold text-foreground">제10조 (면책조항)</h2>
+          <h2 className="mb-2 text-base font-semibold text-foreground">제14조 (면책조항)</h2>
           <ul className="list-decimal space-y-1 pl-5">
             <li>회사는 천재지변 또는 이에 준하는 불가항력으로 인해 서비스를 제공할 수 없는 경우에는 책임이 면제됩니다.</li>
             <li>회사는 이용자의 귀책사유로 인한 서비스 이용 장애에 대해 책임을 지지 않습니다.</li>
@@ -115,7 +155,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="mb-2 text-base font-semibold text-foreground">제11조 (분쟁 해결)</h2>
+          <h2 className="mb-2 text-base font-semibold text-foreground">제15조 (분쟁 해결)</h2>
           <ul className="list-decimal space-y-1 pl-5">
             <li>서비스 이용과 관련하여 분쟁이 발생한 경우 회사와 이용자는 상호 협의하여 해결합니다.</li>
             <li>협의가 이루어지지 않을 경우 관할 법원은 회사 소재지를 관할하는 법원으로 합니다.</li>

@@ -88,7 +88,7 @@ function SalaryContent() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 space-y-6">
+    <div className="mx-auto max-w-3xl px-4 py-8 pb-32 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">급여지급요청</h1>

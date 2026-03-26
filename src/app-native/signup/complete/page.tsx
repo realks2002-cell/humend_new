@@ -112,7 +112,7 @@ export default function SignupCompletePage() {
   }
 
   return (
-    <div className="flex min-h-[70vh] items-center justify-center px-4">
+    <div className="flex min-h-[70vh] items-center justify-center px-4 pb-24">
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">

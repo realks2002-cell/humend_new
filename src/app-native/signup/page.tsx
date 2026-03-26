@@ -10,7 +10,7 @@ import { CheckCircle, Loader2, User, Phone, Lock, Eye, EyeOff, MapPin, Shield, E
 import { toast } from "sonner";
 import { memberSignup, memberLogin } from "@/lib/native-api/auth";
 import { isNative } from "@/lib/capacitor/native";
-import { updateMemberLocationConsent } from "@/lib/native-api/location-actions";
+// import { updateMemberLocationConsent } from "@/lib/native-api/location-actions";
 
 function formatPhoneDisplay(value: string): string {
   const nums = value.replace(/\D/g, "").slice(0, 11);
@@ -85,20 +85,21 @@ export default function SignupPage() {
   const handleLocationConsent = async () => {
     setRequestingLocation(true);
     try {
-      const { requestLocationPermission } = await import("@/lib/capacitor/geolocation");
-      const granted = await requestLocationPermission();
+      const { Geolocation } = await import("@capacitor/geolocation");
+      const perm = await Geolocation.requestPermissions({ permissions: ["location"] });
+      const granted = perm.location === "granted";
       setLocationGranted(granted);
       if (granted) {
-        // 가입 직후 세션이 없으므로 자동 로그인 후 동의 저장
         await memberLogin(rawPhone, password);
-        await updateMemberLocationConsent(true);
         toast.success("위치 권한이 허용되었습니다.");
         setLocationStep(false);
       } else {
-        toast.error("위치 권한이 거부되었습니다. 다시 시도해주세요.");
+        toast.info("나중에 근무 배정 시 다시 요청됩니다.");
+        setLocationStep(false);
       }
     } catch {
-      toast.error("위치 권한 요청 중 오류가 발생했습니다.");
+      toast.info("나중에 근무 배정 시 다시 요청됩니다.");
+      setLocationStep(false);
     } finally {
       setRequestingLocation(false);
     }
@@ -106,7 +107,7 @@ export default function SignupPage() {
 
   if (done && locationStep) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center px-4">
+      <div className="flex min-h-[70vh] items-center justify-center px-4 pb-24">
         <Card className="w-full max-w-sm shadow-lg">
           <CardContent className="pt-8 space-y-4">
             <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
@@ -150,7 +151,7 @@ export default function SignupPage() {
 
   if (done) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center px-4">
+      <div className="flex min-h-[70vh] items-center justify-center px-4 pb-24">
         <Card className="w-full max-w-sm text-center shadow-lg">
           <CardContent className="pt-8">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
@@ -184,7 +185,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-[70vh] items-center justify-center px-4">
+    <div className="flex min-h-[70vh] items-center justify-center px-4 pb-24">
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">

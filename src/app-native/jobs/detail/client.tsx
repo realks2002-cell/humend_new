@@ -62,7 +62,7 @@ export default function JobDetailClient() {
   const displayImages = allImages.slice(0, 3);
 
   return (
-    <div className="mx-auto max-w-[57.6rem] px-4 py-8">
+    <div className="mx-auto max-w-[57.6rem] px-4 py-8 pb-32">
       {displayImages.length > 0 ? (
         <div
           className={`grid gap-2 ${

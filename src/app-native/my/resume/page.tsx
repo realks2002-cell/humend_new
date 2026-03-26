@@ -127,6 +127,14 @@ function ResumeContent() {
 
   const handleCameraClick = async () => {
     if (isNative()) {
+      const hasShown = localStorage.getItem("camera_permission_notice");
+      if (!hasShown) {
+        const ok = confirm(
+          "프로필 사진 촬영/선택을 위해 카메라 및 사진 라이브러리 접근 권한이 필요합니다."
+        );
+        if (!ok) return;
+        localStorage.setItem("camera_permission_notice", "1");
+      }
       const file = await pickPhoto();
       if (file) await compressAndUpload(file, true);
     } else {
@@ -229,7 +237,7 @@ function ResumeContent() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 space-y-6">
+    <div className="mx-auto max-w-2xl px-4 py-8 pb-32 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">회원정보 관리</h1>

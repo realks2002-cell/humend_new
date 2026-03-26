@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   ClipboardList, Calendar, ArrowRight,
-  Clock, Wallet, User, FileSignature, Loader2, MapPin,
+  Clock, Wallet, User, FileSignature, Loader2, Shield,
 } from "lucide-react";
 import { ChangePasswordButton } from "./change-password-button";
 import { DeleteAccountButton } from "./delete-account-button";
@@ -92,11 +92,11 @@ function MyPageContent() {
 
   const quickLinks = [
     { href: "/my/resume", icon: User, label: "프로필관리", desc: "회원정보 등록/수정", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
-    { href: "/my/attendance", icon: MapPin, label: "출근 현황", desc: "오늘 출근 상태 확인", gradient: "from-blue-500/5 to-indigo-500/5", iconBg: "", iconColor: "text-blue-600" },
     { href: "/my/salary", icon: Wallet, label: "급여신청", desc: "계약체결 및 급여신청", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
     { href: "/my/applications", icon: ClipboardList, label: "근무신청 조회", desc: "내 지원 현황 확인", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
     { href: "/my/history", icon: Clock, label: "근무내역", desc: "월별 근무내역 조회", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
-    { href: "/my/consent", icon: FileSignature, label: "친권자 동의서/보건증", desc: consent ? "제출 완료" : "미성년자 동의서 작성", gradient: consent ? "from-emerald-500/5 to-green-500/5" : "from-amber-500/5 to-orange-500/5", iconBg: "", iconColor: consent ? "text-emerald-600" : "text-amber-600" },
+    { href: "/my/consent", icon: FileSignature, label: "친권자 동의서", desc: consent ? "제출 완료" : "미성년자 동의서 작성", gradient: consent ? "from-emerald-500/5 to-green-500/5" : "from-amber-500/5 to-orange-500/5", iconBg: "", iconColor: consent ? "text-emerald-600" : "text-amber-600" },
+    { href: "/my/health-cert", icon: Shield, label: "보건증 제출", desc: "보건증 이미지 업로드", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
   ];
 
   const statCards = [
@@ -105,7 +105,7 @@ function MyPageContent() {
   ];
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 space-y-8">
+    <div className="mx-auto max-w-3xl px-4 py-8 pb-32 space-y-8">
       {/* Profile Hero Section */}
       <div className="relative overflow-hidden rounded-[13px] border border-slate-300 bg-slate-50 p-6">
         <div className="flex items-start gap-5">

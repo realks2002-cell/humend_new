@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Info, LogOut, ChevronRight, Shield, MapPin } from "lucide-react";
+import { LogOut, ChevronRight, Shield, MapPin } from "lucide-react";
 
 export default function MorePage() {
   const [user, setUser] = useState<{ id: string } | null>(null);
@@ -27,21 +27,10 @@ export default function MorePage() {
   };
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6">
+    <div className="mx-auto max-w-lg px-4 py-6 pb-32">
       <h1 className="mb-4 text-lg font-bold">더보기</h1>
 
       <div className="divide-y rounded-lg border bg-card">
-        <Link
-          href="/about"
-          className="flex items-center justify-between px-4 py-3.5 transition-colors active:bg-muted"
-        >
-          <span className="flex items-center gap-3 text-sm">
-            <Info className="h-4 w-4 text-muted-foreground" />
-            사업소개
-          </span>
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </Link>
-
         <a
           href="https://humendhr.com/privacy"
           target="_blank"

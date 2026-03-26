@@ -84,7 +84,7 @@ function ApplicationsContent() {
   ];
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 space-y-6">
+    <div className="mx-auto max-w-3xl px-4 py-8 pb-32 space-y-6">
       {/* Page Header */}
       <div>
         <h1 className="text-base sm:text-lg font-bold tracking-tight">근무신청 조회</h1>

@@ -83,10 +83,16 @@ export default function JobsClient() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl animate-in fade-in duration-500 px-4 py-8">
+    <div className="animate-in fade-in duration-500 overflow-x-hidden">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-sm flex items-center justify-center px-6 h-14">
+        <img src="/logo.png" alt="HUMAN:D" className="h-4 w-auto" />
+      </header>
+
+      <div className="px-4 py-6 pb-32">
       <h1 className="text-2xl font-bold mb-3">알바공고</h1>
 
-      <div className="mb-4 flex items-center gap-1.5">
+      <div className="mb-4 flex items-center gap-1.5 overflow-hidden">
         <Select value={filterClient} onValueChange={setFilterClient}>
           <SelectTrigger className="h-8 w-0 min-w-[90px] flex-1 text-xs">
             <SelectValue placeholder="근무지" />
@@ -284,6 +290,7 @@ export default function JobsClient() {
           )}
         </>
       )}
+      </div>
     </div>
   );
 }

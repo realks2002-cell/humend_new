@@ -54,7 +54,9 @@ function ConsentContent() {
 export default function ConsentPage() {
   return (
     <AuthGuard>
-      <ConsentContent />
+      <div className="pb-32">
+        <ConsentContent />
+      </div>
     </AuthGuard>
   );
 }

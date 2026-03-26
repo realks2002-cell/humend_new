@@ -31,6 +31,16 @@ export default function RootLayout({
           <img src="/logo.png" alt="HUMAN:D" style={{height:'24px',width:'auto'}} />
           <div id="splash-bar" />
         </div>
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            function hide(){
+              try{var C=window.Capacitor;if(C&&C.Plugins&&C.Plugins.SplashScreen)C.Plugins.SplashScreen.hide();}catch(e){}
+              setTimeout(function(){document.body.classList.add('loaded');},500);
+            }
+            if(document.readyState==='complete')hide();
+            else window.addEventListener('load',hide);
+          })();
+        `}} />
         <NativeAppProvider>
           <TooltipProvider>
             <main className="min-h-screen pb-16" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>{children}</main>

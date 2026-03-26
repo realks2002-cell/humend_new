@@ -1,19 +1,20 @@
 'use client';
 
 import { usePathname, useRouter } from "next/navigation";
-import { Briefcase, ClipboardList, User, UserPlus } from "lucide-react";
+import { Home, User, UserPlus, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
-  { href: "/jobs", label: "채용공고", icon: Briefcase },
-  { href: "/my/applications", label: "지원내역", icon: ClipboardList },
+  { href: "/", label: "홈", icon: Home },
   { href: "/my", label: "마이페이지", icon: User },
   { href: "/signup", label: "회원가입", icon: UserPlus },
+  { href: "/terms", label: "이용약관", icon: FileText },
 ] as const;
 
 function isActive(pathname: string, tab: typeof tabs[number]) {
+  if (tab.href === "/") return pathname === "/";
   if (tab.href === "/my") {
-    return pathname === "/my" || (pathname.startsWith("/my/") && !pathname.startsWith("/my/applications"));
+    return pathname === "/my" || pathname.startsWith("/my/");
   }
   return pathname.startsWith(tab.href);
 }
