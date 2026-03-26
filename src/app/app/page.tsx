@@ -38,7 +38,7 @@ export default function AppDownloadPage() {
         {/* Install Guide */}
         <div className="rounded-xl border bg-white p-5 text-left shadow-sm">
           <h2 className="mb-3 text-sm font-bold text-gray-900">설치 방법</h2>
-          <ol className="space-y-2 text-xs leading-relaxed text-gray-600">
+          <ol className="space-y-3 text-xs leading-relaxed text-gray-600">
             <li className="flex gap-2">
               <span className="shrink-0 font-bold text-[#830020]">1.</span>
               위 버튼을 눌러 APK 파일을 다운로드합니다.
@@ -49,10 +49,24 @@ export default function AppDownloadPage() {
             </li>
             <li className="flex gap-2">
               <span className="shrink-0 font-bold text-[#830020]">3.</span>
-              &ldquo;출처를 알 수 없는 앱&rdquo; 설치를 허용하라는 안내가 나오면 &ldquo;설정&rdquo;을 눌러 허용합니다.
+              <span>
+                &ldquo;이 출처의 앱 설치가 허용되지 않습니다&rdquo; 팝업이 나오면
+                <strong className="text-gray-900"> &ldquo;설정&rdquo;</strong>을 탭합니다.
+              </span>
             </li>
             <li className="flex gap-2">
               <span className="shrink-0 font-bold text-[#830020]">4.</span>
+              <span>
+                <strong className="text-gray-900">&ldquo;이 출처 허용&rdquo;</strong> 토글을 켭니다.
+                (브라우저별 1회만 설정하면 이후에는 안 나옵니다)
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="shrink-0 font-bold text-[#830020]">5.</span>
+              뒤로 가기를 누르면 설치가 진행됩니다.
+            </li>
+            <li className="flex gap-2">
+              <span className="shrink-0 font-bold text-[#830020]">6.</span>
               설치가 완료되면 앱을 실행합니다.
             </li>
           </ol>
