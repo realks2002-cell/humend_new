@@ -53,6 +53,7 @@ npm run cap:release      # 정적 빌드 + Release AAB 빌드
 - **웹**: Server Actions(`"use server"`) + SSR 사용
 - **앱**: Server Actions 불가 → `src/lib/native-api/`에서 Supabase browser client 직접 사용, API route(`/api/native/*`)로 서버 로직 대체
 - **앱 인증**: Capacitor Preferences에 세션 토큰 저장, `auth-guard.tsx`로 보호
+- **레이아웃 분리**: 웹과 앱의 layout.tsx는 반드시 별도로 관리. 웹은 고정 헤더(`pt-14` 등)를 고려하고, 앱은 BottomNav 기반이므로 상단 패딩 불필요. layout 수정 시 반드시 `app/`과 `app-native/` 양쪽 확인.
 
 ### 인증 미들웨어 (`src/middleware.ts`)
 
@@ -151,3 +152,80 @@ GOOGLE_SPREADSHEET_ID=           # Google Sheets ID
 - **스타일링**: TailwindCSS v4 유틸리티 클래스
 - **Server Actions 크기 제한**: 5MB (`next.config.ts`에서 설정)
 - **앱에서 CSS 주의**: Android WebView에서는 CSS 변수(`text-muted-foreground` 등)가 네이티브 input에 적용 안 될 수 있음. `opacity` 또는 인라인 `style`로 대체 필요.
+
+## Capacitor 앱 개발 규칙
+
+### CSS — Android WebView 스크롤 파괴 방지
+```css
+/* ❌ 절대 금지 — 스크롤 완전 파괴 */
+* { user-select: none; }
+* { -webkit-touch-callout: none; }
+::-webkit-scrollbar { display: none; }
+html, body { overscroll-behavior: none; }
+
+/* ✅ body에만 적용 */
+body {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+/* ✅ X축만 제한 */
+html, body { overscroll-behavior-x: none; overflow-x: hidden !important; }
+/* ✅ textarea는 height 강제 금지 */
+input, select { height: 2rem !important; }
+textarea { font-size: 13px !important; }
+```
+
+### 인증 토큰 — Supabase 세션만 사용
+```typescript
+// ✅ 올바름
+const supabase = createClient();
+const { data: { session } } = await supabase.auth.getSession();
+const token = session?.access_token;
+
+// ❌ Capacitor Preferences 사용 금지 (저장 코드 없어서 항상 null)
+```
+
+### 플랫폼 분기 — 동적 import 필수
+```typescript
+// ✅ 올바름
+if (isNative()) {
+  const { Camera } = await import("@capacitor/camera");
+}
+// ❌ 직접 import 금지 (웹 빌드에서 모듈 없음 에러)
+import { Camera } from '@capacitor/camera';
+```
+
+### 빌드 순서 — sync 빠뜨리면 옛날 코드 실행
+```
+npm run build:capacitor → Android Studio Build APK → 설치
+```
+- cap sync는 소스 복원 전에 실행 (server.url 제거된 상태)
+- 앱 클라이언트 코드 수정 시 반드시 APK 재빌드
+
+### 코드 변경 반영 범위
+| 변경 대상 | Vercel만으로 충분? | APK 재빌드 필요? |
+|-----------|:---:|:---:|
+| API route, Server Action, middleware | O | X |
+| app-native/, lib/native-api/, lib/capacitor/, hooks, BottomNav, globals.css | X | O |
+
+### FCM 푸시 알림
+- 알림 채널: `PushNotifications.createChannel({ id: "default" })` — 서버 `channel_id`와 일치 필수
+- 토큰 전송: fire-and-forget (페이지 전환으로 취소 방지)
+- 토큰 갱신: 서버 API가 기존 토큰 DELETE → 새 토큰 INSERT
+
+### Dialog body lock 주의
+```typescript
+// ❌ 스크롤 영구 잠금
+<Dialog open={show} onOpenChange={() => {}}>
+// ✅ 상태 연결
+<Dialog open={show} onOpenChange={setShow}>
+```
+
+### 고아 유저 방지
+- 구글 로그인 → auth.users 생성 → members 등록 실패 가능
+- auth-guard.tsx + middleware.ts에서 members 체크 → 없으면 /signup/complete
+
+### 위치정보 보관 기간
+- **90일** — 모든 고지(signup, location-consent, privacy)에서 통일
