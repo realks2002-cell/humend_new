@@ -6,17 +6,23 @@ import {
   notifyShiftAssigned,
   notifyShiftCancelled,
 } from "@/lib/push/attendance-notify";
+import { sendPush } from "@/lib/push/fcm";
 
 export async function createShift(
   clientId: string,
   memberIds: string[],
   date: string,
   startTime: string,
-  endTime: string
+  endTime: string,
+  options?: {
+    alertMinutesBefore?: number;
+    alertIntervalMinutes?: number;
+    customNotifyMessage?: string;
+    customRepeatMessage?: string;
+  }
 ) {
   const supabase = createAdminClient();
 
-  // 고객사 정보 (알림용)
   const { data: client } = await supabase
     .from("clients")
     .select("company_name")
@@ -30,21 +36,30 @@ export async function createShift(
     start_time: startTime,
     end_time: endTime,
     arrival_status: "pending" as const,
+    ...(options?.alertMinutesBefore != null && {
+      alert_minutes_before: options.alertMinutesBefore,
+    }),
+    ...(options?.alertIntervalMinutes != null && {
+      alert_interval_minutes: options.alertIntervalMinutes,
+    }),
+    ...(options?.customNotifyMessage && {
+      custom_notify_message: options.customNotifyMessage,
+    }),
+    ...(options?.customRepeatMessage && {
+      custom_repeat_message: options.customRepeatMessage,
+    }),
   }));
 
   const { error } = await supabase.from("daily_shifts").insert(records);
 
   if (error) {
-    if (error.code === "23505") {
-      return { error: "이미 해당 날짜에 배정된 회원이 있습니다." };
-    }
     return { error: error.message };
   }
 
-  // FCM 알림 (비동기, 실패해도 배정은 유지)
   const companyName = client?.company_name ?? "근무지";
+  const notifyMsg = options?.customNotifyMessage || undefined;
   for (const memberId of memberIds) {
-    notifyShiftAssigned(memberId, companyName, date, startTime).catch(
+    notifyShiftAssigned(memberId, companyName, date, startTime, notifyMsg).catch(
       console.error
     );
   }
@@ -56,7 +71,6 @@ export async function createShift(
 export async function deleteShift(shiftId: string) {
   const supabase = createAdminClient();
 
-  // 삭제 전 정보 조회 (알림용)
   const { data: shift } = await supabase
     .from("daily_shifts")
     .select("member_id, work_date, start_time, clients(company_name)")
@@ -72,7 +86,6 @@ export async function deleteShift(shiftId: string) {
     return { error: error.message };
   }
 
-  // FCM 취소 알림
   if (shift) {
     const info = shift as unknown as {
       member_id: string;
@@ -102,7 +115,6 @@ export async function updateShiftGroup(
 ) {
   const supabase = createAdminClient();
 
-  // 기존 shifts 조회 → 현재 member_id 목록 추출
   const { data: existingShifts, error: fetchError } = await supabase
     .from("daily_shifts")
     .select("id, member_id")
@@ -118,7 +130,6 @@ export async function updateShiftGroup(
   const addMemberIds = newMemberIds.filter((id) => !existingMemberIds.includes(id));
   const removeMemberIds = existingMemberIds.filter((id) => !newMemberIds.includes(id));
 
-  // 고객사 정보 (알림용)
   const { data: client } = await supabase
     .from("clients")
     .select("company_name")
@@ -126,7 +137,6 @@ export async function updateShiftGroup(
     .single();
   const companyName = client?.company_name ?? "근무지";
 
-  // 유지할 회원: work_date, start_time, end_time UPDATE
   if (keepMemberIds.length > 0) {
     const keepShiftIds = existingShifts
       .filter((s) => keepMemberIds.includes(s.member_id))
@@ -149,7 +159,6 @@ export async function updateShiftGroup(
     }
   }
 
-  // 추가할 회원: INSERT + FCM 알림
   if (addMemberIds.length > 0) {
     const newRecords = addMemberIds.map((memberId) => ({
       client_id: clientId,
@@ -175,7 +184,6 @@ export async function updateShiftGroup(
     }
   }
 
-  // 제거할 회원: DELETE + FCM 취소 알림
   if (removeMemberIds.length > 0) {
     const removeShiftIds = existingShifts
       .filter((s) => removeMemberIds.includes(s.member_id))
@@ -223,4 +231,45 @@ export async function updateShiftStatus(
 
   revalidatePath("/admin/shifts");
   return { error: null };
+}
+
+export async function sendGroupFcm(
+  memberIds: string[],
+  title: string,
+  body: string
+) {
+  if (!title.trim() || memberIds.length === 0) {
+    return { error: "메시지와 대상 회원이 필요합니다." };
+  }
+
+  const supabase = createAdminClient();
+
+  const { data: tokens } = await supabase
+    .from("device_tokens")
+    .select("member_id, fcm_token")
+    .in("member_id", memberIds);
+
+  if (!tokens || tokens.length === 0) {
+    return { error: "발송 가능한 기기가 없습니다." };
+  }
+
+  let sentCount = 0;
+  for (const t of tokens) {
+    const result = await sendPush(t.fcm_token, { title, body, data: { url: "/my/attendance" } });
+    if (result.success) sentCount++;
+  }
+
+  for (const memberId of memberIds) {
+    await supabase.from("notification_logs").insert({
+      title,
+      body,
+      target_type: "individual",
+      target_member_id: memberId,
+      sent_count: tokens.filter((t) => t.member_id === memberId).length > 0 ? 1 : 0,
+      trigger_type: "manual",
+    });
+  }
+
+  revalidatePath("/admin/shifts");
+  return { error: null, sentCount };
 }

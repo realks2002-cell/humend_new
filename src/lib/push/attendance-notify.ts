@@ -45,11 +45,12 @@ export async function notifyShiftAssigned(
   memberId: string,
   companyName: string,
   workDate: string,
-  startTime: string
+  startTime: string,
+  customMessage?: string
 ) {
   await notifyMember({
     memberId,
-    title: "근무가 배정되었습니다",
+    title: customMessage || "근무가 배정되었습니다",
     body: `${companyName} ${workDate} ${startTime} 출근 예정`,
     data: { url: "/my/attendance" },
   });
@@ -73,12 +74,14 @@ export async function notifyAttendanceCheck(
   memberId: string,
   shiftId: string,
   companyName: string,
-  startTime: string
+  startTime: string,
+  customTitle?: string,
+  customBody?: string
 ) {
   await notifyMember({
     memberId,
-    title: "출근 예정이신가요?",
-    body: `${companyName} ${startTime} 출근 — 터치하여 출근 의사를 알려주세요.`,
+    title: customTitle || "출근 예정이신가요?",
+    body: customBody || `${companyName} ${startTime} 출근 — 터치하여 출근 의사를 알려주세요.`,
     data: {
       action: "confirm_attendance",
       shiftId,

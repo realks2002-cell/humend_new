@@ -6,15 +6,6 @@ import {
   notifyNoshowToAdmin,
 } from "@/lib/push/attendance-notify";
 
-/**
- * GET /api/cron/attendance-check
- * 매 5분 실행 — 출근 알림 발송 + 재알림 + 노쇼 확정
- *
- * 로직:
- * 1. pending + 알림 시간 도래 → 첫 알림 발송, notified로 변경
- * 2. notified + 재알림 간격 경과 + count < max → 재알림
- * 3. notified + count >= max + 출근시간 경과 → noshow 확정
- */
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -33,6 +24,7 @@ export async function GET(req: NextRequest) {
       id, member_id, start_time, arrival_status,
       alert_minutes_before, alert_interval_minutes, alert_max_count,
       notification_sent_count, last_notification_at,
+      custom_notify_message, custom_repeat_message,
       clients (company_name)
     `)
     .eq("work_date", today)
@@ -52,15 +44,17 @@ export async function GET(req: NextRequest) {
       (shift.clients as unknown as { company_name: string })?.company_name ??
       "근무지";
     const timeStr = shift.start_time.slice(0, 5);
+    const customNotify = (shift as any).custom_notify_message as string | null;
+    const customRepeat = (shift as any).custom_repeat_message as string | null;
 
     if (shift.arrival_status === "pending") {
-      // 알림 시작 시점 도래 확인
       if (minutesUntil <= shift.alert_minutes_before && minutesUntil > 0) {
         await notifyAttendanceCheck(
           shift.member_id,
           shift.id,
           companyName,
-          timeStr
+          timeStr,
+          customNotify || undefined
         );
 
         await admin
@@ -82,7 +76,6 @@ export async function GET(req: NextRequest) {
         ? (now.getTime() - lastNotif.getTime()) / 60000
         : Infinity;
 
-      // 노쇼 확정: 최대 알림 횟수 초과 + 출근시간 경과
       if (
         shift.notification_sent_count >= shift.alert_max_count &&
         minutesUntil <= 0
@@ -94,7 +87,6 @@ export async function GET(req: NextRequest) {
 
         notifyNoshowToMember(shift.member_id).catch(console.error);
 
-        // 관리자 알림
         const { data: admins } = await admin
           .from("admins")
           .select("id");
@@ -115,9 +107,7 @@ export async function GET(req: NextRequest) {
         }
 
         noshowCount++;
-      }
-      // 재알림: 간격 경과 + 아직 최대 횟수 미달
-      else if (
+      } else if (
         minutesSinceLast >= shift.alert_interval_minutes &&
         shift.notification_sent_count < shift.alert_max_count
       ) {
@@ -125,7 +115,8 @@ export async function GET(req: NextRequest) {
           shift.member_id,
           shift.id,
           companyName,
-          timeStr
+          timeStr,
+          customRepeat || customNotify || undefined
         );
 
         await admin

@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { createAdminClient } from "@/lib/supabase/server";
-import { ShiftTable, type ShiftWithDetails, type ApprovedPosting } from "./shift-table";
+import { ShiftTable, type ShiftWithDetails, type ApprovedPosting, type ClientPosting } from "./shift-table";
 
 export default async function AdminShiftsPage({
   searchParams,
@@ -11,13 +11,11 @@ export default async function AdminShiftsPage({
   const params = await searchParams;
   const supabase = createAdminClient();
 
-  // 기본 날짜: 오늘 (KST)
   const today = new Date(Date.now() + 9 * 60 * 60 * 1000)
     .toISOString()
     .split("T")[0];
   const selectedDate = params.date || today;
 
-  // 해당 날짜 배정 조회
   const { data: shifts } = await supabase
     .from("daily_shifts")
     .select(
@@ -33,45 +31,53 @@ export default async function AdminShiftsPage({
     .eq("work_date", selectedDate)
     .order("start_time", { ascending: true });
 
-  // 고객사 목록 (등록 폼용)
   const { data: clients } = await supabase
     .from("clients")
     .select("id, company_name, location")
     .order("company_name");
 
-  // 회원 목록 (등록 폼용)
   const { data: members } = await supabase
     .from("members")
     .select("id, name, phone")
     .order("name");
 
-  // 해당 날짜의 전체 공고 조회 (일일: work_date 매칭, 기간제: start_date~end_date 범위)
-  const { data: allPostings } = await supabase
+  // 전체 공고 조회 (캐스케이드 드롭다운용)
+  const { data: dailyPostings } = await supabase
     .from("job_postings")
-    .select(
-      `
+    .select(`
       id, client_id, work_date, start_time, end_time,
       posting_type, start_date, end_date,
       clients!inner (company_name, location)
-    `
-    )
-    .or(
-      `work_date.eq.${selectedDate},and(start_date.lte.${selectedDate},end_date.gte.${selectedDate})`
-    );
+    `)
+    .gte("work_date", today)
+    .order("work_date", { ascending: true });
 
-  const datePostings = allPostings ?? [];
+  const { data: fixedTermPostings } = await supabase
+    .from("job_postings")
+    .select(`
+      id, client_id, work_date, start_time, end_time,
+      posting_type, start_date, end_date,
+      clients!inner (company_name, location)
+    `)
+    .eq("posting_type", "fixed_term")
+    .gte("end_date", today);
 
-  // 해당 공고들의 승인 지원자 조회
-  const postingIds = datePostings.map((p) => p.id);
-  const { data: approvedApps } = postingIds.length > 0
+  const combinedPostings = [
+    ...(dailyPostings ?? []),
+    ...(fixedTermPostings ?? []).filter(
+      (fp) => !(dailyPostings ?? []).some((ap) => ap.id === fp.id)
+    ),
+  ];
+
+  const allPostingIds = combinedPostings.map((p) => p.id);
+  const { data: approvedApps } = allPostingIds.length > 0
     ? await supabase
         .from("applications")
         .select(`posting_id, members!inner (id, name, phone)`)
         .eq("status", "승인")
-        .in("posting_id", postingIds)
+        .in("posting_id", allPostingIds)
     : { data: [] };
 
-  // 공고별 승인 지원자 그룹화
   const approvedByPosting = new Map<string, { id: string; name: string | null; phone: string }[]>();
   for (const app of approvedApps ?? []) {
     const member = app.members as any;
@@ -85,7 +91,53 @@ export default async function AdminShiftsPage({
     });
   }
 
-  // 전체 공고 → ApprovedPosting 변환 (승인 지원자 0명도 포함)
+  // 고객사별 공고 그룹핑
+  const clientPostingsMap = new Map<string, ClientPosting>();
+  for (const p of combinedPostings) {
+    const client = p.clients as any;
+    const clientId = p.client_id;
+    if (!clientPostingsMap.has(clientId)) {
+      clientPostingsMap.set(clientId, {
+        clientId,
+        clientName: client?.company_name ?? "",
+        clientLocation: client?.location ?? "",
+        postings: [],
+      });
+    }
+    if (p.posting_type === "fixed_term" && p.start_date && p.end_date) {
+      const start = new Date(p.start_date);
+      const end = new Date(p.end_date);
+      const todayDate = new Date(today);
+      const fromDate = start > todayDate ? start : todayDate;
+      for (let d = new Date(fromDate); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split("T")[0];
+        clientPostingsMap.get(clientId)!.postings.push({
+          postingId: p.id,
+          workDate: dateStr,
+          startTime: p.start_time,
+          endTime: p.end_time,
+          approvedMembers: approvedByPosting.get(p.id) ?? [],
+        });
+      }
+    } else if (p.work_date) {
+      clientPostingsMap.get(clientId)!.postings.push({
+        postingId: p.id,
+        workDate: p.work_date,
+        startTime: p.start_time,
+        endTime: p.end_time,
+        approvedMembers: approvedByPosting.get(p.id) ?? [],
+      });
+    }
+  }
+  const clientPostings = Array.from(clientPostingsMap.values());
+
+  const datePostings = combinedPostings.filter((p) => {
+    if (p.work_date === selectedDate) return true;
+    if (p.posting_type === "fixed_term" && p.start_date && p.end_date) {
+      return p.start_date <= selectedDate && p.end_date >= selectedDate;
+    }
+    return false;
+  });
   const approvedPostings: ApprovedPosting[] = datePostings.map((p) => {
     const client = p.clients as any;
     return {
@@ -99,6 +151,21 @@ export default async function AdminShiftsPage({
       approvedMembers: approvedByPosting.get(p.id) ?? [],
     };
   });
+
+  const assignedMemberIds = (shifts ?? []).map((s: any) => s.member_id as string);
+
+  // FCM 발송 기록 조회 (해당 날짜 배정 회원 대상, 오늘 기준)
+  const uniqueMemberIds = [...new Set(assignedMemberIds)];
+  const { data: notificationLogs } = uniqueMemberIds.length > 0
+    ? await supabase
+        .from("notification_logs")
+        .select("id, title, body, target_member_id, sent_count, trigger_type, created_at")
+        .in("target_member_id", uniqueMemberIds)
+        .gte("created_at", `${selectedDate}T00:00:00+09:00`)
+        .lte("created_at", `${selectedDate}T23:59:59+09:00`)
+        .order("created_at", { ascending: false })
+        .limit(100)
+    : { data: [] };
 
   return (
     <div className="p-6 space-y-6">
@@ -114,6 +181,9 @@ export default async function AdminShiftsPage({
         members={members ?? []}
         selectedDate={selectedDate}
         approvedPostings={approvedPostings}
+        clientPostings={clientPostings}
+        assignedMemberIds={assignedMemberIds}
+        notificationLogs={(notificationLogs ?? []) as any}
       />
     </div>
   );
