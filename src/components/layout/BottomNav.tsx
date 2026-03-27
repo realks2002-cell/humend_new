@@ -1,27 +1,57 @@
 'use client';
 
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, User, UserPlus, FileText } from "lucide-react";
+import { Home, User, UserPlus, UserCog, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
-const tabs = [
-  { href: "/", label: "홈", icon: Home },
-  { href: "/my", label: "마이페이지", icon: User },
-  { href: "/signup", label: "회원가입", icon: UserPlus },
-  { href: "/terms", label: "이용약관", icon: FileText },
-] as const;
-
-function isActive(pathname: string, tab: typeof tabs[number]) {
-  if (tab.href === "/") return pathname === "/";
-  if (tab.href === "/my") {
-    return pathname === "/my" || pathname.startsWith("/my/");
-  }
-  return pathname.startsWith(tab.href);
+function isActive(pathname: string, href: string) {
+  if (href === "/") return pathname === "/";
+  if (href === "/my") return pathname === "/my" || (pathname.startsWith("/my/") && !pathname.startsWith("/my/resume"));
+  if (href === "/my/resume") return pathname === "/my/resume";
+  return pathname.startsWith(href);
 }
 
 export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const [isMember, setIsMember] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const checkMember = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        const { data: member } = await supabase
+          .from("members")
+          .select("id")
+          .eq("id", data.user.id)
+          .maybeSingle();
+        setIsMember(!!member);
+      } else {
+        setIsMember(false);
+      }
+    };
+
+    checkMember();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      checkMember();
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const tabs = [
+    { href: "/", label: "홈", icon: Home },
+    { href: "/my", label: "마이페이지", icon: User },
+    isMember
+      ? { href: "/my/resume", label: "프로필관리", icon: UserCog }
+      : { href: "/signup", label: "회원가입", icon: UserPlus },
+    { href: "/terms", label: "이용약관", icon: FileText },
+  ];
 
   return (
     <nav
@@ -30,7 +60,7 @@ export default function BottomNav() {
     >
       <div className="grid grid-cols-4">
         {tabs.map((tab) => {
-          const active = isActive(pathname, tab);
+          const active = isActive(pathname, tab.href);
           const Icon = tab.icon;
           return (
             <button
