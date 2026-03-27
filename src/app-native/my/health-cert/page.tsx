@@ -152,8 +152,8 @@ function HealthCertView({ profile, onDeleted }: { profile: Member; onDeleted: ()
     onDeleted();
   }
 
-  const certDate = (profile as Record<string, unknown>).health_cert_date as string;
-  const certUrl = (profile as Record<string, unknown>).health_cert_image_url as string;
+  const certDate = (profile as unknown as Record<string, unknown>).health_cert_date as string;
+  const certUrl = (profile as unknown as Record<string, unknown>).health_cert_image_url as string;
   const d = new Date(certDate);
   const dateStr = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
 
@@ -216,7 +216,7 @@ export default function HealthCertPage() {
 
   if (!profile) return null;
 
-  const hasCert = !!(profile as Record<string, unknown>).health_cert_date && !!(profile as Record<string, unknown>).health_cert_image_url;
+  const hasCert = !!(profile as unknown as Record<string, unknown>).health_cert_date && !!(profile as unknown as Record<string, unknown>).health_cert_image_url;
 
   if (hasCert) {
     return <HealthCertView profile={profile} onDeleted={() => { setLoading(true); setKey((k) => k + 1); }} />;

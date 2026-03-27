@@ -35,8 +35,10 @@ echo "=== [3/8] 정적 빌드 호환성 위해 서버 전용 파일 제거 ==="
 # admin 디렉토리 전체 제거 (회원 전용 빌드)
 rm -rf src/app/admin
 
-# health-cert 제거 (Vercel Blob 서버 전용 기능)
-rm -rf src/app/my/health-cert
+# health-cert: 웹 전용 파일(Server Action) 제거, app-native page.tsx만 유지
+rm -f src/app/my/health-cert/health-cert-form.tsx
+rm -f src/app/my/health-cert/health-cert-view.tsx
+rm -f src/app/my/health-cert/actions.ts
 
 # API routes 제거 (정적 빌드에서 동작 불가)
 rm -rf src/app/api
