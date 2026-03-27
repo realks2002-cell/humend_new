@@ -64,11 +64,26 @@ export async function middleware(request: NextRequest) {
       return supabaseResponse;
     }
 
-    // /my/* → 로그인 필요
-    if (pathname.startsWith("/my") && !user) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      return NextResponse.redirect(url);
+    // /my/* → 로그인 필요 + members 등록 필요
+    if (pathname.startsWith("/my")) {
+      if (!user) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/login";
+        return NextResponse.redirect(url);
+      }
+
+      // 고아 유저 체크: auth에 있지만 members에 없으면 추가정보 입력으로
+      const { data: member } = await supabase
+        .from("members")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!member) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/signup/complete";
+        return NextResponse.redirect(url);
+      }
     }
 
     // /admin/* (로그인 페이지 제외) → 관리자 로그인 필요

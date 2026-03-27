@@ -31,12 +31,20 @@ export async function memberLogin(phone: string, password: string) {
 }
 
 export async function memberSignup(phone: string, name: string, password: string) {
-  const res = await fetch(`${API_BASE}/api/native/auth/signup`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phone, name, password }),
-  });
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/api/native/auth/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, name, password }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      return { error: data?.error || `서버 오류 (${res.status})` };
+    }
+    return res.json();
+  } catch {
+    return { error: "네트워크 오류가 발생했습니다. 다시 시도해주세요." };
+  }
 }
 
 export async function createGoogleMember(phone: string, name: string) {
@@ -46,24 +54,40 @@ export async function createGoogleMember(phone: string, name: string) {
   } = await supabase.auth.getSession();
   if (!session?.access_token) return { error: "인증 정보가 없습니다." };
 
-  const res = await fetch(`${API_BASE}/api/native/auth/create-google-member`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify({ phone, name }),
-  });
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/api/native/auth/create-google-member`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ phone, name }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      return { error: data?.error || `서버 오류 (${res.status})` };
+    }
+    return res.json();
+  } catch {
+    return { error: "네트워크 오류가 발생했습니다. 다시 시도해주세요." };
+  }
 }
 
 export async function resetPasswordByEmail(email: string) {
-  const res = await fetch(`${API_BASE}/api/native/auth/reset-password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
-  });
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/api/native/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      return { error: data?.error || `서버 오류 (${res.status})` };
+    }
+    return res.json();
+  } catch {
+    return { error: "네트워크 오류가 발생했습니다. 다시 시도해주세요." };
+  }
 }
 
 export async function signOut() {
