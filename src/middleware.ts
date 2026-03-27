@@ -54,7 +54,7 @@ export async function middleware(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
 
     // 공개 페이지는 리다이렉트 불필요
-    const publicPaths = ["/", "/about", "/jobs", "/login", "/signup", "/signup/complete", "/admin/login", "/privacy", "/terms", "/app"];
+    const publicPaths = ["/", "/about", "/jobs", "/login", "/signup", "/signup/complete", "/google-link", "/admin/login", "/privacy", "/terms", "/app"];
     const isPublic =
       publicPaths.includes(pathname) ||
       pathname.startsWith("/jobs/") ||
@@ -81,7 +81,9 @@ export async function middleware(request: NextRequest) {
 
       if (!member) {
         const url = request.nextUrl.clone();
-        url.pathname = "/signup/complete";
+        // 구글 유저는 기존 회원 연결 페이지로, 그 외는 추가정보 입력으로
+        const isGoogle = user.app_metadata?.provider === "google";
+        url.pathname = isGoogle ? "/google-link" : "/signup/complete";
         return NextResponse.redirect(url);
       }
     }
