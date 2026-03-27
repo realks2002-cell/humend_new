@@ -8,6 +8,19 @@ export async function registerPush(): Promise<string | null> {
     return null;
   }
 
+  // Android 8+ (API 26+): 기본 알림 채널 생성 (없으면 알림 무시됨)
+  try {
+    await PushNotifications.createChannel({
+      id: "default",
+      name: "기본 알림",
+      importance: 5,
+      sound: "default",
+      vibration: true,
+    });
+  } catch {
+    // iOS에서는 createChannel 미지원 — 무시
+  }
+
   await PushNotifications.register();
 
   return new Promise((resolve) => {

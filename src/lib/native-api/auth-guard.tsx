@@ -15,12 +15,25 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) {
         router.replace("/login");
-      } else {
-        setChecked(true);
+        return;
       }
+
+      // 고아 유저 체크: auth에 있지만 members에 없으면 추가정보 입력으로
+      const { data: member } = await supabase
+        .from("members")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!member) {
+        router.replace("/signup/complete");
+        return;
+      }
+
+      setChecked(true);
     });
   }, [router]);
 
