@@ -155,6 +155,11 @@ GOOGLE_SPREADSHEET_ID=           # Google Sheets ID
 
 ## Capacitor 앱 개발 규칙
 
+### capacitor.config.ts — 절대 임의 수정 금지
+- `server.url` 값을 **절대 임의로 변경하지 말 것**. 앱이 바라보는 서버가 바뀌어 즉시 장애 발생.
+- 개발/심사 전환은 반드시 `build-capacitor.sh` 스크립트를 통해서만 수행.
+- 수동으로 `capacitor.config.ts`를 수정해야 하는 경우 반드시 사용자에게 **현재 값과 변경 값을 명시**하고 확인받을 것.
+
 ### CSS — Android WebView 스크롤 파괴 방지
 ```css
 /* ❌ 절대 금지 — 스크롤 완전 파괴 */

@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, User, UserPlus, UserCog, FileText } from "lucide-react";
+import { Home, User, Briefcase, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
-  if (href === "/my") return pathname === "/my" || (pathname.startsWith("/my/") && !pathname.startsWith("/my/resume"));
-  if (href === "/my/resume") return pathname === "/my/resume";
+  if (href === "/my/salary") return pathname.startsWith("/my/salary");
+  if (href === "/my") return pathname === "/my" || (pathname.startsWith("/my/") && !pathname.startsWith("/my/salary"));
   return pathname.startsWith(href);
 }
 
@@ -46,11 +46,9 @@ export default function BottomNav() {
 
   const tabs = [
     { href: "/", label: "홈", icon: Home },
+    { href: "/jobs", label: "채용공고", icon: Briefcase },
+    { href: isMember ? "/my/salary" : "/login", label: "급여신청", icon: Wallet },
     { href: "/my", label: "마이페이지", icon: User },
-    isMember
-      ? { href: "/my/resume", label: "프로필관리", icon: UserCog }
-      : { href: "/signup", label: "회원가입", icon: UserPlus },
-    { href: "/terms", label: "이용약관", icon: FileText },
   ];
 
   return (
