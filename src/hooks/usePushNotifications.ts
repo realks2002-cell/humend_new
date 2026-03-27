@@ -23,34 +23,21 @@ export function usePushNotifications() {
       if (cleanup) return;
 
       const token = await registerPush();
-      if (!token || cleanup) return;
+      if (!token) return;
 
       const platform = getPlatform();
-
-      // 네이티브 번들에서는 Bearer 토큰이 필요
       const supabase = createClient();
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       const accessToken = currentSession?.access_token;
 
-      // 토큰 전송 — 401(인증 실패)이면 재시도
-      let result = await sendTokenToServer(token, platform, accessToken);
-      let retries = 0;
-
-      while (result === 401 && retries < MAX_RETRIES && !cleanup) {
-        retries++;
-        console.log(
-          `[Push] 인증 실패, ${RETRY_DELAY_MS / 1000}초 후 재시도 (${retries}/${MAX_RETRIES})`
-        );
-        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
-        if (cleanup) return;
-        result = await sendTokenToServer(token, platform, accessToken);
-      }
-
-      if (result === true) {
-        console.log("[Push] 토큰 등록 완료");
-      } else {
-        console.warn("[Push] 토큰 등록 실패:", result);
-      }
+      // 토큰 전송은 페이지 전환(cleanup)과 무관하게 반드시 완료 (fire-and-forget)
+      sendTokenToServer(token, platform, accessToken).then((result) => {
+        if (result === true) {
+          console.log("[Push] 토큰 등록 완료");
+        } else {
+          console.warn("[Push] 토큰 등록 실패:", result);
+        }
+      });
 
       if (!cleanup) {
         setupPushListeners();

@@ -28,18 +28,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "token is required" }, { status: 400 });
   }
 
-  const { error } = await admin.from("device_tokens").upsert(
-    {
-      member_id: user.id,
-      fcm_token: fcmToken,
-      platform: platform ?? "android",
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "member_id,fcm_token" }
-  );
+  // 기존 토큰 삭제 (재설치 시 옛 토큰 정리)
+  await admin.from("device_tokens").delete().eq("member_id", user.id);
+
+  // 새 토큰 등록
+  const { error } = await admin.from("device_tokens").insert({
+    member_id: user.id,
+    fcm_token: fcmToken,
+    platform: platform ?? "android",
+  });
 
   if (error) {
-    console.error("[native/push/register] upsert error:", error);
+    console.error("[native/push/register] insert error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
