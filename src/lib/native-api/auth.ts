@@ -18,16 +18,34 @@ export async function memberLogin(phone: string, password: string) {
   const supabase = createClient();
   const email = phoneToEmail(phone);
 
+  // 1차: phone 이메일로 직접 로그인
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
-  if (error) {
+  if (!error) return { success: true };
+
+  // 2차: 서버 API 폴백 (실제 auth 이메일로 재시도)
+  const apiUrl = `${API_BASE}/api/native/auth/login`;
+  try {
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, password }),
+    });
+    const data = await res.json();
+    if (data.success && data.access_token) {
+      await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+      return { success: true };
+    }
+    return { error: data.error || "전화번호 또는 비밀번호가 올바르지 않습니다." };
+  } catch (e) {
     return { error: "전화번호 또는 비밀번호가 올바르지 않습니다." };
   }
-
-  return { success: true };
 }
 
 export async function memberSignup(phone: string, name: string, password: string) {

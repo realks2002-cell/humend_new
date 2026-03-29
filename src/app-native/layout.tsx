@@ -31,7 +31,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#FFFFFF" />
         <title>Humend HR</title>
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <style dangerouslySetInnerHTML={{ __html: `
           @keyframes splash-slide{0%{transform:translateX(-100%)}50%{transform:translateX(150%)}100%{transform:translateX(350%)}}
           #splash{position:fixed;inset:0;background:#fff;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;transition:opacity .4s ease}
@@ -53,15 +53,15 @@ export default function RootLayout({
             else window.addEventListener('load',hide);
           })();
         `}} />
-        <NativeAppProvider>
-          <TooltipProvider>
-            <TermsAgreement>
-              <main className="min-h-screen pb-16" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>{children}</main>
+        <TooltipProvider>
+          <TermsAgreement>
+            <NativeAppProvider>
+              <main className="min-h-screen pb-16 w-full max-w-full overflow-x-hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>{children}</main>
               <BottomNav />
-            </TermsAgreement>
-            <Toaster position="top-center" richColors />
-          </TooltipProvider>
-        </NativeAppProvider>
+            </NativeAppProvider>
+          </TermsAgreement>
+          <Toaster position="top-center" richColors />
+        </TooltipProvider>
       </body>
     </html>
   );

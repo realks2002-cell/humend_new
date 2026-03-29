@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import NotificationBell from "@/components/layout/NotificationBell";
 import {
   ArrowRight,
   Wallet,
@@ -57,6 +58,7 @@ export default function NativeHomePage() {
         className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md shadow-sm flex items-center justify-center px-6 h-16 relative"
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
+        <NotificationBell className="absolute left-6" />
         <img src="/logo.png" alt="HUMAN:D" className="h-4 w-auto" />
         {!user && (
           <Link href="/login" className="absolute right-6 text-sm font-medium text-slate-600">
@@ -94,7 +96,7 @@ export default function NativeHomePage() {
               </button>
             </div>
           </div>
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-hd-primary/5 rounded-full blur-3xl" />
+          <div className="absolute -top-24 right-0 w-64 h-64 bg-hd-primary/5 rounded-full blur-3xl" />
 
           {/* Marquee Ticker */}
           <div className="relative z-10 mt-10 w-full overflow-hidden border-y border-gray-200 py-3">
@@ -322,7 +324,7 @@ export default function NativeHomePage() {
                 제휴 문의 <Phone className="h-4 w-4" />
               </a>
             </div>
-            <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-hd-primary/20 rounded-full blur-2xl" />
+            <div className="absolute -bottom-10 right-0 w-48 h-48 bg-hd-primary/20 rounded-full blur-2xl" />
           </div>
         </section>
       </main>

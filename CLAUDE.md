@@ -41,7 +41,7 @@ npm run cap:release      # 정적 빌드 + Release AAB 빌드
 - **Auth & DB**: Supabase (Auth + PostgreSQL + Storage + RLS)
 - **Styling**: TailwindCSS v4 + shadcn/ui (Radix UI)
 - **File Upload**: Vercel Blob Storage (프로필 사진)
-- **Mobile App**: Capacitor 8 (Android 하이브리드 앱)
+- **Mobile App**: Capacitor 8 (Android + iOS 하이브리드 앱)
 - **기타**: date-fns, recharts, jspdf, signature_pad, tiptap, resend, @dnd-kit, googleapis
 
 ## Architecture
@@ -59,12 +59,15 @@ npm run cap:release      # 정적 빌드 + Release AAB 빌드
 
 아래 기능은 안드로이드 앱과 웹 모두 완성된 상태. **사용자가 명시적으로 수정을 요청하지 않는 한 절대 건드리지 말 것.**
 
+- **Android 앱 전체**: 빌드, 로그인, 푸시, 지오펜싱, UI 모두 완성. **Android 관련 코드/설정 절대 수정 금지.**
 - **FCM 푸시 알림 시스템**: 배정 알림, cron 재알림, 수동 발송 (`lib/push/`, `api/cron/attendance-check`)
 - **지오펜싱 출근 확인**: 접근 감지(2km) → 도착 확인(30m) → 이탈 감지(500m) (`lib/capacitor/geofence.ts`, `hooks/useAttendance.ts`)
 - **근무 이탈 감지**: 이탈/복귀 기록 + 관리자 이력 표시 (`api/native/attendance/depart`, `return`, `departure_logs`)
 - **근무표 관리** (`admin/shifts/`): ShiftTable, 배정 등록/수정/삭제, FCM 발송 기록
 - **회원 가입/로그인**: 전화번호 + 비밀번호, 구글 OAuth (`app-native/signup/`, `app-native/login/`)
 - **동의 체계**: 이용약관, 개인정보방침, 위치동의, 알림동의, 친권자동의
+- **앱 로그인 폴백**: phone 이메일 실패 시 서버 API(`/api/native/auth/login`)로 실제 auth 이메일 재시도
+- **앱 권한 요청 순서**: TermsAgreement → NativeAppProvider (동의 후에만 훅 실행, 권한 중복 요청 방지)
 
 ### ⚠️ 웹/앱 수정 전 필수 확인 (절대 규칙)
 

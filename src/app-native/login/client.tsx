@@ -282,7 +282,7 @@ export default function LoginClient() {
             <button
               type="button"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              onClick={() => setShowPassword((v) => !v)}
+              onPointerDown={(e) => { e.preventDefault(); setShowPassword((v) => !v); }}
               tabIndex={-1}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

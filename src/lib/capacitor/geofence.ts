@@ -99,7 +99,7 @@ export async function startGeofenceWatch(
       {
         backgroundMessage: "출근 확인을 위해 위치를 사용 중입니다.",
         backgroundTitle: "휴먼드 출근확인",
-        requestPermissions: true,
+        requestPermissions: false,
         stale: false,
         distanceFilter: DISTANCE_FILTER,
       },
@@ -192,7 +192,7 @@ export async function startDepartureWatch(
       {
         backgroundMessage: "근무 중 위치를 확인하고 있습니다.",
         backgroundTitle: "휴먼드 근무확인",
-        requestPermissions: true,
+        requestPermissions: false,
         stale: false,
         distanceFilter: DISTANCE_FILTER,
       },

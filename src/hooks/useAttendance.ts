@@ -127,15 +127,13 @@ export function useAttendance() {
         onDeparted: (lat, lng) => {
           callApi(
             "/api/native/attendance/depart",
-            { shiftId: shift.id, lat, lng },
-            token
+            { shiftId: shift.id, lat, lng }
           ).catch(console.error);
         },
         onReturned: () => {
           callApi(
             "/api/native/attendance/return",
-            { shiftId: shift.id },
-            token
+            { shiftId: shift.id }
           ).catch(console.error);
         },
         onError: (code) => {

@@ -1,4 +1,5 @@
 import UIKit
+import WebKit
 import Capacitor
 #if canImport(FirebaseCore)
 import FirebaseCore
@@ -9,6 +10,7 @@ import FirebaseMessaging
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
+    private var scrollObservation: NSKeyValueObservation?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         #if canImport(FirebaseCore)
@@ -18,7 +20,36 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         UNUserNotificationCenter.current().delegate = self
         application.registerForRemoteNotifications()
 
+        // WKWebView scrollView 수평 스크롤 차단 (KVO)
+        setupScrollLock()
+
         return true
+    }
+
+    private func setupScrollLock() {
+        guard let window = self.window,
+              let rootVC = window.rootViewController,
+              let webView = findWebView(in: rootVC.view) else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                self?.setupScrollLock()
+            }
+            return
+        }
+
+        // KVO로 contentOffset 감시 — delegate 충돌 없음
+        scrollObservation = webView.scrollView.observe(\.contentOffset, options: [.new]) { scrollView, _ in
+            if scrollView.contentOffset.x != 0 {
+                scrollView.contentOffset = CGPoint(x: 0, y: scrollView.contentOffset.y)
+            }
+        }
+    }
+
+    private func findWebView(in view: UIView) -> WKWebView? {
+        if let webView = view as? WKWebView { return webView }
+        for subview in view.subviews {
+            if let found = findWebView(in: subview) { return found }
+        }
+        return nil
     }
 
     func applicationWillResignActive(_ application: UIApplication) {

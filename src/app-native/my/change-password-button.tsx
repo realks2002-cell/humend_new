@@ -95,7 +95,7 @@ export function ChangePasswordButton() {
               <button
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                onClick={() => setShowCurrent(!showCurrent)}
+                onPointerDown={(e) => { e.preventDefault(); setShowCurrent(!showCurrent); }}
                 tabIndex={-1}
               >
                 {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -112,7 +112,7 @@ export function ChangePasswordButton() {
               <button
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                onClick={() => setShowNew(!showNew)}
+                onPointerDown={(e) => { e.preventDefault(); setShowNew(!showNew); }}
                 tabIndex={-1}
               >
                 {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -129,7 +129,7 @@ export function ChangePasswordButton() {
               <button
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                onClick={() => setShowConfirm(!showConfirm)}
+                onPointerDown={(e) => { e.preventDefault(); setShowConfirm(!showConfirm); }}
                 tabIndex={-1}
               >
                 {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

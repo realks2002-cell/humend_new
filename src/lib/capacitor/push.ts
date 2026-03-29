@@ -1,8 +1,11 @@
 import { PushNotifications } from "@capacitor/push-notifications";
 
-/** 푸시 권한 요청 + FCM 토큰 반환 */
+/** 푸시 권한 확인 + FCM 토큰 반환 (이미 허용됐으면 재요청 안 함) */
 export async function registerPush(): Promise<string | null> {
-  const permission = await PushNotifications.requestPermissions();
+  let permission = await PushNotifications.checkPermissions();
+  if (permission.receive !== "granted") {
+    permission = await PushNotifications.requestPermissions();
+  }
   if (permission.receive !== "granted") {
     console.log("[Push] 권한 거부됨");
     return null;
@@ -74,6 +77,12 @@ export function setupPushListeners() {
       }
     }
   );
+}
+
+/** 알림 권한 상태 확인 */
+export async function checkPushPermission(): Promise<string> {
+  const result = await PushNotifications.checkPermissions();
+  return result.receive as string;
 }
 
 /** 서버에 FCM 토큰 전송. 성공 시 true, 인증 실패 시 401, 그 외 실패 시 false 반환 */
