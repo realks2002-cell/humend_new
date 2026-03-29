@@ -117,11 +117,11 @@ export default function SignupPage() {
             <div className="rounded-lg bg-muted/50 p-4 space-y-3 text-sm">
               <div className="flex items-start gap-2">
                 <Shield className="h-4 w-4 mt-0.5 text-blue-500 shrink-0" />
-                <p>출근 확인을 위해 <strong>배정된 근무일의 출근 2시간 전부터 도착 확인까지만</strong> 위치를 수집합니다.</p>
+                <p>출근 확인을 위해 <strong>근무지 접근 시에만</strong> 위치를 확인합니다. 위치는 지속적으로 수집되지 않습니다.</p>
               </div>
               <div className="flex items-start gap-2">
                 <Shield className="h-4 w-4 mt-0.5 text-blue-500 shrink-0" />
-                <p>근무지 도착이 확인되면 <strong>위치 추적이 즉시 종료</strong>됩니다.</p>
+                <p>근무지 도착이 확인되면 <strong>위치 확인이 즉시 종료</strong>됩니다.</p>
               </div>
               <div className="flex items-start gap-2">
                 <Shield className="h-4 w-4 mt-0.5 text-blue-500 shrink-0" />
@@ -165,7 +165,7 @@ export default function SignupPage() {
             </p>
             {locationGranted && (
               <p className="mt-2 text-xs text-blue-600">
-                위치 권한이 허용되었습니다. 출근 시 자동으로 위치가 공유됩니다.
+                위치 권한이 허용되었습니다. 근무지 접근 시 출근이 자동 확인됩니다.
               </p>
             )}
             <div className="mt-6 flex flex-col gap-2">
@@ -304,7 +304,7 @@ export default function SignupPage() {
               <span className="text-xs text-muted-foreground flex-1">[필수] 위치정보 수집·이용 동의</span>
             </label>
             <p className="text-[10px] text-muted-foreground/70 pl-6">
-              출근 확인을 위해 배정된 근무일 출근 2시간 전부터 도착 확인까지 위치를 수집합니다. 90일 후 자동 삭제됩니다.
+              출근 확인을 위해 근무지 접근 시 위치를 확인합니다. 위치는 지속적으로 수집되지 않으며, 90일 후 자동 삭제됩니다.
             </p>
             <label className="flex items-center gap-2 cursor-pointer">
               <Checkbox

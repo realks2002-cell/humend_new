@@ -46,11 +46,10 @@ export function setupPushListeners() {
       // 출근 의사 확인 알림 탭
       if (data?.action === "confirm_attendance" && data?.shiftId) {
         try {
-          // @ts-expect-error — 네이티브 전용 모듈
-          const { Preferences } = await import("@capacitor/preferences");
-          const { value: token } = await Preferences.get({
-            key: "access_token",
-          });
+          const { createClient } = await import("@/lib/supabase/client");
+          const supabase = createClient();
+          const { data: { session } } = await supabase.auth.getSession();
+          const token = session?.access_token;
 
           if (token) {
             const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";

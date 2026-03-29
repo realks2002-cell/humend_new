@@ -282,6 +282,63 @@ export async function batchApproveApplications(applicationIds: string[]) {
   return { success, failed, skippedFull, errors };
 }
 
+export async function batchRejectApplications(applicationIds: string[]) {
+  let success = 0;
+  let failed = 0;
+  const supabase = createAdminClient();
+
+  for (const id of applicationIds) {
+    try {
+      const { error } = await supabase
+        .from("applications")
+        .update({ status: "거절", reviewed_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) {
+        failed++;
+        continue;
+      }
+
+      getApprovalInfo(id)
+        .then((info) => {
+          if (info) notifyApplicationRejected(info.memberId, info.companyName, info.workDate);
+        })
+        .catch(console.error);
+
+      success++;
+    } catch {
+      failed++;
+    }
+  }
+
+  revalidatePath("/admin/applications");
+  return { success, failed };
+}
+
+export async function batchDeleteApplications(applicationIds: string[]) {
+  let success = 0;
+  let failed = 0;
+  const supabase = createAdminClient();
+
+  for (const id of applicationIds) {
+    try {
+      await supabase.from("work_records").delete().eq("application_id", id);
+      const { error } = await supabase.from("applications").delete().eq("id", id);
+      if (error) {
+        failed++;
+        continue;
+      }
+      success++;
+    } catch {
+      failed++;
+    }
+  }
+
+  revalidatePath("/admin/applications");
+  revalidatePath("/admin/payroll");
+  return { success, failed };
+}
+
 export async function deleteApplication(applicationId: string) {
   const supabase = createAdminClient();
 

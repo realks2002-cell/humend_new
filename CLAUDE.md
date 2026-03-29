@@ -55,6 +55,27 @@ npm run cap:release      # 정적 빌드 + Release AAB 빌드
 - **앱 인증**: Capacitor Preferences에 세션 토큰 저장, `auth-guard.tsx`로 보호
 - **레이아웃 분리**: 웹과 앱의 layout.tsx는 반드시 별도로 관리. 웹은 고정 헤더(`pt-14` 등)를 고려하고, 앱은 BottomNav 기반이므로 상단 패딩 불필요. layout 수정 시 반드시 `app/`과 `app-native/` 양쪽 확인.
 
+### 🚫 완성된 기능 — 절대 수정 금지
+
+아래 기능은 안드로이드 앱과 웹 모두 완성된 상태. **사용자가 명시적으로 수정을 요청하지 않는 한 절대 건드리지 말 것.**
+
+- **FCM 푸시 알림 시스템**: 배정 알림, cron 재알림, 수동 발송 (`lib/push/`, `api/cron/attendance-check`)
+- **지오펜싱 출근 확인**: 접근 감지(2km) → 도착 확인(30m) → 이탈 감지(500m) (`lib/capacitor/geofence.ts`, `hooks/useAttendance.ts`)
+- **근무 이탈 감지**: 이탈/복귀 기록 + 관리자 이력 표시 (`api/native/attendance/depart`, `return`, `departure_logs`)
+- **근무표 관리** (`admin/shifts/`): ShiftTable, 배정 등록/수정/삭제, FCM 발송 기록
+- **회원 가입/로그인**: 전화번호 + 비밀번호, 구글 OAuth (`app-native/signup/`, `app-native/login/`)
+- **동의 체계**: 이용약관, 개인정보방침, 위치동의, 알림동의, 친권자동의
+
+### ⚠️ 웹/앱 수정 전 필수 확인 (절대 규칙)
+
+**코드 수정 전 반드시 아래 절차를 따를 것:**
+
+1. **이 작업이 웹용인가 앱용인가?** — 사용자에게 불분명하면 물어볼 것
+2. **앱용이면 `app-native/`에 해당 파일이 있는지 먼저 확인** — `app-native/`에 있으면 반드시 그 파일을 수정
+3. **`app/` 파일을 수정할 때 `app-native/`에 같은 경로 파일이 있으면 경고** — 웹만 바뀌고 앱에는 반영 안 됨
+4. **절대 `app-native/` 파일을 `app/` 내용으로 덮어쓰지 말 것** — 앱 전용 UI/로직이 파괴됨
+5. **홈 화면 특히 주의** — 앱 홈(`app-native/`)과 웹 홈(`app/page.tsx`)은 완전히 다른 UI
+
 ### 인증 미들웨어 (`src/middleware.ts`)
 
 - 공개 경로: `/`, `/about`, `/jobs`, `/login`, `/signup`, `/admin/login`
@@ -219,6 +240,15 @@ npm run build:capacitor → Android Studio Build APK → 설치
 - 알림 채널: `PushNotifications.createChannel({ id: "default" })` — 서버 `channel_id`와 일치 필수
 - 토큰 전송: fire-and-forget (페이지 전환으로 취소 방지)
 - 토큰 갱신: 서버 API가 기존 토큰 DELETE → 새 토큰 INSERT
+- **Server Action에서 FCM 발송은 반드시 `await`** — fire-and-forget(`.catch(console.error)`)하면 함수 종료 시 발송 중단됨. `Promise.allSettled`로 대기 필수
+- **Cron 재알림 interval 체크에 `-1`분 버퍼** — 서브초 타이밍 차이로 정확히 N분에 조건 미충족 가능. `minutesSinceLast >= interval - 1`
+
+### 지오펜싱 출근 확인
+- `useAttendance` 훅 기반 → 앱이 열려야 시작됨 (React hook)
+- `arrived`/`noshow`만 제외, 나머지 상태(`pending`/`notified`/`confirmed`)에서 모두 시작
+- `@capacitor-community/background-geolocation` → 백그라운드 동작 O, 앱 강제 종료 시 중단
+- 2km 접근 감지(1회) → 30m 출근 확인(watch 중단)
+- 회원에게 **배터리 최적화 제외** 안내 필요 (삼성/샤오미 등에서 강제 종료 방지)
 
 ### Dialog body lock 주의
 ```typescript

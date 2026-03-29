@@ -11,6 +11,38 @@ html, body {
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Human:D Design System Colors (shared with app-native) */
+  --color-hd-primary: #830020;
+  --color-hd-primary-container: #a61d33;
+  --color-hd-on-primary: #ffffff;
+  --color-hd-on-primary-container: #ffb9bb;
+  --color-hd-secondary: #003ec6;
+  --color-hd-secondary-container: #0052fe;
+  --color-hd-on-secondary: #ffffff;
+  --color-hd-on-secondary-container: #dfe3ff;
+  --color-hd-tertiary: #722500;
+  --color-hd-tertiary-container: #993400;
+  --color-hd-error: #ba1a1a;
+  --color-hd-error-container: #ffdad6;
+  --color-hd-background: #f8f9fa;
+  --color-hd-surface: #f8f9fa;
+  --color-hd-surface-bright: #f8f9fa;
+  --color-hd-surface-dim: #d9dadb;
+  --color-hd-surface-variant: #e1e3e4;
+  --color-hd-surface-container-low: #f3f4f5;
+  --color-hd-surface-container: #edeeef;
+  --color-hd-surface-container-high: #e7e8e9;
+  --color-hd-surface-container-highest: #e1e3e4;
+  --color-hd-surface-container-lowest: #ffffff;
+  --color-hd-on-surface: #191c1d;
+  --color-hd-on-surface-variant: #594141;
+  --color-hd-on-background: #191c1d;
+  --color-hd-inverse-surface: #2e3132;
+  --color-hd-inverse-on-surface: #f0f1f2;
+  --color-hd-inverse-primary: #ffb3b4;
+  --color-hd-outline: #8d7070;
+  --color-hd-outline-variant: #e1bebe;
+  --color-hd-surface-tint: #b2273b;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -205,6 +237,11 @@ html, body {
 @keyframes hero-marquee-scroll {
   from { transform: translateX(0); }
   to { transform: translateX(-100%); }
+}
+
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 
 /* Stat hover wiggle */

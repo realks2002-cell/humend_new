@@ -25,7 +25,8 @@ export default async function AdminShiftsPage({
       alert_minutes_before, notification_sent_count,
       created_at, updated_at,
       clients!inner (company_name, location, latitude, longitude, contact_phone),
-      members (name, phone)
+      members (name, phone),
+      departure_logs (id, departed_at, returned_at, duration_minutes)
     `
     )
     .eq("work_date", selectedDate)

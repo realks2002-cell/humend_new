@@ -31,6 +31,8 @@ echo "=== [2/8] Overlay: app-native → app 복사 ==="
 # app-native 파일들을 app 위에 덮어쓰기 (기존 파일 교체)
 cp -R src/app-native/* src/app/
 
+# Supabase 클라이언트: NEXT_PUBLIC_IS_NATIVE_APP=true 환경변수로 네이티브 모드 강제
+
 echo "=== [3/8] 정적 빌드 호환성 위해 서버 전용 파일 제거 ==="
 # admin 디렉토리 전체 제거 (회원 전용 빌드)
 rm -rf src/app/admin
@@ -69,7 +71,7 @@ cp next.config.capacitor.ts next.config.ts
 
 echo "=== [5/8] 심사 대응: 개발용 설정 제거 ==="
 # capacitor.config.ts에서 server.url 제거 (로컬 번들 모드로 전환)
-sed -i.bak "/url:.*10\.0\.2\.2/d" capacitor.config.ts
+sed -i.bak '/url:/d' capacitor.config.ts
 rm -f capacitor.config.ts.bak
 
 if [[ "$PLATFORM" == "android" || "$PLATFORM" == "all" ]]; then
@@ -83,16 +85,9 @@ fi
 
 echo "=== [6/8] Next.js 정적 빌드 (output: export) ==="
 # API Bridge 호출 시 Vercel 서버를 가리키도록 환경변수 설정
-NEXT_PUBLIC_API_BASE=https://humendhr.com npx next build
+NEXT_PUBLIC_API_BASE=https://humendhr.com NEXT_PUBLIC_IS_NATIVE_APP=true npx next build
 
-echo "=== [7/8] 소스 코드 복원 ==="
-RESTORE_TARGETS="src/app/ src/middleware.ts next.config.ts capacitor.config.ts"
-if [[ "$PLATFORM" == "android" || "$PLATFORM" == "all" ]]; then
-  RESTORE_TARGETS="$RESTORE_TARGETS android/app/src/main/AndroidManifest.xml"
-fi
-git checkout -- $RESTORE_TARGETS
-
-echo "=== [8/8] Capacitor sync ==="
+echo "=== [7/8] Capacitor sync (server.url 제거된 상태에서) ==="
 if [[ "$PLATFORM" == "android" ]]; then
   npx cap sync android
 elif [[ "$PLATFORM" == "ios" ]]; then
@@ -101,6 +96,13 @@ elif [[ "$PLATFORM" == "all" ]]; then
   npx cap sync android
   npx cap sync ios
 fi
+
+echo "=== [8/8] 소스 코드 복원 ==="
+RESTORE_TARGETS="src/app/ src/middleware.ts next.config.ts capacitor.config.ts"
+if [[ "$PLATFORM" == "android" || "$PLATFORM" == "all" ]]; then
+  RESTORE_TARGETS="$RESTORE_TARGETS android/app/src/main/AndroidManifest.xml android/app/src/main/res/xml/network_security_config.xml"
+fi
+git checkout -- $RESTORE_TARGETS
 
 echo ""
 echo "✅ Capacitor 빌드 완료! out/ 디렉토리에 정적 파일 생성됨"

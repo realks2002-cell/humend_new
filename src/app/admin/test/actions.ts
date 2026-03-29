@@ -9,6 +9,33 @@ const SEED_MEMBERS = [
   { name: "이윤주", phone: "01023596976" },
 ];
 
+export async function createTestClient(placeName: string, lat: number, lng: number) {
+  const supabase = createAdminClient();
+
+  const { data: existing } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("company_name", placeName)
+    .single();
+
+  if (existing) {
+    await supabase
+      .from("clients")
+      .update({ latitude: lat, longitude: lng, location: placeName, is_test: true })
+      .eq("id", existing.id);
+    return existing.id as string;
+  }
+
+  const { data: newClient, error } = await supabase
+    .from("clients")
+    .insert({ company_name: placeName, location: placeName, latitude: lat, longitude: lng, is_test: true })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(`근무지 등록 실패: ${error.message}`);
+  return newClient.id as string;
+}
+
 export interface TestMember {
   id: string;
   name: string;
@@ -110,12 +137,77 @@ async function ensureTestMember(phone: string, name: string): Promise<string> {
   return authUser.user.id;
 }
 
+export async function triggerCron() {
+  const supabase = createAdminClient();
+  const now = new Date();
+  const today = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+
+  const { data: shifts } = await supabase
+    .from("daily_shifts")
+    .select(`
+      id, member_id, start_time, arrival_status,
+      alert_minutes_before, alert_interval_minutes, alert_max_count,
+      notification_sent_count, last_notification_at,
+      custom_notify_message, custom_repeat_message,
+      clients (company_name)
+    `)
+    .eq("work_date", today)
+    .in("arrival_status", ["pending", "notified"]);
+
+  if (!shifts || shifts.length === 0) return { checked: 0, notified: 0 };
+
+  const { notifyAttendanceCheck } = await import("@/lib/push/attendance-notify");
+
+  let notified = 0;
+  for (const shift of shifts) {
+    const shiftStart = new Date(`${today}T${shift.start_time}+09:00`);
+    const minutesUntil = (shiftStart.getTime() - now.getTime()) / 60000;
+    const companyName =
+      (shift.clients as unknown as { company_name: string })?.company_name ?? "근무지";
+    const timeStr = shift.start_time.slice(0, 5);
+    const customNotify = (shift as any).custom_notify_message as string | null;
+    const customRepeat = (shift as any).custom_repeat_message as string | null;
+
+    if (shift.arrival_status === "pending") {
+      if (minutesUntil <= shift.alert_minutes_before && minutesUntil > 0) {
+        await notifyAttendanceCheck(shift.member_id, shift.id, companyName, timeStr, customNotify || undefined);
+        await supabase
+          .from("daily_shifts")
+          .update({ arrival_status: "notified", notification_sent_count: 1, last_notification_at: now.toISOString() })
+          .eq("id", shift.id);
+        notified++;
+      }
+    } else if (shift.arrival_status === "notified") {
+      const lastNotif = shift.last_notification_at ? new Date(shift.last_notification_at) : null;
+      const minutesSinceLast = lastNotif ? (now.getTime() - lastNotif.getTime()) / 60000 : Infinity;
+
+      if (minutesSinceLast >= shift.alert_interval_minutes - 1 && shift.notification_sent_count < shift.alert_max_count) {
+        await notifyAttendanceCheck(shift.member_id, shift.id, companyName, timeStr, customRepeat || customNotify || undefined);
+        await supabase
+          .from("daily_shifts")
+          .update({ notification_sent_count: shift.notification_sent_count + 1, last_notification_at: now.toISOString() })
+          .eq("id", shift.id);
+        notified++;
+      }
+    }
+  }
+
+  return { checked: shifts.length, notified };
+}
+
 export async function createTestShift(
   placeName: string,
   lat: number,
   lng: number,
   startTime: string,
-  memberId: string
+  memberId: string,
+  alertOptions?: {
+    alertMinutesBefore?: number;
+    alertIntervalMinutes?: number;
+    alertMaxCount?: number;
+  }
 ) {
   const supabase = createAdminClient();
 
@@ -164,6 +256,12 @@ export async function createTestShift(
     .eq("work_date", today)
     .single();
 
+  const alertData = {
+    ...(alertOptions?.alertMinutesBefore != null && { alert_minutes_before: alertOptions.alertMinutesBefore }),
+    ...(alertOptions?.alertIntervalMinutes != null && { alert_interval_minutes: alertOptions.alertIntervalMinutes }),
+    ...(alertOptions?.alertMaxCount != null && { alert_max_count: alertOptions.alertMaxCount }),
+  };
+
   if (existingShift) {
     const { error } = await supabase
       .from("daily_shifts")
@@ -177,11 +275,12 @@ export async function createTestShift(
         nearby_at: null,
         notification_sent_count: 0,
         last_notification_at: null,
+        ...alertData,
       })
       .eq("id", existingShift.id);
 
     if (error) throw new Error(`배정 업데이트 실패: ${error.message}`);
-    notifyShiftAssigned(memberId, placeName, today, startTime).catch(console.error);
+    await notifyShiftAssigned(memberId, placeName, today, startTime);
     return existingShift.id as string;
   }
 
@@ -194,12 +293,13 @@ export async function createTestShift(
       start_time: startTime,
       end_time: endTime,
       arrival_status: "pending",
+      ...alertData,
     })
     .select("id")
     .single();
 
   if (shiftError) throw new Error(`배정 생성 실패: ${shiftError.message}`);
-  notifyShiftAssigned(memberId, placeName, today, startTime).catch(console.error);
+  await notifyShiftAssigned(memberId, placeName, today, startTime);
   return shift.id as string;
 }
 

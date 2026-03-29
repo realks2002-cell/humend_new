@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo, useCallback } from "react";
+import { useState, useTransition, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -51,6 +51,13 @@ export interface NotificationLog {
   created_at: string;
 }
 
+export interface DepartureLog {
+  id: string;
+  departed_at: string;
+  returned_at: string | null;
+  duration_minutes: number | null;
+}
+
 export interface ShiftWithDetails {
   id: string;
   client_id: string;
@@ -64,6 +71,7 @@ export interface ShiftWithDetails {
   nearby_at: string | null;
   alert_minutes_before: number;
   notification_sent_count: number;
+  departure_logs?: DepartureLog[];
   clients: {
     company_name: string;
     location: string;
@@ -238,6 +246,8 @@ export function ShiftTable({
   clientPostings = [],
   assignedMemberIds = [],
   notificationLogs = [],
+  testMode = false,
+  onCreateTestClient,
 }: {
   shifts: ShiftWithDetails[];
   clients: Client[];
@@ -247,6 +257,8 @@ export function ShiftTable({
   clientPostings?: ClientPosting[];
   assignedMemberIds?: string[];
   notificationLogs?: NotificationLog[];
+  testMode?: boolean;
+  onCreateTestClient?: (placeName: string, lat: number, lng: number) => Promise<string>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -273,6 +285,40 @@ export function ShiftTable({
   const [customRepeatMessage, setCustomRepeatMessage] = useState("");
   const [pasteText, setPasteText] = useState("");
   const [pasteResult, setPasteResult] = useState<{ matched: Member[]; unmatched: string[] } | null>(null);
+
+  // testMode: 주소 검색으로 근무지 등록
+  const [testPlaceQuery, setTestPlaceQuery] = useState("");
+  const [testSearchResults, setTestSearchResults] = useState<{ address: string; lat: number; lng: number }[]>([]);
+  const [testSearching, setTestSearching] = useState(false);
+  const geocoderRef = useRef<google.maps.Geocoder | null>(null);
+
+  const handleTestSearch = async () => {
+    if (!testPlaceQuery.trim() || !testMode) return;
+    if (!window.google?.maps) { alert("지도가 아직 로딩 중입니다."); return; }
+    if (!geocoderRef.current) geocoderRef.current = new google.maps.Geocoder();
+    setTestSearching(true);
+    try {
+      const response = await geocoderRef.current.geocode({ address: testPlaceQuery });
+      setTestSearchResults(response.results.map((r) => ({
+        address: r.formatted_address,
+        lat: r.geometry.location.lat(),
+        lng: r.geometry.location.lng(),
+      })));
+    } catch { alert("주소 검색 실패"); }
+    finally { setTestSearching(false); }
+  };
+
+  const handleTestSelectAddress = async (r: { address: string; lat: number; lng: number }) => {
+    if (!onCreateTestClient) return;
+    try {
+      const clientId = await onCreateTestClient(r.address, r.lat, r.lng);
+      setFormClientId(clientId);
+      setTestPlaceQuery(r.address);
+      setTestSearchResults([]);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "등록 실패");
+    }
+  };
 
   // 수정 모드 (등록 다이얼로그 재사용)
   const [editGroup, setEditGroup] = useState<{
@@ -368,6 +414,8 @@ export function ShiftTable({
     setPasteText("");
     setPasteResult(null);
     setEditGroup(null);
+    setTestPlaceQuery("");
+    setTestSearchResults([]);
   }
 
   const handlePaste = useCallback((text: string) => {
@@ -381,7 +429,7 @@ export function ShiftTable({
     });
   }, [members]);
 
-  const selectedWorkDate = formDateKey ? formDateKey.split("|")[0] : "";
+  const selectedWorkDate = formDateKey ? formDateKey.split("|")[0] : (testMode ? selectedDate : "");
 
   async function handleCreate() {
     if (!formClientId || !selectedWorkDate || selectedMembers.length === 0) return;
@@ -501,49 +549,86 @@ export function ShiftTable({
               </>
             ) : (
               <>
-                {/* 등록 모드: 캐스케이드 드롭다운 */}
-                <div>
-                  <Label>고객사</Label>
-                  <Select value={formClientId} onValueChange={handleClientSelect}>
-                    <SelectTrigger><SelectValue placeholder="고객사를 선택하세요" /></SelectTrigger>
-                    <SelectContent>
-                      {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.company_name} ({c.location})</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {formClientId && (
-                  <div>
-                    <Label>근무일 선택</Label>
-                    {selectedClientPostings.length > 0 ? (
-                      <Select value={formDateKey} onValueChange={handleDateSelect}>
-                        <SelectTrigger><SelectValue placeholder="공고 날짜를 선택하세요" /></SelectTrigger>
+                {testMode ? (
+                  <>
+                    {/* 테스트 모드: 주소 검색으로 근무지 등록 */}
+                    <div>
+                      <Label>근무지 (주소 검색)</Label>
+                      {formClientId ? (
+                        <div className="flex items-center gap-2 mt-1">
+                          <Input value={testPlaceQuery} disabled className="flex-1" />
+                          <Button type="button" variant="ghost" size="sm" className="h-8 text-xs shrink-0" onClick={() => { setFormClientId(""); setTestPlaceQuery(""); setTestSearchResults([]); }}>변경</Button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex gap-2 mt-1">
+                            <Input placeholder="주소를 입력하세요 (예: 강남역)" value={testPlaceQuery} onChange={(e) => setTestPlaceQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleTestSearch()} />
+                            <Button type="button" size="sm" className="shrink-0" onClick={handleTestSearch} disabled={testSearching}>{testSearching ? "검색 중..." : "검색"}</Button>
+                          </div>
+                          {testSearchResults.length > 0 && (
+                            <div className="mt-2 border rounded-md divide-y max-h-36 overflow-y-auto">
+                              {testSearchResults.map((r, i) => (
+                                <button key={i} className="w-full text-left px-3 py-2 text-sm hover:bg-accent" onClick={() => handleTestSelectAddress(r)}>{r.address}</button>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    {formClientId && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div><Label>시작 시간</Label><Input type="time" value={formStartTime} onChange={(e) => setFormStartTime(e.target.value)} /></div>
+                        <div><Label>종료 시간</Label><Input type="time" value={formEndTime} onChange={(e) => setFormEndTime(e.target.value)} /></div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* 일반 모드: 캐스케이드 드롭다운 */}
+                    <div>
+                      <Label>고객사</Label>
+                      <Select value={formClientId} onValueChange={handleClientSelect}>
+                        <SelectTrigger><SelectValue placeholder="고객사를 선택하세요" /></SelectTrigger>
                         <SelectContent>
-                          {selectedClientPostings.map((p) => (
-                            <SelectItem key={`${p.workDate}|${p.startTime}|${p.endTime}|${p.postingId}`} value={`${p.workDate}|${p.startTime}|${p.endTime}|${p.postingId}`}>
-                              {p.workDate} ({p.startTime.slice(0, 5)}~{p.endTime.slice(0, 5)})
-                              {p.approvedMembers.length > 0 && ` · ${p.approvedMembers.length}명 승인`}
-                            </SelectItem>
-                          ))}
+                          {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.company_name} ({c.location})</SelectItem>)}
                         </SelectContent>
                       </Select>
-                    ) : (
-                      <p className="text-sm text-muted-foreground mt-1">해당 고객사에 등록된 공고가 없습니다.</p>
-                    )}
-                  </div>
-                )}
+                    </div>
 
-                {formStartTime && formEndTime && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label>시작 시간</Label><Input value={formStartTime} disabled /></div>
-                    <div><Label>종료 시간</Label><Input value={formEndTime} disabled /></div>
-                  </div>
+                    {formClientId && (
+                      <div>
+                        <Label>근무일 선택</Label>
+                        {selectedClientPostings.length > 0 ? (
+                          <Select value={formDateKey} onValueChange={handleDateSelect}>
+                            <SelectTrigger><SelectValue placeholder="공고 날짜를 선택하세요" /></SelectTrigger>
+                            <SelectContent>
+                              {selectedClientPostings.map((p) => (
+                                <SelectItem key={`${p.workDate}|${p.startTime}|${p.endTime}|${p.postingId}`} value={`${p.workDate}|${p.startTime}|${p.endTime}|${p.postingId}`}>
+                                  {p.workDate} ({p.startTime.slice(0, 5)}~{p.endTime.slice(0, 5)})
+                                  {p.approvedMembers.length > 0 && ` · ${p.approvedMembers.length}명 승인`}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <p className="text-sm text-muted-foreground mt-1">해당 고객사에 등록된 공고가 없습니다.</p>
+                        )}
+                      </div>
+                    )}
+
+                    {formStartTime && formEndTime && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div><Label>시작 시간</Label><Input value={formStartTime} disabled /></div>
+                        <div><Label>종료 시간</Label><Input value={formEndTime} disabled /></div>
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             )}
 
             {/* 알림 설정 */}
-            {(formDateKey || editGroup) && (
+            {(formDateKey || editGroup || (testMode && formClientId)) && (
               <>
                 <Separator />
                 <p className="text-sm font-medium">알림 설정</p>
@@ -575,7 +660,7 @@ export function ShiftTable({
             )}
 
             {/* 회원 선택 */}
-            {(formDateKey || editGroup) && (
+            {(formDateKey || editGroup || (testMode && formClientId)) && (
               <>
                 <Separator />
                 <div>
@@ -587,17 +672,13 @@ export function ShiftTable({
                   </div>
                   {selectedPostingMembers.length > 0 ? (
                     <div className="mt-2 max-h-48 overflow-y-auto rounded-md border p-2 space-y-1">
-                      {selectedPostingMembers.map((m) => {
-                        const assigned = assignedMemberIds.includes(m.id);
-                        return (
-                          <label key={m.id} className={cn("flex items-center gap-2 rounded px-2 py-1.5 text-sm", assigned ? "opacity-50 cursor-not-allowed" : "hover:bg-accent cursor-pointer")}>
-                            <Checkbox checked={selectedMembers.includes(m.id)} onCheckedChange={() => !assigned && toggleMember(m.id)} disabled={assigned} />
+                      {selectedPostingMembers.map((m) => (
+                          <label key={m.id} className={cn("flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-accent cursor-pointer")}>
+                            <Checkbox checked={selectedMembers.includes(m.id)} onCheckedChange={() => toggleMember(m.id)} />
                             <span>{m.name ?? "이름없음"}</span>
                             <span className="text-muted-foreground">{m.phone}</span>
-                            {assigned && <Badge variant="outline" className="text-[10px] ml-auto">배정됨</Badge>}
                           </label>
-                        );
-                      })}
+                      ))}
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground mt-1">승인된 지원자가 없습니다.</p>
@@ -613,16 +694,13 @@ export function ShiftTable({
                   </div>
                   {memberSearch && (
                     <div className="mt-2 max-h-36 overflow-y-auto rounded-md border p-2 space-y-1">
-                      {filteredMembers.map((m) => {
-                        const assigned = assignedMemberIds.includes(m.id);
-                        return (
-                          <label key={m.id} className={cn("flex items-center gap-2 rounded px-2 py-1.5 text-sm", assigned ? "opacity-50 cursor-not-allowed" : "hover:bg-accent cursor-pointer")}>
-                            <Checkbox checked={selectedMembers.includes(m.id)} onCheckedChange={() => !assigned && toggleMember(m.id)} disabled={assigned} />
+                      {filteredMembers.map((m) => (
+                          <label key={m.id} className={cn("flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-accent cursor-pointer")}>
+                            <Checkbox checked={selectedMembers.includes(m.id)} onCheckedChange={() => toggleMember(m.id)} />
                             <span>{m.name ?? "이름없음"}</span>
                             <span className="text-muted-foreground">{m.phone}</span>
                           </label>
-                        );
-                      })}
+                      ))}
                       {filteredMembers.length === 0 && <p className="text-sm text-muted-foreground py-2 text-center">검색 결과가 없습니다</p>}
                     </div>
                   )}
@@ -707,26 +785,43 @@ export function ShiftTable({
                     const isNoshow = shift.arrival_status === "noshow";
                     const isArrived = shift.arrival_status === "arrived";
                     const isOn = shift.confirmed_at != null;
+                    const departures = shift.departure_logs ?? [];
+                    const activeDeparture = departures.find((d) => !d.returned_at);
+                    const totalDepartMinutes = departures.reduce((sum, d) => sum + (d.duration_minutes ?? 0), 0);
                     return (
-                      <div key={shift.id} className="flex items-center gap-2 px-4 py-2 text-sm">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium truncate">{shift.members.name ?? "이름없음"}</span>
-                            <span className="text-muted-foreground text-xs shrink-0">{shift.members.phone}</span>
+                      <div key={shift.id} className="px-4 py-2 text-sm space-y-1">
+                        <div className="flex items-center gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium truncate">{shift.members.name ?? "이름없음"}</span>
+                              <span className="text-muted-foreground text-xs shrink-0">{shift.members.phone}</span>
+                            </div>
                           </div>
+                          {isNoshow ? (
+                            <Badge variant="destructive" className="shrink-0 text-xs bg-red-700">노쇼</Badge>
+                          ) : (
+                            <>
+                              <Badge variant={isOn ? "default" : "destructive"} className={cn("shrink-0 text-[11px] px-1.5", isOn ? "bg-green-600" : "bg-red-500")}>{isOn ? "ON" : "OFF"}</Badge>
+                              {activeDeparture && <Badge variant="destructive" className="shrink-0 text-[11px] px-1.5 bg-orange-500 animate-pulse">이탈 중</Badge>}
+                              {shift.nearby_at && <span className="text-blue-600 text-xs shrink-0 tabular-nums">근접 {fmtTime(shift.nearby_at)}</span>}
+                              {isArrived && shift.arrived_at && <span className="text-green-600 text-xs shrink-0 tabular-nums">출근 {fmtTime(shift.arrived_at)}</span>}
+                            </>
+                          )}
+                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-red-600 shrink-0" onClick={() => handleDelete(shift.id)} disabled={isPending} title="삭제">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
-                        {isNoshow ? (
-                          <Badge variant="destructive" className="shrink-0 text-xs bg-red-700">노쇼</Badge>
-                        ) : (
-                          <>
-                            <Badge variant={isOn ? "default" : "destructive"} className={cn("shrink-0 text-[11px] px-1.5", isOn ? "bg-green-600" : "bg-red-500")}>{isOn ? "ON" : "OFF"}</Badge>
-                            {shift.nearby_at && <span className="text-blue-600 text-xs shrink-0 tabular-nums">근접 {fmtTime(shift.nearby_at)}</span>}
-                            {isArrived && shift.arrived_at && <span className="text-green-600 text-xs shrink-0 tabular-nums">출근 {fmtTime(shift.arrived_at)}</span>}
-                          </>
+                        {departures.length > 0 && (
+                          <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-orange-600 pl-0.5">
+                            <span>이탈 {departures.length}회</span>
+                            {totalDepartMinutes > 0 && <span>총 {totalDepartMinutes}분</span>}
+                            {departures.map((d, i) => (
+                              <span key={d.id} className="text-muted-foreground">
+                                {fmtTime(d.departed_at)}{d.returned_at ? `~${fmtTime(d.returned_at)}` : "~"}
+                              </span>
+                            ))}
+                          </div>
                         )}
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-red-600 shrink-0" onClick={() => handleDelete(shift.id)} disabled={isPending} title="삭제">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
                       </div>
                     );
                   })}

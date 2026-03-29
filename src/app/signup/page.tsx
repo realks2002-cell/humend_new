@@ -229,7 +229,7 @@ export default function SignupPage() {
               <span className="text-xs text-muted-foreground flex-1">[필수] 위치정보 수집·이용 동의</span>
             </label>
             <p className="text-[10px] text-muted-foreground/70 pl-6">
-              출근 확인을 위해 배정된 근무일 출근 2시간 전부터 도착 확인까지 위치를 수집합니다. 90일 후 자동 삭제됩니다.
+              출근 확인을 위해 근무지 접근 시 위치를 확인합니다. 위치는 지속적으로 수집되지 않으며, 90일 후 자동 삭제됩니다.
             </p>
             <label className="flex items-center gap-2 cursor-pointer">
               <Checkbox

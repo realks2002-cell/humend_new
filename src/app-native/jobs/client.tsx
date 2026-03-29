@@ -107,14 +107,14 @@ export default function JobsClient() {
         </Select>
         <Input
           type="date"
-          className="h-8 w-[85px] shrink-0 text-[10px] px-1 opacity-50"
+          className="h-8 w-[85px] text-[10px] px-1 opacity-50"
           value={filterFrom}
           onChange={(e) => setFilterFrom(e.target.value)}
         />
         <span className="text-[10px] text-muted-foreground">~</span>
         <Input
           type="date"
-          className="h-8 w-[85px] shrink-0 text-[10px] px-1 opacity-50"
+          className="h-8 w-[85px] text-[10px] px-1 opacity-50"
           value={filterTo}
           onChange={(e) => setFilterTo(e.target.value)}
         />

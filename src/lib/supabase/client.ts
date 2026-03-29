@@ -5,13 +5,19 @@ let nativeClient: ReturnType<typeof createSupabaseClient> | null = null;
 
 function isNativePlatform(): boolean {
   if (typeof window === "undefined") return false;
+  // 1) 빌드 시 환경변수로 강제 설정
+  if (process.env.NEXT_PUBLIC_IS_NATIVE_APP === "true") return true;
+  // 2) Capacitor 런타임 감지
   try {
-    // Capacitor injects this on native platforms
-    return !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
-      .Capacitor?.isNativePlatform?.();
-  } catch {
-    return false;
-  }
+    if ((window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+      .Capacitor?.isNativePlatform?.()) return true;
+  } catch {}
+  // 3) 정적 빌드 감지: capacitor:// 또는 file:// origin
+  try {
+    const origin = window.location.origin;
+    if (origin.startsWith("capacitor://") || origin.startsWith("file://") || origin === "null") return true;
+  } catch {}
+  return false;
 }
 
 export function createClient() {

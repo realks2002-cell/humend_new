@@ -108,7 +108,7 @@ export async function GET(req: NextRequest) {
 
         noshowCount++;
       } else if (
-        minutesSinceLast >= shift.alert_interval_minutes &&
+        minutesSinceLast >= shift.alert_interval_minutes - 1 &&
         shift.notification_sent_count < shift.alert_max_count
       ) {
         await notifyAttendanceCheck(

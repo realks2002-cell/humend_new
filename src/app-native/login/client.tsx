@@ -60,18 +60,35 @@ export default function LoginClient() {
           return;
         }
 
-        // members 테이블 확인 후 바로 네비게이션 (네이티브앱은 쿠키 불필요)
+        // members 테이블 확인: id 또는 google_uid로 매칭
         const { data: { user } } = await supabase.auth.getUser();
 
         if (user) {
-          const { data: member } = await supabase
+          const { data: memberById } = await supabase
             .from("members")
             .select("id")
             .eq("id", user.id)
             .maybeSingle();
 
-          const targetPath = member ? redirectPath : "/signup/complete";
-          router.push(targetPath);
+          if (memberById) {
+            router.push(redirectPath);
+            return;
+          }
+
+          // google_uid로 매칭 (이미 연결된 계정)
+          const { data: memberByGuid } = await supabase
+            .from("members")
+            .select("id")
+            .eq("google_uid", user.id)
+            .maybeSingle();
+
+          if (memberByGuid) {
+            router.push(redirectPath);
+            return;
+          }
+
+          // 매칭 안 됨 → 전화번호로 계정 연결 페이지
+          router.push("/google-link");
           return;
         }
         setGoogleLoading(false);

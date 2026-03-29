@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import dynamic_import from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,8 @@ import { Users, Building2, Handshake, ArrowRight, Zap, MapPin, Shield, Briefcase
 import { CountUp } from "@/components/ui/count-up";
 import HeroSection from "@/components/home/HeroSection";
 import KakaoFloatingButton from "@/components/home/KakaoFloatingButton";
+
+const MobileHome = dynamic_import(() => import("@/components/home/MobileHome"));
 
 const stats = [
   { label: "등록 회원", value: 12000, suffix: "+", icon: Users, color: "text-gray-700" },
@@ -58,7 +61,14 @@ export default async function Home() {
     .filter((c) => c.job_postings.length > 0);
 
   return (
-    <div className="animate-in fade-in duration-500">
+    <>
+    {/* 모바일: 네이티브 홈 */}
+    <div className="md:hidden">
+      <MobileHome />
+    </div>
+
+    {/* 데스크톱: 기존 웹 홈 */}
+    <div className="hidden md:block animate-in fade-in duration-500">
       <KakaoFloatingButton />
 
       {/* Hero */}
@@ -264,5 +274,6 @@ export default async function Home() {
         </div>
       </section>
     </div>
+    </>
   );
 }

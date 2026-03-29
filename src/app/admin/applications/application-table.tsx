@@ -13,10 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatDate, formatDateRange, formatWorkDays, formatPhone, formatClientWage } from "@/lib/utils/format";
+import { formatDate, formatDateRange, formatWorkDays, formatPhone } from "@/lib/utils/format";
 import { ApplicationActions, RevertAction } from "./application-actions";
 import { MemberDetailModal } from "../members/member-detail-modal";
-import { batchApproveApplications, deleteApplication, updateApplicationMemo } from "./actions";
+import { batchApproveApplications, batchRejectApplications, batchDeleteApplications, deleteApplication, updateApplicationMemo } from "./actions";
 import { toast } from "sonner";
 import type { Member } from "@/lib/supabase/queries";
 import { getMemberDetail } from "../payments/actions";
@@ -31,10 +31,21 @@ const statusConfig: Record<string, { label: string; variant: "secondary" | "defa
   "취소": { label: "취소됨", variant: "secondary" },
 };
 
+function formatAppliedAt(dateStr?: string | null) {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return `${mm}/${dd}  ${hh}:${mi}`;
+}
+
 interface AppItem {
   id: string;
   member_id: string;
   status: string;
+  applied_at?: string | null;
   admin_memo?: string | null;
   members: { name: string; phone: string } | null;
   job_postings: {
@@ -136,13 +147,13 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
     [filtered, currentPage]
   );
 
-  const pendingFilteredIds = useMemo(
-    () => paginatedApps.filter((a) => a.status === "대기").map((a) => a.id),
+  const allFilteredIds = useMemo(
+    () => paginatedApps.map((a) => a.id),
     [paginatedApps]
   );
 
   function toggleAll(checked: boolean) {
-    setSelectedIds(checked ? new Set(pendingFilteredIds) : new Set());
+    setSelectedIds(checked ? new Set(allFilteredIds) : new Set());
   }
 
   function toggleOne(id: string, checked: boolean) {
@@ -170,6 +181,46 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
       setSelectedIds(new Set());
     } catch {
       toast.error("일괄 승인 중 오류가 발생했습니다.");
+    } finally {
+      setBatchLoading(false);
+    }
+  }
+
+  async function handleBatchReject() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!confirm(`${ids.length}건을 일괄 거절하시겠습니까?`)) return;
+    setBatchLoading(true);
+    try {
+      const result = await batchRejectApplications(ids);
+      if (result.failed === 0) {
+        toast.success(`${result.success}건 일괄 거절 완료`);
+      } else {
+        toast.warning(`성공 ${result.success}건 / 실패 ${result.failed}건`);
+      }
+      setSelectedIds(new Set());
+    } catch {
+      toast.error("일괄 거절 중 오류가 발생했습니다.");
+    } finally {
+      setBatchLoading(false);
+    }
+  }
+
+  async function handleBatchDelete() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!confirm(`${ids.length}건을 일괄 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
+    setBatchLoading(true);
+    try {
+      const result = await batchDeleteApplications(ids);
+      if (result.failed === 0) {
+        toast.success(`${result.success}건 일괄 삭제 완료`);
+      } else {
+        toast.warning(`성공 ${result.success}건 / 실패 ${result.failed}건`);
+      }
+      setSelectedIds(new Set());
+    } catch {
+      toast.error("일괄 삭제 중 오류가 발생했습니다.");
     } finally {
       setBatchLoading(false);
     }
@@ -228,15 +279,33 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
         <span className="ml-auto text-xs text-muted-foreground">{filtered.length}건</span>
       </div>
       {showActions && selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 border-b bg-blue-50 px-4 py-2">
+        <div className="flex items-center gap-2 border-b bg-blue-50 px-4 py-2">
           <span className="text-sm font-medium">{selectedIds.size}건 선택됨</span>
           <Button
             size="sm"
+            className="bg-green-600 hover:bg-green-700 text-white"
             onClick={handleBatchApprove}
             disabled={batchLoading}
           >
-            {batchLoading && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
+            {batchLoading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
             일괄 승인
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-red-300 text-red-600 hover:bg-red-50"
+            onClick={handleBatchReject}
+            disabled={batchLoading}
+          >
+            일괄 거절
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={handleBatchDelete}
+            disabled={batchLoading}
+          >
+            일괄 삭제
           </Button>
         </div>
       )}
@@ -250,19 +319,18 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
             <col className="w-[27px]" />
             <col className="w-[41px]" />
             <col className="w-[32px] hidden md:table-column" />
-            <col className="w-[64px] hidden md:table-column" />
+            <col className="w-[120px] hidden md:table-column" />
             <col className="w-[57px] hidden md:table-column" />
-            <col className="w-[38px] hidden md:table-column" />
+            <col className="w-[50px] hidden md:table-column" />
             <col className="w-[34px]" />
-            {showActions && <col className="w-[54px]" />}
-            {showActions && <col className="w-[34px]" />}
+            {showActions && <col className="w-[50px]" />}
           </colgroup>
           <thead>
             <tr className="border-b bg-muted/50 text-center">
               {showActions && (
                 <th className="px-2 py-3">
                   <Checkbox
-                    checked={pendingFilteredIds.length > 0 && pendingFilteredIds.every((id) => selectedIds.has(id))}
+                    checked={allFilteredIds.length > 0 && allFilteredIds.every((id) => selectedIds.has(id))}
                     onCheckedChange={(checked) => toggleAll(!!checked)}
                     aria-label="전체 선택"
                   />
@@ -276,15 +344,14 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
               <th className="hidden px-2 py-3 font-medium md:table-cell">키</th>
               <th className="hidden px-2 py-3 font-medium md:table-cell">간단 메모</th>
               <th className="hidden px-2 py-3 font-medium md:table-cell">전화번호</th>
-              <th className="hidden px-2 py-3 font-medium md:table-cell">급여</th>
+              <th className="hidden px-2 py-3 font-medium md:table-cell">지원일</th>
               <th className="px-2 py-3 font-medium">상태</th>
               {showActions && <th className="px-2 py-3 font-medium">처리</th>}
-              {showActions && <th className="px-2 py-3 font-medium">삭제</th>}
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={showActions ? 13 : 10} className="py-8 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</td></tr>
+              <tr><td colSpan={showActions ? 12 : 10} className="py-8 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</td></tr>
             ) : null}
             {paginatedApps.map((app) => {
               const config = statusConfig[app.status] ?? statusConfig["대기"];
@@ -293,13 +360,11 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                 <tr key={app.id} className="border-b last:border-0">
                   {showActions && (
                     <td className="px-2 py-3 text-center">
-                      {app.status === "대기" ? (
-                        <Checkbox
-                          checked={selectedIds.has(app.id)}
-                          onCheckedChange={(checked) => toggleOne(app.id, !!checked)}
-                          aria-label={`${app.members?.name ?? ""} 선택`}
-                        />
-                      ) : null}
+                      <Checkbox
+                        checked={selectedIds.has(app.id)}
+                        onCheckedChange={(checked) => toggleOne(app.id, !!checked)}
+                        aria-label={`${app.members?.name ?? ""} 선택`}
+                      />
                     </td>
                   )}
                   <td className="px-2 py-3 text-center">{app.job_postings.clients.company_name}</td>
@@ -341,8 +406,8 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                   <td className="hidden px-2 py-3 text-center md:table-cell">
                     {app.members ? formatPhone(app.members.phone) : "-"}
                   </td>
-                  <td className="hidden px-2 py-3 text-center md:table-cell">
-                    {formatClientWage(app.job_postings.clients)}
+                  <td className="hidden px-2 py-3 text-center whitespace-nowrap md:table-cell">
+                    {formatAppliedAt(app.applied_at)}
                   </td>
                   <td className="px-2 py-3 text-center">
                     <Badge variant={config.variant} className="text-xs">
@@ -354,24 +419,20 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                       <div className="flex items-center justify-center gap-1">
                         {app.status === "대기" && <ApplicationActions applicationId={app.id} />}
                         {(app.status === "승인" || app.status === "거절") && <RevertAction applicationId={app.id} />}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          disabled={deletingId === app.id}
+                          onClick={() => handleDelete(app.id, app.members?.name ?? "알 수 없음")}
+                        >
+                          {deletingId === app.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
                       </div>
-                    </td>
-                  )}
-                  {showActions && (
-                    <td className="px-2 py-3 text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                        disabled={deletingId === app.id}
-                        onClick={() => handleDelete(app.id, app.members?.name ?? "알 수 없음")}
-                      >
-                        {deletingId === app.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-3.5 w-3.5" />
-                        )}
-                      </Button>
                     </td>
                   )}
                 </tr>
@@ -452,14 +513,24 @@ function MemoInput({ applicationId, initialValue }: { applicationId: string; ini
   }, [applicationId, value]);
 
   return (
-    <input
-      type="text"
-      className="w-full max-w-[80px] mx-auto block rounded border border-transparent bg-transparent px-1 py-0.5 text-center text-xs hover:border-border focus:border-ring focus:outline-none"
+    <textarea
+      rows={1}
+      className="w-full block rounded border border-transparent bg-transparent px-1 py-0.5 text-center text-xs hover:border-border focus:border-ring focus:outline-none resize-none overflow-hidden"
       value={value}
-      onChange={(e) => setValue(e.target.value)}
+      onChange={(e) => {
+        setValue(e.target.value);
+        e.target.style.height = "auto";
+        e.target.style.height = e.target.scrollHeight + "px";
+      }}
       onBlur={save}
-      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) (e.target as HTMLTextAreaElement).blur(); }}
       placeholder="-"
+      ref={(el) => {
+        if (el && el.value) {
+          el.style.height = "auto";
+          el.style.height = el.scrollHeight + "px";
+        }
+      }}
     />
   );
 }

@@ -58,11 +58,11 @@ export async function createShift(
 
   const companyName = client?.company_name ?? "근무지";
   const notifyMsg = options?.customNotifyMessage || undefined;
-  for (const memberId of memberIds) {
-    notifyShiftAssigned(memberId, companyName, date, startTime, notifyMsg).catch(
-      console.error
-    );
-  }
+  await Promise.allSettled(
+    memberIds.map((memberId) =>
+      notifyShiftAssigned(memberId, companyName, date, startTime, notifyMsg)
+    )
+  );
 
   revalidatePath("/admin/shifts");
   return { error: null };
@@ -93,7 +93,7 @@ export async function deleteShift(shiftId: string) {
       start_time: string;
       clients: { company_name: string } | null;
     };
-    notifyShiftCancelled(
+    await notifyShiftCancelled(
       info.member_id,
       info.clients?.company_name ?? "근무지",
       info.work_date,
@@ -177,11 +177,11 @@ export async function updateShiftGroup(
       return { error: error.message };
     }
 
-    for (const memberId of addMemberIds) {
-      notifyShiftAssigned(memberId, companyName, newDate, newStartTime).catch(
-        console.error
-      );
-    }
+    await Promise.allSettled(
+      addMemberIds.map((memberId) =>
+        notifyShiftAssigned(memberId, companyName, newDate, newStartTime)
+      )
+    );
   }
 
   if (removeMemberIds.length > 0) {
@@ -196,11 +196,11 @@ export async function updateShiftGroup(
 
     if (error) return { error: error.message };
 
-    for (const memberId of removeMemberIds) {
-      notifyShiftCancelled(memberId, companyName, newDate, newStartTime).catch(
-        console.error
-      );
-    }
+    await Promise.allSettled(
+      removeMemberIds.map((memberId) =>
+        notifyShiftCancelled(memberId, companyName, newDate, newStartTime)
+      )
+    );
   }
 
   revalidatePath("/admin/shifts");

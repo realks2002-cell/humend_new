@@ -18,7 +18,7 @@ export default function PrivacyPage() {
             <li><strong>필수항목:</strong> 이름, 생년월일, 성별, 연락처(휴대전화번호), 주소, 은행계좌정보</li>
             <li><strong>선택항목:</strong> 프로필 사진, 경력사항, 자격증 정보</li>
             <li><strong>자동 수집:</strong> 접속 IP, 접속 일시, 서비스 이용 기록, 기기 정보</li>
-            <li><strong>위치정보:</strong> 출근 확인을 위한 위치정보 (동의 시에만 수집)</li>
+            <li><strong>위치정보:</strong> 출근 확인을 위한 위치정보 (동의 시, 근무지 접근 시에만 수집 — 지속 수집 없음)</li>
           </ul>
           <p className="mt-2">수집 방법: 회원가입, 서비스 이용, 고객센터 문의</p>
         </section>

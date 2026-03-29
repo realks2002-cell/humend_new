@@ -1,0 +1,328 @@
+<!DOCTYPE html><html class="light" lang="ko"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>HUMAN:D - 오늘 지원하면 내일 출근</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#830020",
+              "error": "#ba1a1a",
+              "on-tertiary-container": "#ffbca3",
+              "tertiary-fixed": "#ffdbce",
+              "on-secondary-fixed": "#001452",
+              "on-secondary": "#ffffff",
+              "inverse-on-surface": "#f0f1f2",
+              "on-secondary-fixed-variant": "#0038b6",
+              "background": "#f8f9fa",
+              "tertiary": "#722500",
+              "surface-variant": "#e1e3e4",
+              "secondary-fixed": "#dde1ff",
+              "surface-container-low": "#f3f4f5",
+              "on-error-container": "#93000a",
+              "error-container": "#ffdad6",
+              "surface-container-highest": "#e1e3e4",
+              "on-error": "#ffffff",
+              "inverse-primary": "#ffb3b4",
+              "on-tertiary": "#ffffff",
+              "secondary-fixed-dim": "#b7c4ff",
+              "on-surface": "#191c1d",
+              "outline-variant": "#e1bebe",
+              "surface-tint": "#b2273b",
+              "on-tertiary-fixed": "#370e00",
+              "outline": "#8d7070",
+              "on-primary-fixed": "#40000b",
+              "on-primary-container": "#ffb9bb",
+              "on-tertiary-fixed-variant": "#802a00",
+              "on-secondary-container": "#dfe3ff",
+              "surface-dim": "#d9dadb",
+              "surface-bright": "#f8f9fa",
+              "tertiary-container": "#993400",
+              "secondary": "#003ec6",
+              "surface-container-high": "#e7e8e9",
+              "primary-container": "#a61d33",
+              "primary-fixed": "#ffdada",
+              "primary-fixed-dim": "#ffb3b4",
+              "on-primary": "#ffffff",
+              "surface-container": "#edeeef",
+              "surface-container-lowest": "#ffffff",
+              "surface": "#f8f9fa",
+              "inverse-surface": "#2e3132",
+              "on-background": "#191c1d",
+              "secondary-container": "#0052fe",
+              "tertiary-fixed-dim": "#ffb59a",
+              "on-primary-fixed-variant": "#900726",
+              "on-surface-variant": "#594141"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; color: #191c1d; }
+      .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+      .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+      .hide-scrollbar::-webkit-scrollbar { display: none; }
+      .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm flex justify-between items-center px-6 h-16">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-slate-600" style="">menu</span>
+<h1 class="text-2xl font-black text-primary tracking-tighter font-headline" style="">HUMAN:D</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-slate-600" style="">account_circle</span>
+</div>
+</header>
+<main class="pt-16 pb-24">
+<!-- Hero Section -->
+<section class="relative px-6 pt-12 pb-16 overflow-hidden">
+<div class="max-w-md mx-auto relative z-10">
+<span class="inline-block bg-primary-container/10 text-primary px-3 py-1 rounded-full text-xs font-bold mb-4 tracking-wider uppercase" style="">Quick Staffing</span>
+<h2 class="text-4xl font-extrabold font-headline leading-tight tracking-tight mb-6" style=""></h2><h1 class="hero-headline mb-5 text-[clamp(1.89rem,5.27vw,4.05rem)] font-black leading-[1.2] text-indigo-950" style="border-color: lab(90.952 0 -0.0000119209); border-image: initial; margin-bottom: 20px; padding: 0px; outline-color: oklab(0.707999 -0.00000712276 0.0000166297 / 0.5); font-size: clamp(1.89rem, 5.27vw, 4.05rem); --tw-leading: 1.2; line-height: 1.2; --tw-font-weight: 900; color: lab(12.4853 14.9672 -31.3418); font-family: Geist, &quot;Geist Fallback&quot;, ui-sans-serif, system-ui, sans-serif, &quot;Apple SD Gothic Neo&quot;, &quot;Malgun Gothic&quot;, sans-serif; text-align: center; background-color: rgb(242, 243, 252); letter-spacing: -2px;"><span class="block overflow-hidden" style="border-color: lab(90.952 0 -0.0000119209); border-image: initial; margin: 0px; padding: 0px; outline-color: oklab(0.707999 -0.00000712276 0.0000166297 / 0.5); display: block;">일할 준비 됐으면,</span><span class="block overflow-hidden" style="border-color: lab(90.952 0 -0.0000119209); border-image: initial; margin: 0px; padding: 0px; outline-color: oklab(0.707999 -0.00000712276 0.0000166297 / 0.5); display: block;"><span class="hero-highlight" style="border-color: lab(90.952 0 -0.0000119209); border-image: initial; margin: 0px; padding: 0px; outline-color: oklab(0.707999 -0.00000712276 0.0000166297 / 0.5); display: inline-block; position: relative; --hero-draw-delay: 0s;"><span class="hero-accent-primary" style="border-color: lab(90.952 0 -0.0000119209); border-image: initial; margin: 0px; padding: 0px; outline-color: oklab(0.707999 -0.00000712276 0.0000166297 / 0.5); -webkit-text-fill-color: transparent; background: linear-gradient(90deg, rgb(239, 68, 68), rgb(249, 115, 22), rgb(244, 63, 94), rgb(239, 68, 68)) 0px 0px / 200% 100% text; animation-duration: 3s; animation-timing-function: ease-in-out; animation-iteration-count: infinite; animation-direction: normal; animation-fill-mode: none; animation-play-state: running; animation-name: hero-accent-shimmer; animation-timeline: auto; animation-range: normal;">탭 한 번</span></span>이면 끝.<span class="hero-cursor" style="border-color: lab(90.952 0 -0.0000119209); border-image: initial; margin: 0px; padding: 0px; outline-color: oklab(0.707999 -0.00000712276 0.0000166297 / 0.5); color: rgb(79, 70, 229); font-weight: 300; animation-duration: 0.6s; animation-timing-function: step-end; animation-iteration-count: infinite; animation-direction: normal; animation-fill-mode: none; animation-play-state: running; animation-name: hero-cursor-blink; animation-timeline: auto; animation-range: normal; display: inline-block;">|</span></span><span class="block overflow-hidden" style="border-color: lab(90.952 0 -0.0000119209); border-image: initial; margin: 0px; padding: 0px; outline-color: oklab(0.707999 -0.00000712276 0.0000166297 / 0.5); display: block;"><span class="hero-cursor" style="border-color: lab(90.952 0 -0.0000119209); border-image: initial; margin: 0px; padding: 0px; outline-color: oklab(0.707999 -0.00000712276 0.0000166297 / 0.5); color: rgb(79, 70, 229); font-weight: 300; animation-duration: 0.6s; animation-timing-function: step-end; animation-iteration-count: infinite; animation-direction: normal; animation-fill-mode: none; animation-play-state: running; animation-name: hero-cursor-blink; animation-timeline: auto; animation-range: normal; display: inline-block;">오늘 지원하고 내일출근 하자.</span></span></h1><p class="hero-subheadline mb-4 text-xl font-bold text-gray-600 md:text-2xl" style="border-color: lab(90.952 0 -0.0000119209); border-image: initial; margin-bottom: 16px; padding: 0px; outline-color: oklab(0.707999 -0.00000712276 0.0000166297 / 0.5); font-size: 24px; line-height: 1.33333; --tw-font-weight: 700; color: lab(35.6337 -1.58697 -10.8425); font-family: Geist, &quot;Geist Fallback&quot;, ui-sans-serif, system-ui, sans-serif, &quot;Apple SD Gothic Neo&quot;, &quot;Malgun Gothic&quot;, sans-serif; letter-spacing: normal; text-align: center; background-color: rgb(242, 243, 252); opacity: 0; transform: translateY(20px); animation-duration: 0.7s; animation-timing-function: ease-out; animation-iteration-count: 1; animation-direction: normal; animation-fill-mode: forwards; animation-play-state: running; animation-name: hero-slide-up; animation-timeline: auto; animation-range: normal;">오늘 지원하고, 내일 출근하자.</p><span class="text-primary" style="">내일 출근</span>
+
+<div class="flex flex-col gap-3">
+<button class="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary py-4 rounded-xl font-bold shadow-lg shadow-primary/20 flex justify-center items-center gap-2" style="">
+                        일자리 보기 <span class="material-symbols-outlined text-lg" style="">arrow_forward</span>
+</button>
+<button class="w-full bg-surface-container-lowest text-primary border border-outline-variant/20 py-4 rounded-xl font-bold flex justify-center items-center gap-2" style="">
+                        급여 신청 <span class="material-symbols-outlined text-lg" style="">payments</span>
+</button>
+</div>
+</div>
+<!-- Abstract background shape -->
+<div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
+</section>
+<!-- Category Tags -->
+<section class="px-6 mb-12">
+<div class="flex overflow-x-auto hide-scrollbar gap-2 pb-2">
+<span class="flex-none bg-primary text-on-primary px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap" style="">전체</span>
+<span class="flex-none bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" style="">케이터링 보조</span>
+<span class="flex-none bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" style="">연회장 세팅</span>
+<span class="flex-none bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" style="">호텔 연회</span>
+<span class="flex-none bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" style="">웨딩홀 서빙</span>
+<span class="flex-none bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" style="">뷔페 세팅</span>
+<span class="flex-none bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" style="">호텔 하우스키핑</span>
+</div>
+</section>
+<!-- Job List Section -->
+<section class="mb-16">
+<div class="px-6 flex justify-between items-end mb-6">
+<div>
+<h3 class="text-xl font-extrabold font-headline mb-1" style="">지금 바로 지원 가능한 공고</h3>
+<p class="text-sm text-on-surface-variant" style="">내일 바로 일을 시작해보세요</p>
+</div>
+<button class="text-primary font-bold text-sm" style="">전체보기</button>
+</div>
+<!-- Horizontal Scroll Cards -->
+<div class="flex overflow-x-auto hide-scrollbar gap-6 px-6">
+<!-- Job Card 1 -->
+<div class="flex-none w-72">
+<div class="relative rounded-2xl overflow-hidden aspect-[3/2] mb-4 group">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" data-alt="Luxurious grand ballroom in a five-star hotel with sparkling chandeliers, white linen tables, and elegant catering setup for a formal wedding" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDEnyuHB_KV-IWoO3ECDfCSERFWIou2aZYK9sx0Us7-AenXjsCGcYvHnduHtvz_ZEVSqwl7XN_9r_HBp95hllV3GqYuQwtGHXWgEEzTAQ7Q250XA4zR3fr7eCmPk0-jugMuLaLxIxRVg_kQXTU3tfdwCkEfpLIGy1WgeRC1hEaoWg9_FDfSG8r_sF9HUFhL720xgb22rWckdPt-kFh7FE2YMJrvfhnhN53UyoqQD5_m0zVns1NZta9URErIFY2d7Trl1EeSgugqNk" style="">
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="bg-primary/90 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-tighter" style="">URGENT</span>
+<span class="bg-secondary/90 text-white text-[10px] font-bold px-2 py-1 rounded-md" style="">시급제</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-xl -mt-8 relative mx-3 shadow-lg shadow-on-surface/5">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-bold text-on-surface text-lg line-clamp-1" style="">그랜드 하얏트 연회 서빙</h4>
+<span class="material-symbols-outlined text-primary text-xl" style="font-variation-settings: &quot;FILL&quot; 1;">stars</span>
+</div>
+<div class="flex items-center gap-1 text-xs text-on-surface-variant mb-3" style="">
+<span class="material-symbols-outlined text-sm" style="">location_on</span> 용산구 한남동
+                            <span class="mx-1 opacity-30" style="">•</span>
+<span class="material-symbols-outlined text-sm" style="">person</span> 8명 모집
+                        </div>
+<div class="flex justify-between items-center pt-3 border-t border-surface-container">
+<span class="text-primary font-extrabold text-lg" style="">11,500원</span>
+<span class="text-[10px] text-on-surface-variant font-medium" style="">내일 14:00 - 22:00</span>
+</div>
+</div>
+</div>
+<!-- Job Card 2 -->
+<div class="flex-none w-72">
+<div class="relative rounded-2xl overflow-hidden aspect-[3/2] mb-4 group">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" data-alt="Professional hotel kitchen staff preparing exquisite hors d'oeuvres on silver platters for a high-end corporate gala event" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAAKNEv9W0lDGqzyEY-8pR2wiv0u3p32GX-ZDvtUJ7K2Yv68i6UG_RPM7IaOtqu0L_tuONrHTAFzqvlrcWdCUJqTownurK4zqp5BT2Igh5gkO91zVex3mDuVStGCWk2YKMTnlmRSmHvybjuoRwTZDoXpWNUX4plUhktg2v7SUF4kwFY8D9N7IMxXsLA-oNi0M3Mvn8I7bFfivtBtAADhCROG0cuzueHCh1MVKjSyEeLPHauklMhbO1CT0clDSyrRU8k2KPlA7DQ1dc" style="">
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="bg-primary-container text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-tighter" style="">PREMIUM</span>
+<span class="bg-secondary/90 text-white text-[10px] font-bold px-2 py-1 rounded-md" style="">기간제</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-xl -mt-8 relative mx-3 shadow-lg shadow-on-surface/5">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-bold text-on-surface text-lg line-clamp-1" style="">포시즌스 주방 보조 스태프</h4>
+<span class="material-symbols-outlined text-primary text-xl" style="">verified</span>
+</div>
+<div class="flex items-center gap-1 text-xs text-on-surface-variant mb-3" style="">
+<span class="material-symbols-outlined text-sm" style="">location_on</span> 종로구 광화문
+                            <span class="mx-1 opacity-30" style="">•</span>
+<span class="material-symbols-outlined text-sm" style="">person</span> 3명 모집
+                        </div>
+<div class="flex justify-between items-center pt-3 border-t border-surface-container">
+<span class="text-primary font-extrabold text-lg" style="">12,200원</span>
+<span class="text-[10px] text-on-surface-variant font-medium" style="">3일간 09:00 - 18:00</span>
+</div>
+</div>
+</div>
+<!-- Job Card 3 -->
+<div class="flex-none w-72">
+<div class="relative rounded-2xl overflow-hidden aspect-[3/2] mb-4 group">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" data-alt="Interior of a luxury modern restaurant with minimalist decor, soft warm lighting, and organized table settings ready for fine dining guests" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcbTSKfKgxcfPCRtAG77ORVPBexxxQlQoiz__RzcN74xDva1UCzhcXRel1I173uarMtQ6ThgDXJxwCyvudVhqcoGRAGkOnDmMjgiyhrj-z-v-A0noko8DzwYstkKRmtn_no24sjoryDL58TP4nXMd_MiWspySdNBaj5HcZXK-JJyTlLQ0sE7U1ly7C5pweGS5uaK6R-Fb7h5ZZmDP5XP5fnp4uAIRAVzB9ix0D3bieY93Tl8SAQgthITZo4ue4VG5Ke8UO3vOqJek" style="">
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="bg-primary/90 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-tighter" style="">NEW</span>
+<span class="bg-secondary/90 text-white text-[10px] font-bold px-2 py-1 rounded-md" style="">시급제</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-xl -mt-8 relative mx-3 shadow-lg shadow-on-surface/5">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-bold text-on-surface text-lg line-clamp-1" style="">워커힐 뷔페 세팅 스태프</h4>
+<span class="material-symbols-outlined text-primary text-xl" style="">workspace_premium</span>
+</div>
+<div class="flex items-center gap-1 text-xs text-on-surface-variant mb-3" style="">
+<span class="material-symbols-outlined text-sm" style="">location_on</span> 광진구 광장동
+                            <span class="mx-1 opacity-30" style="">•</span>
+<span class="material-symbols-outlined text-sm" style="">person</span> 15명 모집
+                        </div>
+<div class="flex justify-between items-center pt-3 border-t border-surface-container">
+<span class="text-primary font-extrabold text-lg" style="">10,500원</span>
+<span class="text-[10px] text-on-surface-variant font-medium" style="">오늘 18:00 - 23:00</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Service Intro / Why Human:D -->
+<section class="bg-surface-container-low py-16 px-6">
+<div class="max-w-md mx-auto">
+<h3 class="text-2xl font-extrabold font-headline mb-10 text-center italic" style="">Professional Reliability</h3>
+<div class="space-y-8">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: &quot;FILL&quot; 1;">bolt</span>
+</div>
+<div>
+<h4 class="font-bold text-lg mb-1" style="">빠른 매칭</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed" style="">지원 후 최대 1시간 내에 확정. 기다림 없이 내일 바로 일을 시작할 수 있습니다.</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: &quot;FILL&quot; 1;">domain</span>
+</div>
+<div>
+<h4 class="font-bold text-lg mb-1" style="">다양한 현장</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed" style="">5성급 호텔부터 대형 웨딩홀까지, 커리어가 되는 프리미엄 현장을 경험하세요.</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: &quot;FILL&quot; 1;">account_balance_wallet</span>
+</div>
+<div>
+<h4 class="font-bold text-lg mb-1" style="">투명한 급여</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed" style="">근무 종료 즉시 정산 신청 가능. 복잡한 절차 없이 당신의 땀방울을 보상받으세요.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Trust Indicators Bento Grid -->
+<section class="py-16 px-6">
+<h3 class="text-xl font-bold font-headline mb-8 text-center text-on-surface-variant" style="">숫자로 증명하는 신뢰</h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="col-span-2 bg-primary text-on-primary p-8 rounded-[2rem] text-center shadow-xl shadow-primary/10">
+<div class="text-4xl font-black font-headline mb-2 tracking-tighter" style="">50,000+</div>
+<div class="text-sm opacity-80 font-medium" style="">누적 회원수</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-3xl text-center border border-surface-container">
+<div class="text-2xl font-black font-headline mb-1 text-primary" style="">500+</div>
+<div class="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest" style="">Partners</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-3xl text-center border border-surface-container">
+<div class="text-2xl font-black font-headline mb-1 text-primary" style="">200k+</div>
+<div class="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest" style="">Matchings</div>
+</div>
+</div>
+</section>
+<!-- Partner Section (For Business Owners) -->
+<section class="px-6 py-12 mb-8">
+<div class="relative bg-inverse-surface text-inverse-on-surface rounded-[2.5rem] p-10 overflow-hidden">
+<div class="relative z-10">
+<h3 class="text-2xl font-extrabold font-headline mb-4 leading-tight" style="">인력이 필요한 사장님을 위한<br>맞춤 솔루션</h3>
+<p class="text-sm opacity-70 mb-8 max-w-[200px]" style="">급한 인력 충원부터 장기 운영 대행까지 휴먼드가 책임집니다.</p>
+<button class="bg-primary px-8 py-3 rounded-full text-sm font-bold flex items-center gap-2" style="">
+                        제휴 문의 <span class="material-symbols-outlined text-sm" style="">call</span>
+</button>
+</div>
+<!-- Artistic abstract circle -->
+<div class="absolute -bottom-10 -right-10 w-48 h-48 bg-primary/20 rounded-full blur-2xl"></div>
+</div>
+</section>
+</main>
+<!-- Floating KakaoTalk Button -->
+<a class="fixed bottom-28 right-6 z-40 flex items-center justify-center w-14 h-14 bg-white/80 backdrop-blur-md rounded-full shadow-2xl transition-transform active:scale-90 group border border-surface-container" href="#" style="">
+<span class="material-symbols-outlined text-[#FEE500] text-3xl" style="font-variation-settings: &quot;FILL&quot; 1;">chat_bubble</span>
+</a>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-[0_-4px_24px_rgba(25,28,29,0.06)] rounded-t-3xl z-50">
+<a class="flex flex-col items-center justify-center bg-red-50 dark:bg-red-950/30 text-primary dark:text-red-400 rounded-2xl px-5 py-2 transition-all duration-300 ease-out active:scale-90" href="#" style="">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">home_app_logo</span>
+<span class="text-[10px] font-semibold mt-1" style="">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-primary transition-all duration-300 active:scale-90" href="#" style="">
+<span class="material-symbols-outlined" style="">work_outline</span>
+<span class="text-[10px] font-semibold mt-1" style="">Jobs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-primary transition-all duration-300 active:scale-90" href="#" style="">
+<span class="material-symbols-outlined" style="">flash_on</span>
+<span class="text-[10px] font-semibold mt-1" style="">Matching</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-primary transition-all duration-300 active:scale-90" href="#" style="">
+<span class="material-symbols-outlined" style="">person_outline</span>
+<span class="text-[10px] font-semibold mt-1" style="">My</span>
+</a>
+</nav>
+<!-- Footer -->
+<footer class="bg-slate-100 dark:bg-slate-950 w-full py-12 px-6 pb-32">
+<div class="flex flex-col gap-8 w-full max-w-7xl mx-auto">
+<div class="flex flex-col gap-4">
+<span class="text-lg font-bold text-primary tracking-tighter" style="">HUMAN:D</span>
+<p class="text-xs text-slate-500 leading-relaxed font-body" style="">
+                    휴먼드 에이치알 (HUMAN:D HR)<br>
+                    대표: 홍길동 | 사업자번호: 123-45-67890<br>
+                    서울 구로구 디지털로 26길 123, 가이아타워 1502호<br>
+                    고객센터: 1588-0000 | partner@human-d.com
+                </p>
+</div>
+<div class="flex flex-wrap gap-4">
+<a class="text-xs text-slate-500 hover:text-primary transition-colors" href="#" style="">Terms of Service</a>
+<a class="text-xs text-slate-500 hover:text-primary transition-colors" href="#" style="">Privacy Policy</a>
+<a class="text-xs text-slate-500 hover:text-primary transition-colors" href="#" style="">Partner Inquiry</a>
+<a class="text-xs text-slate-500 hover:text-primary transition-colors" href="#" style="">Contact Us</a>
+</div>
+<p class="text-[10px] text-slate-400 mt-4" style="">© 2024 HUMAN:D Staffing Platform. All rights reserved.</p>
+</div>
+</footer>
+</body></html>

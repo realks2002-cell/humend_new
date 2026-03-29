@@ -2,9 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import { isNative } from "@/lib/capacitor/native";
+import { createClient } from "@/lib/supabase/client";
 import {
   startGeofenceWatch,
-  stopGeofenceWatch,
+  startDepartureWatch,
   isWatching,
 } from "@/lib/capacitor/geofence";
 
@@ -12,10 +13,9 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 
 async function getAccessToken(): Promise<string | null> {
   try {
-    // @ts-expect-error — 네이티브 전용 모듈, 웹 빌드에서는 catch로 처리
-    const { Preferences } = await import("@capacitor/preferences");
-    const { value } = await Preferences.get({ key: "access_token" });
-    return value;
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
   } catch {
     return null;
   }
@@ -23,9 +23,10 @@ async function getAccessToken(): Promise<string | null> {
 
 async function callApi(
   path: string,
-  body: Record<string, unknown>,
-  token: string
+  body: Record<string, unknown>
 ) {
+  const token = await getAccessToken();
+  if (!token) return null;
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
     headers: {
@@ -47,20 +48,21 @@ export function useAttendance() {
     let mounted = true;
 
     (async () => {
-      const token = await getAccessToken();
-      if (!token || !mounted) return;
+      const initToken = await getAccessToken();
+      if (!initToken || !mounted) return;
 
       // 오늘 근무 조회
       const res = await fetch(`${API_BASE}/api/native/attendance/today`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${initToken}` },
       });
       const data = await res.json();
       const shift = data?.shift;
 
       if (!shift || !mounted) return;
 
-      // confirmed 상태일 때만 지오펜스 시작
-      if (shift.arrival_status !== "confirmed") return;
+      // 이미 도착했거나 노쇼면 지오펜스 불필요... 가 아니라
+      // arrived면 이탈 감지 watch 시작
+      if (shift.arrival_status === "noshow") return;
 
       const client = shift.clients as {
         latitude: number | null;
@@ -69,18 +71,70 @@ export function useAttendance() {
       if (!client?.latitude || !client?.longitude) return;
       if (isWatching()) return;
 
+      if (shift.arrival_status === "arrived") {
+        // 이미 출근한 상태 → 이탈 감지 watch 시작
+        // 현재 이탈 중인지 확인
+        const supabase = createClient();
+        const { data: openDeparture } = await supabase
+          .from("departure_logs")
+          .select("id")
+          .eq("shift_id", shift.id)
+          .is("returned_at", null)
+          .limit(1);
+
+        const alreadyDeparted = (openDeparture?.length ?? 0) > 0;
+
+        await startDepartureWatch(
+          client.latitude,
+          client.longitude,
+          {
+            onDeparted: (lat, lng) => {
+              callApi(
+                "/api/native/attendance/depart",
+                { shiftId: shift.id, lat, lng }
+              ).catch(console.error);
+            },
+            onReturned: () => {
+              callApi(
+                "/api/native/attendance/return",
+                { shiftId: shift.id }
+              ).catch(console.error);
+            },
+            onError: (code) => {
+              console.error("[Attendance] departure watch error:", code);
+            },
+          },
+          alreadyDeparted
+        );
+        return;
+      }
+
+      // pending/notified/confirmed → 출근 감지 + 이탈 감지 통합 watch
       await startGeofenceWatch(client.latitude, client.longitude, {
         onNearby: (_lat, _lng) => {
           callApi(
             "/api/native/attendance/nearby",
-            { shiftId: shift.id },
-            token
+            { shiftId: shift.id }
           ).catch(console.error);
         },
         onArrived: (lat, lng) => {
           callApi(
             "/api/native/attendance/arrive",
+            { shiftId: shift.id, lat, lng }
+          ).catch(console.error);
+          // arrived 후에도 watch가 계속 유지됨 (이탈 감지)
+        },
+        onDeparted: (lat, lng) => {
+          callApi(
+            "/api/native/attendance/depart",
             { shiftId: shift.id, lat, lng },
+            token
+          ).catch(console.error);
+        },
+        onReturned: () => {
+          callApi(
+            "/api/native/attendance/return",
+            { shiftId: shift.id },
             token
           ).catch(console.error);
         },

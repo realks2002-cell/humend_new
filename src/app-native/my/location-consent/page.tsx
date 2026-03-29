@@ -25,7 +25,7 @@ export default function LocationConsentPage() {
         .select("location_consent")
         .eq("id", data.user.id)
         .single();
-      setConsented(member?.location_consent ?? true);
+      setConsented((member as unknown as { location_consent?: boolean })?.location_consent ?? true);
       setLoading(false);
     });
   }, [router]);
@@ -45,7 +45,7 @@ export default function LocationConsentPage() {
 
     const { error } = await supabase
       .from("members")
-      .update({ location_consent: next })
+      .update({ location_consent: next } as never)
       .eq("id", user.id);
 
     if (error) {
@@ -107,7 +107,7 @@ export default function LocationConsentPage() {
           <div>
             <p className="font-medium text-sm">수집 목적</p>
             <p className="text-sm text-muted-foreground">
-              출근 확인을 위해 배정된 근무일에 근무지 도착 여부를 확인합니다.
+              출근 확인을 위해 근무지 접근 시에만 위치를 확인합니다. 위치는 지속적으로 수집되지 않습니다.
             </p>
           </div>
         </div>
@@ -122,7 +122,7 @@ export default function LocationConsentPage() {
           <Clock className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
           <div>
             <p className="font-medium text-sm">보관 기간</p>
-            <p className="text-sm text-muted-foreground">15일 후 자동 삭제</p>
+            <p className="text-sm text-muted-foreground">90일 후 자동 삭제</p>
           </div>
         </div>
         <div className="flex items-start gap-3">

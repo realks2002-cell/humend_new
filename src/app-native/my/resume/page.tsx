@@ -126,18 +126,28 @@ function ResumeContent() {
   };
 
   const handleCameraClick = async () => {
-    if (isNative()) {
-      const hasShown = localStorage.getItem("camera_permission_notice");
-      if (!hasShown) {
-        const ok = confirm(
-          "프로필 사진 촬영/선택을 위해 카메라 및 사진 라이브러리 접근 권한이 필요합니다."
-        );
-        if (!ok) return;
-        localStorage.setItem("camera_permission_notice", "1");
+    // 앱 전용: 항상 Capacitor Camera 사용, 실패 시 file input fallback
+    try {
+      const { Camera, CameraResultType, CameraSource } = await import("@capacitor/camera");
+      const photo = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Base64,
+        source: CameraSource.Prompt,
+        width: 1024,
+        height: 1024,
+      });
+      if (photo.base64String) {
+        const format = photo.format || "jpeg";
+        const byteString = atob(photo.base64String);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+        const file = new File([ab], `photo_${Date.now()}.${format}`, { type: `image/${format}` });
+        await compressAndUpload(file, true);
       }
-      const file = await pickPhoto();
-      if (file) await compressAndUpload(file, true);
-    } else {
+    } catch (e) {
+      console.warn("[Camera] fallback to file input:", e);
       fileInputRef.current?.click();
     }
   };
@@ -237,7 +247,7 @@ function ResumeContent() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 pb-32 space-y-6">
+    <div className="mx-auto max-w-2xl px-4 py-8 pb-32 space-y-6 overflow-x-hidden">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">회원정보 관리</h1>
@@ -730,7 +740,7 @@ function ResumeContent() {
       </Button>
 
       {/* Success Modal */}
-      <Dialog open={showSuccessModal} onOpenChange={() => {}}>
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
         <DialogContent className="max-w-sm" onPointerDownOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
