@@ -13,7 +13,7 @@ export async function showBatteryOptimizationGuide(): Promise<void> {
   // 네이티브 alert 사용 (별도 Dialog 플러그인 불필요)
   window.alert(
     "출근 위치 추적이 정상적으로 작동하려면 배터리 최적화 예외 설정이 필요합니다.\n\n" +
-      "설정 > 앱 > 휴먼드HR > 배터리 > 제한 없음\n\n" +
+      "설정 > 앱 > 휴멘드HR > 배터리 > 제한 없음\n\n" +
       "위 경로에서 배터리 최적화를 해제해 주세요."
   );
 }

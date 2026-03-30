@@ -50,7 +50,10 @@ export async function createShift(
     }),
   }));
 
-  const { error } = await supabase.from("daily_shifts").insert(records);
+  const { data: inserted, error } = await supabase
+    .from("daily_shifts")
+    .insert(records)
+    .select("id, member_id");
 
   if (error) {
     return { error: error.message };
@@ -59,9 +62,10 @@ export async function createShift(
   const companyName = client?.company_name ?? "근무지";
   const notifyMsg = options?.customNotifyMessage || undefined;
   await Promise.allSettled(
-    memberIds.map((memberId) =>
-      notifyShiftAssigned(memberId, companyName, date, startTime, notifyMsg)
-    )
+    memberIds.map((memberId) => {
+      const shiftId = inserted?.find((s) => s.member_id === memberId)?.id;
+      return notifyShiftAssigned(memberId, companyName, date, startTime, notifyMsg, shiftId);
+    })
   );
 
   revalidatePath("/admin/shifts");
@@ -169,7 +173,10 @@ export async function updateShiftGroup(
       arrival_status: "pending" as const,
     }));
 
-    const { error } = await supabase.from("daily_shifts").insert(newRecords);
+    const { data: addedShifts, error } = await supabase
+      .from("daily_shifts")
+      .insert(newRecords)
+      .select("id, member_id");
     if (error) {
       if (error.code === "23505") {
         return { error: "이미 해당 날짜에 배정된 회원이 있습니다." };
@@ -178,9 +185,10 @@ export async function updateShiftGroup(
     }
 
     await Promise.allSettled(
-      addMemberIds.map((memberId) =>
-        notifyShiftAssigned(memberId, companyName, newDate, newStartTime)
-      )
+      addMemberIds.map((memberId) => {
+        const shiftId = addedShifts?.find((s) => s.member_id === memberId)?.id;
+        return notifyShiftAssigned(memberId, companyName, newDate, newStartTime, undefined, shiftId);
+      })
     );
   }
 
@@ -236,7 +244,8 @@ export async function updateShiftStatus(
 export async function sendGroupFcm(
   memberIds: string[],
   title: string,
-  body: string
+  body: string,
+  memberShiftMap?: Record<string, string>
 ) {
   if (!title.trim() || memberIds.length === 0) {
     return { error: "메시지와 대상 회원이 필요합니다." };
@@ -267,6 +276,7 @@ export async function sendGroupFcm(
       target_member_id: memberId,
       sent_count: tokens.filter((t) => t.member_id === memberId).length > 0 ? 1 : 0,
       trigger_type: "manual",
+      ...(memberShiftMap?.[memberId] && { shift_id: memberShiftMap[memberId] }),
     });
   }
 

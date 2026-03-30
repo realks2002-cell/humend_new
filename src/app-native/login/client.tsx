@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { memberLogin, resetPasswordByEmail } from "@/lib/native-api/auth";
 import { createClient } from "@/lib/supabase/client";
 import { nativeGoogleSignIn } from "@/lib/google-auth";
+import { nativeAppleSignIn, isIOSPlatform } from "@/lib/apple-auth";
 
 function formatPhoneDisplay(value: string): string {
   const nums = value.replace(/\D/g, "").slice(0, 11);
@@ -37,6 +38,10 @@ export default function LoginClient() {
   const [forgotSent, setForgotSent] = useState(false);
 
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
+  useEffect(() => { isIOSPlatform().then(setIsIOS); }, []);
 
   const rawPhone = phone.replace(/\D/g, "");
 
@@ -108,6 +113,44 @@ export default function LoginClient() {
       console.error("[GoogleLogin] handleGoogleLogin 에러:", err);
       toast.error("오류가 발생했습니다", { description: "다시 시도해주세요." });
       setGoogleLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setAppleLoading(true);
+    try {
+      const supabase = createClient();
+      const appleUser = await nativeAppleSignIn();
+      if (!appleUser) {
+        toast.error("Apple 로그인 실패", { description: "다시 시도해주세요." });
+        setAppleLoading(false);
+        return;
+      }
+
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: "apple",
+        token: appleUser.idToken,
+      });
+      if (error) {
+        toast.error("Apple 로그인 실패", { description: error.message || "다시 시도해주세요." });
+        setAppleLoading(false);
+        return;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setAppleLoading(false); return; }
+
+      const { data: memberById } = await supabase.from("members").select("id").eq("id", user.id).maybeSingle();
+      if (memberById) { router.push(redirectPath); return; }
+
+      const { data: memberByApple } = await supabase.from("members").select("id").eq("apple_uid", user.id).maybeSingle();
+      if (memberByApple) { router.push(redirectPath); return; }
+
+      router.push("/signup/complete?provider=apple");
+    } catch (err) {
+      console.error("[AppleLogin] 에러:", err);
+      toast.error("오류가 발생했습니다", { description: "다시 시도해주세요." });
+      setAppleLoading(false);
     }
   };
 
@@ -330,6 +373,23 @@ export default function LoginClient() {
             )}
             {googleLoading ? "연결 중..." : "구글로 로그인"}
           </Button>
+          {isIOS && (
+            <Button
+              variant="outline"
+              className="w-full bg-black text-white hover:bg-gray-900 hover:text-white"
+              onClick={handleAppleLogin}
+              disabled={appleLoading}
+            >
+              {appleLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                </svg>
+              )}
+              {appleLoading ? "연결 중..." : "Apple로 로그인"}
+            </Button>
+          )}
           <div className="flex items-center justify-between text-sm">
             <button
               className="text-muted-foreground hover:text-primary hover:underline"

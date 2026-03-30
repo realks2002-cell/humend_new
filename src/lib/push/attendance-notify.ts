@@ -7,6 +7,7 @@ interface NotifyOptions {
   body: string;
   data?: Record<string, string>;
   triggerType?: "auto" | "manual";
+  shiftId?: string;
 }
 
 async function notifyMember(opts: NotifyOptions) {
@@ -36,6 +37,7 @@ async function notifyMember(opts: NotifyOptions) {
     target_member_id: opts.memberId,
     sent_count: sentCount,
     trigger_type: opts.triggerType ?? "auto",
+    ...(opts.shiftId && { shift_id: opts.shiftId }),
   });
 }
 
@@ -46,13 +48,15 @@ export async function notifyShiftAssigned(
   companyName: string,
   workDate: string,
   startTime: string,
-  customMessage?: string
+  customMessage?: string,
+  shiftId?: string
 ) {
   await notifyMember({
     memberId,
     title: customMessage || "근무가 배정되었습니다",
     body: `${companyName} ${workDate} ${startTime} 출근 예정`,
     data: { url: "/my/attendance" },
+    shiftId,
   });
 }
 
@@ -60,13 +64,15 @@ export async function notifyShiftCancelled(
   memberId: string,
   companyName: string,
   workDate: string,
-  startTime: string
+  startTime: string,
+  shiftId?: string
 ) {
   await notifyMember({
     memberId,
     title: "근무 배정이 취소되었습니다",
     body: `${companyName} ${workDate} ${startTime}`,
     data: { url: "/my/attendance" },
+    shiftId,
   });
 }
 
@@ -87,15 +93,17 @@ export async function notifyAttendanceCheck(
       shiftId,
       url: "/my/attendance",
     },
+    shiftId,
   });
 }
 
-export async function notifyNoshowToMember(memberId: string) {
+export async function notifyNoshowToMember(memberId: string, shiftId?: string) {
   await notifyMember({
     memberId,
     title: "노쇼 처리되었습니다",
     body: "출근 알림에 응답하지 않아 노쇼로 처리되었습니다.",
     data: { url: "/my/attendance" },
+    shiftId,
   });
 }
 

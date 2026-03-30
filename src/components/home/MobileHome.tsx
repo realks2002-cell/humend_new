@@ -300,7 +300,7 @@ export default function MobileHome() {
                 위한 맞춤 솔루션
               </h3>
               <p className="text-sm opacity-70 mb-8 max-w-[200px]">
-                급한 인력 충원부터 장기 운영 대행까지 휴먼드가 책임집니다.
+                급한 인력 충원부터 장기 운영 대행까지 휴멘드가 책임집니다.
               </p>
               <a
                 href="tel:02-875-8332"

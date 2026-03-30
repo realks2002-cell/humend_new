@@ -60,3 +60,4 @@ next-env.d.ts
 
 # APK는 git 제외 (수동 배포)
 public/humend-hr.apk
+*.p8

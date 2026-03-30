@@ -59,7 +59,7 @@ export default async function AdminTestPage({
   const { data: notificationLogs } = uniqueMemberIds.length > 0
     ? await supabase
         .from("notification_logs")
-        .select("id, title, body, target_member_id, sent_count, trigger_type, created_at")
+        .select("id, title, body, target_member_id, shift_id, sent_count, trigger_type, created_at")
         .in("target_member_id", uniqueMemberIds)
         .gte("created_at", `${selectedDate}T00:00:00+09:00`)
         .lte("created_at", `${selectedDate}T23:59:59+09:00`)
