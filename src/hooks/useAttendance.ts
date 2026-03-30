@@ -48,7 +48,9 @@ export function useAttendance() {
     let mounted = true;
 
     (async () => {
+      console.log("[Attendance] 시작");
       const initToken = await getAccessToken();
+      console.log("[Attendance] 토큰:", initToken ? "있음" : "없음");
       if (!initToken || !mounted) return;
 
       // 오늘 근무 조회
@@ -57,19 +59,22 @@ export function useAttendance() {
       });
       const data = await res.json();
       const shift = data?.shift;
+      console.log("[Attendance] shift:", shift ? `${shift.id} / ${shift.arrival_status}` : "없음");
 
       if (!shift || !mounted) return;
 
       // 이미 도착했거나 노쇼면 지오펜스 불필요... 가 아니라
       // arrived면 이탈 감지 watch 시작
-      if (shift.arrival_status === "noshow") return;
+      if (shift.arrival_status === "noshow") { console.log("[Attendance] noshow → 종료"); return; }
 
       const client = shift.clients as {
         latitude: number | null;
         longitude: number | null;
       };
-      if (!client?.latitude || !client?.longitude) return;
-      if (isWatching()) return;
+      console.log("[Attendance] 좌표:", client?.latitude, client?.longitude);
+      if (!client?.latitude || !client?.longitude) { console.log("[Attendance] 좌표 없음 → 종료"); return; }
+      if (isWatching()) { console.log("[Attendance] 이미 watch 중 → 종료"); return; }
+      console.log("[Attendance] 지오펜싱 시작!");
 
       if (shift.arrival_status === "arrived") {
         // 이미 출근한 상태 → 이탈 감지 watch 시작

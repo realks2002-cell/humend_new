@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 배포 규칙
+
+- **Vercel 배포(`vercel --prod`)는 반드시 사용자 승인을 받은 후 진행할 것.** 자동으로 배포하지 말 것.
+
 ## Overview
 
 Humend HR은 **인력파견 플랫폼**입니다. 회원(파견 근로자)과 관리자(파견업체) 두 역할을 지원합니다.
