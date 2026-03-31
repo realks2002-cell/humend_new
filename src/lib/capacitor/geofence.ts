@@ -65,7 +65,7 @@ let departedState = false;
 let departDebounceCount = 0;
 
 const NEARBY_RADIUS = 2000; // 2km
-const ARRIVAL_RADIUS = 30; // 30m
+const ARRIVAL_RADIUS = 100; // 100m
 const DEPARTURE_RADIUS = 500; // 500m
 const DISTANCE_FILTER = 200; // 200m (이탈 감지를 위해 500→200으로 축소)
 const MAX_ACCURACY = 100; // 100m 이하만 수용
@@ -105,13 +105,19 @@ export async function startGeofenceWatch(
       },
       (location, error) => {
         if (error) {
+          console.log("[Geofence] 에러:", error.code);
           callbacks.onError?.(error.code);
           return;
         }
         if (!location) return;
 
+        console.log(`[Geofence] 위치: ${location.latitude.toFixed(4)},${location.longitude.toFixed(4)} acc=${location.accuracy.toFixed(0)}m`);
+
         // 정확도 필터
-        if (location.accuracy > MAX_ACCURACY) return;
+        if (location.accuracy > MAX_ACCURACY) {
+          console.log(`[Geofence] 정확도 초과 (${location.accuracy.toFixed(0)}m > ${MAX_ACCURACY}m) → 스킵`);
+          return;
+        }
 
         const dist = haversineMeters(
           location.latitude,
@@ -119,6 +125,8 @@ export async function startGeofenceWatch(
           clientLat,
           clientLng
         );
+
+        console.log(`[Geofence] 거리: ${dist.toFixed(0)}m`);
 
         if (!arrivedTriggered) {
           // ─── 출근 전: 접근 + 도착 감지 ───

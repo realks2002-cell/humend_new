@@ -97,6 +97,19 @@ elif [[ "$PLATFORM" == "all" ]]; then
   npx cap sync ios
 fi
 
+# iOS: Firebase Messaging SPM 의존성 추가 (cap sync가 덮어쓰므로 매번 추가)
+if [[ "$PLATFORM" == "ios" || "$PLATFORM" == "all" ]]; then
+  PACKAGE_SWIFT="ios/App/CapApp-SPM/Package.swift"
+  if ! grep -q "firebase-ios-sdk" "$PACKAGE_SWIFT" 2>/dev/null; then
+    # dependencies 배열에 Firebase 추가
+    sed -i.bak 's|.package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.2.0"),|.package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.2.0"),\n        .package(url: "https://github.com/firebase/firebase-ios-sdk.git", from: "12.0.0"),|' "$PACKAGE_SWIFT"
+    # targets 의존성에 FirebaseMessaging 추가
+    sed -i.bak 's|.product(name: "CapgoCapacitorSocialLogin", package: "CapgoCapacitorSocialLogin")|.product(name: "CapgoCapacitorSocialLogin", package: "CapgoCapacitorSocialLogin"),\n                .product(name: "FirebaseMessaging", package: "firebase-ios-sdk")|' "$PACKAGE_SWIFT"
+    rm -f "${PACKAGE_SWIFT}.bak"
+    echo "  Firebase Messaging SPM 의존성 추가 완료"
+  fi
+fi
+
 echo "=== [8/8] 소스 코드 복원 ==="
 RESTORE_TARGETS="src/app/ src/middleware.ts next.config.ts capacitor.config.ts"
 if [[ "$PLATFORM" == "android" || "$PLATFORM" == "all" ]]; then

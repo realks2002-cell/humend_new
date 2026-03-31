@@ -4,9 +4,6 @@ import { useEffect } from "react";
 import { isNative, getPlatform } from "@/lib/capacitor/native";
 import { createClient } from "@/lib/supabase/client";
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 5000;
-
 export function usePushNotifications() {
   useEffect(() => {
     if (!isNative()) return;
@@ -27,10 +24,9 @@ export function usePushNotifications() {
 
       const platform = getPlatform();
       const supabase = createClient();
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const accessToken = currentSession?.access_token;
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
 
-      // 토큰 전송은 페이지 전환(cleanup)과 무관하게 반드시 완료 (fire-and-forget)
       sendTokenToServer(token, platform, accessToken).then((result) => {
         if (result === true) {
           console.log("[Push] 토큰 등록 완료");
@@ -47,24 +43,19 @@ export function usePushNotifications() {
     async function init() {
       try {
         const supabase = createClient();
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
 
         if (session) {
-          // 이미 로그인 상태 → 바로 등록
           await registerAndSend();
         } else {
-          // 비로그인 → 로그인 이벤트 대기 후 등록
-          const {
-            data: { subscription },
-          } = supabase.auth.onAuthStateChange((_event, newSession) => {
-            if (newSession && !cleanup) {
-              subscription.unsubscribe();
-              authUnsub = undefined;
-              registerAndSend();
-            }
-          });
+          const { data: { subscription } } =
+            supabase.auth.onAuthStateChange((_event, newSession) => {
+              if (newSession && !cleanup) {
+                subscription.unsubscribe();
+                authUnsub = undefined;
+                registerAndSend();
+              }
+            });
           authUnsub = () => subscription.unsubscribe();
         }
       } catch (e) {
@@ -74,9 +65,21 @@ export function usePushNotifications() {
 
     init();
 
+    // 앱 포그라운드 복귀 시 토큰 재등록
+    let appListener: { remove: () => void } | undefined;
+    (async () => {
+      try {
+        const { App } = await import("@capacitor/app");
+        appListener = await App.addListener("appStateChange", ({ isActive }) => {
+          if (isActive && !cleanup) registerAndSend();
+        });
+      } catch {}
+    })();
+
     return () => {
       cleanup = true;
       authUnsub?.();
+      appListener?.remove();
     };
   }, []);
 }

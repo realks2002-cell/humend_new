@@ -76,6 +76,7 @@ export default function LoginClient() {
             .maybeSingle();
 
           if (memberById) {
+            import("@/lib/capacitor/register-push-token").then(m => m.onLoginComplete());
             router.push(redirectPath);
             return;
           }
@@ -88,6 +89,7 @@ export default function LoginClient() {
             .maybeSingle();
 
           if (memberByGuid) {
+            import("@/lib/capacitor/register-push-token").then(m => m.onLoginComplete());
             router.push(redirectPath);
             return;
           }
@@ -141,10 +143,18 @@ export default function LoginClient() {
       if (!user) { setAppleLoading(false); return; }
 
       const { data: memberById } = await supabase.from("members").select("id").eq("id", user.id).maybeSingle();
-      if (memberById) { router.push(redirectPath); return; }
+      if (memberById) {
+        import("@/lib/capacitor/register-push-token").then(m => m.onLoginComplete());
+        router.push(redirectPath);
+        return;
+      }
 
       const { data: memberByApple } = await supabase.from("members").select("id").eq("apple_uid", user.id).maybeSingle();
-      if (memberByApple) { router.push(redirectPath); return; }
+      if (memberByApple) {
+        import("@/lib/capacitor/register-push-token").then(m => m.onLoginComplete());
+        router.push(redirectPath);
+        return;
+      }
 
       router.push("/signup/complete?provider=apple");
     } catch (err) {
@@ -173,8 +183,8 @@ export default function LoginClient() {
     }
 
     toast.success("로그인 성공!");
+    import("@/lib/capacitor/register-push-token").then(m => m.onLoginComplete());
     router.push(redirectPath);
-    router.refresh();
   };
 
   const handleForgotSubmit = async () => {

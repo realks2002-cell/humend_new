@@ -11,14 +11,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
     private var scrollObservation: NSKeyValueObservation?
+    static var pendingFCMToken: String?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         #if canImport(FirebaseCore)
         FirebaseApp.configure()
+        Messaging.messaging().delegate = self
         #endif
 
         UNUserNotificationCenter.current().delegate = self
-        application.registerForRemoteNotifications()
+        // registerForRemoteNotifications는 Capacitor PushNotifications.register()에서 호출
+        // 여기서 호출하면 FCM 토큰이 JS 리스너 준비 전에 생성되어 이벤트를 놓침
 
         // WKWebView scrollView 수평 스크롤 차단 (KVO)
         setupScrollLock()
@@ -78,14 +81,37 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         #if canImport(FirebaseMessaging)
         Messaging.messaging().apnsToken = deviceToken
-        #endif
+        // APNs 토큰 설정 후 FCM 토큰 비동기 요청
+        Messaging.messaging().token { token, error in
+            if let token = token {
+                print("[Firebase] FCM token (from apns): \(token)")
+                AppDelegate.pendingFCMToken = token
+                NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: token)
+            } else if let error = error {
+                print("[Firebase] FCM token error: \(error)")
+            }
+        }
+        #else
         NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
+        #endif
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
     }
 }
+
+#if canImport(FirebaseMessaging)
+extension AppDelegate: MessagingDelegate {
+    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        guard let token = fcmToken else { return }
+        print("[Firebase] FCM token: \(token)")
+        AppDelegate.pendingFCMToken = token
+        // FCM 토큰을 String으로 Capacitor에 전달 (Capacitor가 String 분기 처리)
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: token)
+    }
+}
+#endif
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {

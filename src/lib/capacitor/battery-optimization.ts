@@ -1,38 +1,47 @@
 import { Capacitor } from "@capacitor/core";
-import { App } from "@capacitor/app";
 
 /**
- * Android 배터리 최적화 예외 설정 안내
- * 백그라운드 위치 추적이 정상 작동하려면 배터리 최적화 예외가 필요
+ * Android 배터리 최적화 예외 요청
+ * REQUEST_IGNORE_BATTERY_OPTIMIZATIONS 인텐트로 시스템 다이얼로그 표시
  */
-export async function showBatteryOptimizationGuide(): Promise<void> {
+export async function requestBatteryOptimizationExemption(): Promise<void> {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "android") {
     return;
   }
 
-  // 네이티브 alert 사용 (별도 Dialog 플러그인 불필요)
-  window.alert(
-    "출근 위치 추적이 정상적으로 작동하려면 배터리 최적화 예외 설정이 필요합니다.\n\n" +
-      "설정 > 앱 > 휴멘드HR > 배터리 > 제한 없음\n\n" +
-      "위 경로에서 배터리 최적화를 해제해 주세요."
-  );
-}
+  try {
+    const { App } = await import("@capacitor/app");
+    const info = await App.getInfo();
+    const packageName = info.id;
 
-/**
- * 배터리 최적화 상태 확인 (App 플러그인 사용)
- * @returns 앱 정보 (배터리 최적화 직접 확인 API 없으므로 앱 상태 반환)
- */
-export async function checkBatteryOptimization(): Promise<{
-  isNative: boolean;
-  isAndroid: boolean;
-}> {
-  const isNative = Capacitor.isNativePlatform();
-  const isAndroid = Capacitor.getPlatform() === "android";
+    // 이미 제외 상태인지 확인 후, 아니면 시스템 다이얼로그 표시
+    // Capacitor Browser 플러그인으로 설정 화면 열기
+    const { Browser } = await import("@capacitor/browser");
 
-  if (isNative) {
-    const appState = await App.getState();
-    console.log("[battery-optimization] App active:", appState.isActive);
+    const confirmed = window.confirm(
+      "출근 확인이 정상 작동하려면 배터리 최적화 예외 설정이 필요합니다.\n\n" +
+      "다음 화면에서 '제한 없음'을 선택해주세요."
+    );
+
+    if (confirmed) {
+      await Browser.open({
+        url: `intent://settings/battery_saver_menu#Intent;scheme=android-app;package=com.android.settings;S.extra_args=com.humend.hr;end`,
+      }).catch(async () => {
+        // fallback: 앱 배터리 설정 직접 열기
+        await Browser.open({
+          url: `market://details?id=${packageName}`,
+        }).catch(() => {
+          window.alert(
+            "설정 → 앱 → Humend HR → 배터리 → 제한 없음\n\n" +
+            "위 경로에서 직접 설정해주세요."
+          );
+        });
+      });
+    }
+  } catch {
+    window.alert(
+      "설정 → 앱 → Humend HR → 배터리 → 제한 없음\n\n" +
+      "위 경로에서 배터리 최적화를 해제해주세요."
+    );
   }
-
-  return { isNative, isAndroid };
 }

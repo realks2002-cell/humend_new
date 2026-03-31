@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   startGeofenceWatch,
   startDepartureWatch,
+  stopGeofenceWatch,
   isWatching,
 } from "@/lib/capacitor/geofence";
 
@@ -38,117 +39,139 @@ async function callApi(
   return res.json();
 }
 
-export function useAttendance() {
-  const startedRef = useRef(false);
+export async function checkAndStartGeofence(overrideToken?: string) {
+  console.log("[Attendance] 체크 시작");
 
-  useEffect(() => {
-    if (!isNative() || startedRef.current) return;
-    startedRef.current = true;
+  // 포그라운드 복귀 시 기존 watcher 중단 후 재시작
+  if (isWatching()) {
+    console.log("[Attendance] 기존 watch 중단 후 재시작");
+    await stopGeofenceWatch();
+  }
 
-    let mounted = true;
+  const initToken = overrideToken ?? await getAccessToken();
+  console.log("[Attendance] 토큰:", initToken ? "있음" : "없음");
+  if (!initToken) return;
 
-    (async () => {
-      console.log("[Attendance] 시작");
-      const initToken = await getAccessToken();
-      console.log("[Attendance] 토큰:", initToken ? "있음" : "없음");
-      if (!initToken || !mounted) return;
+  const res = await fetch(`${API_BASE}/api/native/attendance/today`, {
+    headers: { Authorization: `Bearer ${initToken}` },
+  });
+  const data = await res.json();
+  const shift = data?.shift;
+  console.log("[Attendance] shift:", shift ? `${shift.id} / ${shift.arrival_status}` : "없음");
 
-      // 오늘 근무 조회
-      const res = await fetch(`${API_BASE}/api/native/attendance/today`, {
-        headers: { Authorization: `Bearer ${initToken}` },
-      });
-      const data = await res.json();
-      const shift = data?.shift;
-      console.log("[Attendance] shift:", shift ? `${shift.id} / ${shift.arrival_status}` : "없음");
+  if (!shift) return;
 
-      if (!shift || !mounted) return;
+  if (shift.arrival_status === "noshow") {
+    console.log("[Attendance] noshow → 종료");
+    return;
+  }
 
-      // 이미 도착했거나 노쇼면 지오펜스 불필요... 가 아니라
-      // arrived면 이탈 감지 watch 시작
-      if (shift.arrival_status === "noshow") { console.log("[Attendance] noshow → 종료"); return; }
+  const client = shift.clients as {
+    latitude: number | null;
+    longitude: number | null;
+  };
+  console.log("[Attendance] 좌표:", client?.latitude, client?.longitude);
+  if (!client?.latitude || !client?.longitude) {
+    console.log("[Attendance] 좌표 없음 → 종료");
+    return;
+  }
 
-      const client = shift.clients as {
-        latitude: number | null;
-        longitude: number | null;
-      };
-      console.log("[Attendance] 좌표:", client?.latitude, client?.longitude);
-      if (!client?.latitude || !client?.longitude) { console.log("[Attendance] 좌표 없음 → 종료"); return; }
-      if (isWatching()) { console.log("[Attendance] 이미 watch 중 → 종료"); return; }
-      console.log("[Attendance] 지오펜싱 시작!");
-
-      if (shift.arrival_status === "arrived") {
-        // 이미 출근한 상태 → 이탈 감지 watch 시작
-        // 현재 이탈 중인지 확인
-        const supabase = createClient();
-        const { data: openDeparture } = await supabase
-          .from("departure_logs")
-          .select("id")
-          .eq("shift_id", shift.id)
-          .is("returned_at", null)
-          .limit(1);
-
-        const alreadyDeparted = (openDeparture?.length ?? 0) > 0;
-
-        await startDepartureWatch(
-          client.latitude,
-          client.longitude,
-          {
-            onDeparted: (lat, lng) => {
-              callApi(
-                "/api/native/attendance/depart",
-                { shiftId: shift.id, lat, lng }
-              ).catch(console.error);
-            },
-            onReturned: () => {
-              callApi(
-                "/api/native/attendance/return",
-                { shiftId: shift.id }
-              ).catch(console.error);
-            },
-            onError: (code) => {
-              console.error("[Attendance] departure watch error:", code);
-            },
-          },
-          alreadyDeparted
+  // 위치 권한 체크
+  try {
+    const { Geolocation } = await import("@capacitor/geolocation");
+    const perm = await Geolocation.checkPermissions();
+    console.log("[Attendance] 위치 권한:", JSON.stringify(perm));
+    if (perm.location !== "granted" && perm.coarseLocation !== "granted") {
+      const req = await Geolocation.requestPermissions({ permissions: ["location"] });
+      if (req.location !== "granted" && req.coarseLocation !== "granted") {
+        console.log("[Attendance] 위치 권한 거부 → 설정 유도");
+        const { Browser } = await import("@capacitor/browser");
+        const confirmed = window.confirm(
+          "출근 확인을 위해 위치 권한이 필요합니다.\n\n" +
+          "설정 → 앱 → Humend HR → 권한 → 위치 → '항상 허용'으로 변경해주세요."
         );
+        if (confirmed) {
+          await Browser.open({ url: "app-settings:" });
+        }
         return;
       }
+    }
+  } catch (e) {
+    console.error("[Attendance] 권한 체크 에러:", e);
+  }
 
-      // pending/notified/confirmed → 출근 감지 + 이탈 감지 통합 watch
-      await startGeofenceWatch(client.latitude, client.longitude, {
-        onNearby: (_lat, _lng) => {
-          callApi(
-            "/api/native/attendance/nearby",
-            { shiftId: shift.id }
-          ).catch(console.error);
-        },
-        onArrived: (lat, lng) => {
-          callApi(
-            "/api/native/attendance/arrive",
-            { shiftId: shift.id, lat, lng }
-          ).catch(console.error);
-          // arrived 후에도 watch가 계속 유지됨 (이탈 감지)
-        },
+  console.log("[Attendance] 지오펜싱 시작!");
+
+
+  if (shift.arrival_status === "arrived") {
+    const supabase = createClient();
+    const { data: openDeparture } = await supabase
+      .from("departure_logs")
+      .select("id")
+      .eq("shift_id", shift.id)
+      .is("returned_at", null)
+      .limit(1);
+
+    const alreadyDeparted = (openDeparture?.length ?? 0) > 0;
+
+    await startDepartureWatch(
+      client.latitude,
+      client.longitude,
+      {
         onDeparted: (lat, lng) => {
-          callApi(
-            "/api/native/attendance/depart",
-            { shiftId: shift.id, lat, lng }
-          ).catch(console.error);
+          callApi("/api/native/attendance/depart", { shiftId: shift.id, lat, lng }).catch(console.error);
         },
         onReturned: () => {
-          callApi(
-            "/api/native/attendance/return",
-            { shiftId: shift.id }
-          ).catch(console.error);
+          callApi("/api/native/attendance/return", { shiftId: shift.id }).catch(console.error);
         },
         onError: (code) => {
-          console.error("[Attendance] geofence error:", code);
+          console.error("[Attendance] departure watch error:", code);
         },
-      });
-    })();
+      },
+      alreadyDeparted
+    );
+    return;
+  }
 
-    return () => {
-      mounted = false;
-    };
+  // pending/notified/confirmed → 출근 감지 + 이탈 감지 통합 watch
+  await startGeofenceWatch(client.latitude, client.longitude, {
+    onNearby: (_lat, _lng) => {
+      callApi("/api/native/attendance/nearby", { shiftId: shift.id }).catch(console.error);
+    },
+    onArrived: (lat, lng) => {
+      callApi("/api/native/attendance/arrive", { shiftId: shift.id, lat, lng }).catch(console.error);
+    },
+    onDeparted: (lat, lng) => {
+      callApi("/api/native/attendance/depart", { shiftId: shift.id, lat, lng }).catch(console.error);
+    },
+    onReturned: () => {
+      callApi("/api/native/attendance/return", { shiftId: shift.id }).catch(console.error);
+    },
+    onError: (code) => {
+      console.error("[Attendance] geofence error:", code);
+    },
+  });
+}
+
+export function useAttendance() {
+  const listenerRef = useRef(false);
+
+  useEffect(() => {
+    if (!isNative()) return;
+
+    // 앱 시작 시 1회 체크
+    checkAndStartGeofence();
+
+    // 앱이 포그라운드로 돌아올 때마다 재체크
+    if (!listenerRef.current) {
+      listenerRef.current = true;
+      import("@capacitor/app").then(({ App }) => {
+        App.addListener("appStateChange", ({ isActive }) => {
+          if (isActive) {
+            checkAndStartGeofence();
+          }
+        });
+      });
+    }
   }, []);
 }
