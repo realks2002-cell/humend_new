@@ -62,6 +62,8 @@ export default async function Home() {
 
   return (
     <>
+    <KakaoFloatingButton />
+
     {/* 모바일: 네이티브 홈 */}
     <div className="md:hidden">
       <MobileHome />
@@ -69,7 +71,6 @@ export default async function Home() {
 
     {/* 데스크톱: 기존 웹 홈 */}
     <div className="hidden md:block animate-in fade-in duration-500">
-      <KakaoFloatingButton />
 
       {/* Hero */}
       <HeroSection />

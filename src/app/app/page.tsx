@@ -25,7 +25,7 @@ export default function AppDownloadPage() {
 
         {/* Download Button */}
         <a
-          href="https://cpcpfepft9rzl9lo.public.blob.vercel-storage.com/humend-hr.apk"
+          href="https://cpcpfepft9rzl9lo.public.blob.vercel-storage.com/humend-hr-0Wiia4l4fUkqhxqfgFqhQ15F8B8gAn.apk"
           download
           className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#830020] px-6 py-4 text-base font-bold text-white shadow-lg transition-all active:scale-[0.98]"
         >

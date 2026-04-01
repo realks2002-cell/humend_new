@@ -26,7 +26,7 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleUser | null> {
       google: {
         webClientId: '133410524921-94i1t8skrfkfggmrpdhnfkclh9h8o4bv.apps.googleusercontent.com',
         iOSClientId: '153271647846-8kvvkvqnvr1frrts9lqau817cifrtiu3.apps.googleusercontent.com',
-        iOSServerClientId: '133410524921-94i1t8skrfkfggmrpdhnfkclh9h8o4bv.apps.googleusercontent.com',
+        iOSServerClientId: '153271647846-8kvvkvqnvr1frrts9lqau817cifrtiu3.apps.googleusercontent.com',
       },
     });
 

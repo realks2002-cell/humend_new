@@ -39,12 +39,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             return
         }
 
-        // KVO로 contentOffset 감시 — delegate 충돌 없음
-        scrollObservation = webView.scrollView.observe(\.contentOffset, options: [.new]) { scrollView, _ in
-            if scrollView.contentOffset.x != 0 {
-                scrollView.contentOffset = CGPoint(x: 0, y: scrollView.contentOffset.y)
-            }
-        }
+        // 스와이프 뒤로가기 제스처 활성화
+        webView.allowsBackForwardNavigationGestures = true
     }
 
     private func findWebView(in view: UIView) -> WKWebView? {

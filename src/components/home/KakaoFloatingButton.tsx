@@ -1,19 +1,28 @@
 "use client";
 
 export default function KakaoFloatingButton() {
-  const handleClick = () => {
-    window.open("https://pf.kakao.com/_sPCKb/chat", "_blank");
+  const handleClick = async () => {
+    const url = "https://pf.kakao.com/_sPCKb/chat";
+    try {
+      const { Capacitor } = await import("@capacitor/core");
+      if (Capacitor.isNativePlatform()) {
+        const { Browser } = await import("@capacitor/browser");
+        await Browser.open({ url });
+        return;
+      }
+    } catch {}
+    window.open(url, "_blank");
   };
 
   return (
     <button
       onClick={handleClick}
-      className="fixed right-4 top-1/2 z-40 -translate-y-1/2 flex flex-col items-center gap-1 group"
+      className="fixed right-4 bottom-[130px] z-40 flex flex-col items-center gap-1 group"
       aria-label="카카오톡 상담"
     >
-      <div className="flex h-[35px] w-[35px] md:h-[50px] md:w-[50px] items-center justify-center rounded-full bg-[#FEE500] shadow-lg transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl">
+      <div className="flex h-[40px] w-[40px] md:h-[57px] md:w-[57px] items-center justify-center rounded-full bg-[#FEE500] shadow-lg transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl">
         <svg
-          className="size-[17px] md:size-[25px]"
+          className="size-[20px] md:size-[29px]"
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"

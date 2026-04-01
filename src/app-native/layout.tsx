@@ -2,6 +2,7 @@ import "./globals.css";
 import { Geist, Geist_Mono } from "next/font/google";
 import NativeAppProvider from "@/components/layout/NativeAppProvider";
 import BottomNav from "@/components/layout/BottomNav";
+import KakaoFloatingButton from "@/components/home/KakaoFloatingButton";
 import TermsAgreement from "@/components/layout/TermsAgreement";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -57,6 +58,7 @@ export default function RootLayout({
           <TermsAgreement>
             <NativeAppProvider>
               <main className="min-h-screen pb-16 w-full max-w-full overflow-x-hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>{children}</main>
+              <KakaoFloatingButton />
               <BottomNav />
             </NativeAppProvider>
           </TermsAgreement>
