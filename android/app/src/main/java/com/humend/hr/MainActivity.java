@@ -17,6 +17,7 @@ public class MainActivity extends BridgeActivity
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(SocialLoginPlugin.class);
         registerPlugin(PushNotificationsPlugin.class);
+        registerPlugin(NativeGeofencePlugin.class);
         super.onCreate(savedInstanceState);
     }
 

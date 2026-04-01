@@ -102,6 +102,13 @@ export async function checkAndStartGeofence(overrideToken?: string) {
 
   console.log("[Attendance] 지오펜싱 시작!");
 
+  // OS 네이티브 지오펜스 등록 (앱 종료 후에도 2km 진입 감지)
+  try {
+    const { registerWorkplaceGeofence } = await import("@/lib/capacitor/native-geofence");
+    await registerWorkplaceGeofence(client.latitude, client.longitude, shift.id);
+  } catch (e) {
+    console.warn("[Attendance] 네이티브 지오펜스 등록 실패:", e);
+  }
 
   if (shift.arrival_status === "arrived") {
     const supabase = createClient();
@@ -162,9 +169,10 @@ export function useAttendance() {
     // 앱 시작 시 1회 체크
     checkAndStartGeofence();
 
-    // 앱이 포그라운드로 돌아올 때마다 재체크
     if (!listenerRef.current) {
       listenerRef.current = true;
+
+      // 앱이 포그라운드로 돌아올 때마다 재체크
       import("@capacitor/app").then(({ App }) => {
         App.addListener("appStateChange", ({ isActive }) => {
           if (isActive) {
@@ -172,6 +180,14 @@ export function useAttendance() {
           }
         });
       });
+
+      // OS 네이티브 지오펜스 진입 시 JS 정밀 추적 시작
+      import("@/lib/capacitor/native-geofence").then(({ onGeofenceEnter }) => {
+        onGeofenceEnter(() => {
+          console.log("[Attendance] 네이티브 지오펜스 진입 → JS 추적 시작");
+          checkAndStartGeofence();
+        });
+      }).catch(() => {});
     }
   }, []);
 }
