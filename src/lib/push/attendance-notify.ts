@@ -49,13 +49,24 @@ export async function notifyShiftAssigned(
   workDate: string,
   startTime: string,
   customMessage?: string,
-  shiftId?: string
+  shiftId?: string,
+  latitude?: number | null,
+  longitude?: number | null
 ) {
   await notifyMember({
     memberId,
     title: customMessage || "근무가 배정되었습니다",
     body: `${companyName} ${workDate} ${startTime} 출근 예정`,
-    data: { url: "/my/attendance" },
+    data: {
+      url: "/my/attendance",
+      ...(latitude && longitude && shiftId ? {
+        type: "geofence_register",
+        lat: String(latitude),
+        lng: String(longitude),
+        shiftId,
+        radius: "2000",
+      } : {}),
+    },
     shiftId,
   });
 }

@@ -1,6 +1,7 @@
 import UIKit
 import WebKit
 import Capacitor
+import CoreLocation
 #if canImport(FirebaseCore)
 import FirebaseCore
 import FirebaseMessaging
@@ -94,6 +95,34 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+    }
+
+    // Silent Push / Data Message 수신 — 백그라운드에서도 실행됨
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        if let type = userInfo["type"] as? String, type == "geofence_register",
+           let latStr = userInfo["lat"] as? String,
+           let lngStr = userInfo["lng"] as? String,
+           let shiftId = userInfo["shiftId"] as? String,
+           let lat = Double(latStr),
+           let lng = Double(lngStr) {
+            let radiusStr = userInfo["radius"] as? String ?? "2000"
+            let radius = Double(radiusStr) ?? 2000.0
+
+            let region = CLCircularRegion(
+                center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
+                radius: radius,
+                identifier: "shift_\(shiftId)"
+            )
+            region.notifyOnEntry = true
+            region.notifyOnExit = false
+
+            let manager = CLLocationManager()
+            manager.startMonitoring(for: region)
+            print("[GeofenceFCM] 지오펜스 등록: shift_\(shiftId) (\(lat),\(lng) r=\(radius)m)")
+            completionHandler(.newData)
+            return
+        }
+        completionHandler(.noData)
     }
 }
 

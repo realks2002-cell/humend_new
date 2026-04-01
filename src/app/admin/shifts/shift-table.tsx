@@ -46,6 +46,7 @@ export interface NotificationLog {
   title: string;
   body: string;
   target_member_id: string;
+  shift_id: string | null;
   sent_count: number;
   trigger_type: "auto" | "manual";
   created_at: string;
@@ -158,21 +159,26 @@ function parseExcelPaste(text: string, allMembers: Member[]) {
 
 function ShiftCardFcm({
   memberIds,
+  shiftIds,
   logs,
   isPending,
   startTransition,
 }: {
   memberIds: string[];
+  shiftIds: string[];
   logs: NotificationLog[];
   isPending: boolean;
   startTransition: (fn: () => Promise<void>) => void;
 }) {
   const [msg, setMsg] = useState("");
+  const shiftSet = useMemo(() => new Set(shiftIds), [shiftIds]);
   const memberSet = useMemo(() => new Set(memberIds), [memberIds]);
 
-  // 이 그룹 회원의 발송 기록 (중복 제거: 같은 시각+제목은 1건으로)
+  // 이 그룹의 발송 기록 (shift_id 기준 필터, 없으면 member_id 폴백)
   const groupLogs = useMemo(() => {
-    const filtered = logs.filter((l) => memberSet.has(l.target_member_id));
+    const filtered = logs.filter((l) =>
+      l.shift_id ? shiftSet.has(l.shift_id) : memberSet.has(l.target_member_id)
+    );
     const seen = new Map<string, NotificationLog & { count: number }>();
     for (const l of filtered) {
       const key = `${l.created_at.slice(0, 16)}|${l.title}`;
@@ -184,7 +190,7 @@ function ShiftCardFcm({
       }
     }
     return Array.from(seen.values()).slice(0, 5);
-  }, [logs, memberSet]);
+  }, [logs, shiftSet, memberSet]);
 
   async function handleSend() {
     if (!msg.trim()) return;
@@ -774,6 +780,7 @@ export function ShiftTable({
                 {/* FCM 발송 기록 + 즉시 발송 */}
                 <ShiftCardFcm
                   memberIds={gs.map((s) => s.member_id)}
+                  shiftIds={gs.map((s) => s.id)}
                   logs={notificationLogs}
                   isPending={isPending}
                   startTransition={startTransition}

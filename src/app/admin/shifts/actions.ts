@@ -25,7 +25,7 @@ export async function createShift(
 
   const { data: client } = await supabase
     .from("clients")
-    .select("company_name")
+    .select("company_name, latitude, longitude")
     .eq("id", clientId)
     .single();
 
@@ -61,10 +61,12 @@ export async function createShift(
 
   const companyName = client?.company_name ?? "근무지";
   const notifyMsg = options?.customNotifyMessage || undefined;
+  const lat = client?.latitude;
+  const lng = client?.longitude;
   await Promise.allSettled(
     memberIds.map((memberId) => {
       const shiftId = inserted?.find((s) => s.member_id === memberId)?.id;
-      return notifyShiftAssigned(memberId, companyName, date, startTime, notifyMsg, shiftId);
+      return notifyShiftAssigned(memberId, companyName, date, startTime, notifyMsg, shiftId, lat, lng);
     })
   );
 
@@ -136,7 +138,7 @@ export async function updateShiftGroup(
 
   const { data: client } = await supabase
     .from("clients")
-    .select("company_name")
+    .select("company_name, latitude, longitude")
     .eq("id", clientId)
     .single();
   const companyName = client?.company_name ?? "근무지";
@@ -187,7 +189,7 @@ export async function updateShiftGroup(
     await Promise.allSettled(
       addMemberIds.map((memberId) => {
         const shiftId = addedShifts?.find((s) => s.member_id === memberId)?.id;
-        return notifyShiftAssigned(memberId, companyName, newDate, newStartTime, undefined, shiftId);
+        return notifyShiftAssigned(memberId, companyName, newDate, newStartTime, undefined, shiftId, client?.latitude, client?.longitude);
       })
     );
   }
