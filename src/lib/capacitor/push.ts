@@ -41,16 +41,19 @@ export async function registerPush(): Promise<string | null> {
 
 /** 알림 탭 리스너 — 출근 의사 확인 + URL 이동 */
 export function setupPushListeners() {
-  // 푸시 수신 시 (포그라운드/백그라운드) — 지오펜싱 재시작
+  // 푸시 수신 시 — 배정 관련이면 지오펜싱 재시작
   PushNotifications.addListener(
     "pushNotificationReceived",
-    async () => {
-      console.log("[Push] 알림 수신 → 지오펜싱 재시작");
-      try {
-        const { checkAndStartGeofence } = await import("@/hooks/useAttendance");
-        await checkAndStartGeofence();
-      } catch (e) {
-        console.error("[Push] 지오펜싱 재시작 실패:", e);
+    async (notification) => {
+      const data = notification.data;
+      if (data?.type === "geofence_register" || data?.action === "confirm_attendance") {
+        console.log("[Push] 배정 알림 수신 → 지오펜싱 재시작");
+        try {
+          const { checkAndStartGeofence } = await import("@/hooks/useAttendance");
+          await checkAndStartGeofence();
+        } catch (e) {
+          console.error("[Push] 지오펜싱 재시작 실패:", e);
+        }
       }
     }
   );

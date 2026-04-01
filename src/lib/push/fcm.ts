@@ -62,7 +62,13 @@ export async function sendPush(
             },
             apns: {
               headers: { "apns-priority": "10" },
-              payload: { aps: { sound: "default" } },
+              payload: {
+                aps: {
+                  sound: "default",
+                  "content-available": 1,
+                },
+                ...(message.data ?? {}),
+              },
             },
           },
         }),

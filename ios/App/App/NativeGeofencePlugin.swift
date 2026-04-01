@@ -3,7 +3,7 @@ import Capacitor
 import CoreLocation
 
 @objc(NativeGeofencePlugin)
-public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin, CLLocationManagerDelegate {
+public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "NativeGeofencePlugin"
     public let jsName = "NativeGeofence"
     public let pluginMethods: [CAPPluginMethod] = [
@@ -12,11 +12,26 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin, CLLocationManage
         CAPPluginMethod(name: "removeAll", returnType: CAPPluginReturnPromise),
     ]
 
-    private lazy var locationManager: CLLocationManager = {
-        let manager = CLLocationManager()
-        manager.delegate = self
-        return manager
-    }()
+    private var geofenceObserver: NSObjectProtocol?
+
+    override public func load() {
+        // AppDelegate의 GeofenceLocationDelegate가 보내는 NotificationCenter 이벤트 구독
+        geofenceObserver = NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("GeofenceEnter"),
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            if let identifier = notification.userInfo?["identifier"] as? String {
+                self?.notifyListeners("geofenceEnter", data: ["identifier": identifier])
+            }
+        }
+    }
+
+    deinit {
+        if let observer = geofenceObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
 
     @objc func register(_ call: CAPPluginCall) {
         guard let lat = call.getDouble("latitude"),
@@ -27,15 +42,16 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin, CLLocationManage
             return
         }
 
+        let manager = AppDelegate.sharedLocationManager
         let region = CLCircularRegion(
             center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
-            radius: min(radius, locationManager.maximumRegionMonitoringDistance),
+            radius: min(radius, manager.maximumRegionMonitoringDistance),
             identifier: identifier
         )
         region.notifyOnEntry = true
         region.notifyOnExit = false
 
-        locationManager.startMonitoring(for: region)
+        manager.startMonitoring(for: region)
         print("[NativeGeofence] 등록: \(identifier) (\(lat),\(lng) r=\(radius)m)")
         call.resolve(["success": true])
     }
@@ -46,9 +62,10 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin, CLLocationManage
             return
         }
 
-        for region in locationManager.monitoredRegions {
+        let manager = AppDelegate.sharedLocationManager
+        for region in manager.monitoredRegions {
             if region.identifier == identifier {
-                locationManager.stopMonitoring(for: region)
+                manager.stopMonitoring(for: region)
                 print("[NativeGeofence] 제거: \(identifier)")
                 break
             }
@@ -57,24 +74,13 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin, CLLocationManage
     }
 
     @objc func removeAll(_ call: CAPPluginCall) {
-        for region in locationManager.monitoredRegions {
+        let manager = AppDelegate.sharedLocationManager
+        for region in manager.monitoredRegions {
             if region.identifier.hasPrefix("shift_") {
-                locationManager.stopMonitoring(for: region)
+                manager.stopMonitoring(for: region)
             }
         }
         print("[NativeGeofence] 전체 제거")
         call.resolve(["success": true])
-    }
-
-    // MARK: - CLLocationManagerDelegate
-
-    public func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
-        guard region is CLCircularRegion else { return }
-        print("[NativeGeofence] 진입 감지: \(region.identifier)")
-        notifyListeners("geofenceEnter", data: ["identifier": region.identifier])
-    }
-
-    public func locationManager(_ manager: CLLocationManager, monitoringDidFailFor region: CLRegion?, withError error: Error) {
-        print("[NativeGeofence] 모니터링 에러: \(error.localizedDescription)")
     }
 }

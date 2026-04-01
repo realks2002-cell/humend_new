@@ -11,8 +11,11 @@ import FirebaseMessaging
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
-    private var scrollObservation: NSKeyValueObservation?
     static var pendingFCMToken: String?
+
+    // 앱 전체에서 공유하는 CLLocationManager (NativeGeofencePlugin에서도 사용)
+    static let sharedLocationManager: CLLocationManager = CLLocationManager()
+    private static var locationDelegate: GeofenceLocationDelegate?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         #if canImport(FirebaseCore)
@@ -20,27 +23,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         Messaging.messaging().delegate = self
         #endif
 
-        UNUserNotificationCenter.current().delegate = self
-        // registerForRemoteNotifications는 Capacitor PushNotifications.register()에서 호출
-        // 여기서 호출하면 FCM 토큰이 JS 리스너 준비 전에 생성되어 이벤트를 놓침
+        // CLLocationManager delegate 설정
+        AppDelegate.locationDelegate = GeofenceLocationDelegate()
+        AppDelegate.sharedLocationManager.delegate = AppDelegate.locationDelegate
 
-        // WKWebView scrollView 수평 스크롤 차단 (KVO)
-        setupScrollLock()
+        UNUserNotificationCenter.current().delegate = self
+
+        // WKWebView 설정
+        setupWebView()
 
         return true
     }
 
-    private func setupScrollLock() {
+    private func setupWebView() {
         guard let window = self.window,
               let rootVC = window.rootViewController,
               let webView = findWebView(in: rootVC.view) else {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-                self?.setupScrollLock()
+                self?.setupWebView()
             }
             return
         }
-
-        // 스와이프 뒤로가기 제스처 활성화
         webView.allowsBackForwardNavigationGestures = true
     }
 
@@ -52,20 +55,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return nil
     }
 
-    func applicationWillResignActive(_ application: UIApplication) {
-    }
-
-    func applicationDidEnterBackground(_ application: UIApplication) {
-    }
-
-    func applicationWillEnterForeground(_ application: UIApplication) {
-    }
-
-    func applicationDidBecomeActive(_ application: UIApplication) {
-    }
-
-    func applicationWillTerminate(_ application: UIApplication) {
-    }
+    func applicationWillResignActive(_ application: UIApplication) {}
+    func applicationDidEnterBackground(_ application: UIApplication) {}
+    func applicationWillEnterForeground(_ application: UIApplication) {}
+    func applicationDidBecomeActive(_ application: UIApplication) {}
+    func applicationWillTerminate(_ application: UIApplication) {}
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
         return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
@@ -78,7 +72,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         #if canImport(FirebaseMessaging)
         Messaging.messaging().apnsToken = deviceToken
-        // APNs 토큰 설정 후 FCM 토큰 비동기 요청
         Messaging.messaging().token { token, error in
             if let token = token {
                 print("[Firebase] FCM token (from apns): \(token)")
@@ -97,8 +90,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
     }
 
-    // Silent Push / Data Message 수신 — 백그라운드에서도 실행됨
+    // FCM 수신 (백그라운드 포함) — 지오펜스 등록
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        // FCM data는 userInfo 최상위에 위치
         if let type = userInfo["type"] as? String, type == "geofence_register",
            let latStr = userInfo["lat"] as? String,
            let lngStr = userInfo["lng"] as? String,
@@ -106,7 +100,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
            let lat = Double(latStr),
            let lng = Double(lngStr) {
             let radiusStr = userInfo["radius"] as? String ?? "2000"
-            let radius = Double(radiusStr) ?? 2000.0
+            let radius = min(Double(radiusStr) ?? 2000.0, AppDelegate.sharedLocationManager.maximumRegionMonitoringDistance)
 
             let region = CLCircularRegion(
                 center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
@@ -116,8 +110,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             region.notifyOnEntry = true
             region.notifyOnExit = false
 
-            let manager = CLLocationManager()
-            manager.startMonitoring(for: region)
+            AppDelegate.sharedLocationManager.startMonitoring(for: region)
             print("[GeofenceFCM] 지오펜스 등록: shift_\(shiftId) (\(lat),\(lng) r=\(radius)m)")
             completionHandler(.newData)
             return
@@ -126,18 +119,37 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 }
 
+// MARK: - Geofence Location Delegate (공유)
+class GeofenceLocationDelegate: NSObject, CLLocationManagerDelegate {
+    func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
+        guard region is CLCircularRegion else { return }
+        print("[NativeGeofence] 진입 감지: \(region.identifier)")
+        // Capacitor JS에 이벤트 전달
+        NotificationCenter.default.post(
+            name: NSNotification.Name("GeofenceEnter"),
+            object: nil,
+            userInfo: ["identifier": region.identifier]
+        )
+    }
+
+    func locationManager(_ manager: CLLocationManager, monitoringDidFailFor region: CLRegion?, withError error: Error) {
+        print("[NativeGeofence] 모니터링 에러: \(error.localizedDescription)")
+    }
+}
+
+// MARK: - Firebase Messaging Delegate
 #if canImport(FirebaseMessaging)
 extension AppDelegate: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         guard let token = fcmToken else { return }
         print("[Firebase] FCM token: \(token)")
         AppDelegate.pendingFCMToken = token
-        // FCM 토큰을 String으로 Capacitor에 전달 (Capacitor가 String 분기 처리)
         NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: token)
     }
 }
 #endif
 
+// MARK: - Notification Center Delegate
 extension AppDelegate: UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.badge, .sound, .banner])

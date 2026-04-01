@@ -59,7 +59,7 @@ export async function notifyShiftAssigned(
     body: `${companyName} ${workDate} ${startTime} 출근 예정`,
     data: {
       url: "/my/attendance",
-      ...(latitude && longitude && shiftId ? {
+      ...(latitude != null && longitude != null && shiftId ? {
         type: "geofence_register",
         lat: String(latitude),
         lng: String(longitude),
