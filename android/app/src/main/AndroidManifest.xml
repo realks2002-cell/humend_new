@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -43,9 +44,11 @@
             android:name=".GeofenceBroadcastReceiver"
             android:exported="false" />
 
+        <!-- Capacitor MessagingService를 override (location_check 처리 추가) -->
         <service
             android:name=".LocationCheckFirebaseService"
-            android:exported="false">
+            android:exported="false"
+            tools:node="replace">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>

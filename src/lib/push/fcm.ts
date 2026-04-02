@@ -95,6 +95,57 @@ export async function sendPush(
   }
 }
 
+/** data-only Silent Push (notification 필드 없음 — 백그라운드 onMessageReceived 보장) */
+export async function sendDataOnlyPush(
+  token: string,
+  data: Record<string, string>
+): Promise<{ success: boolean; unregistered?: boolean }> {
+  try {
+    const auth = getFirebaseAuth();
+    const accessToken = await auth.authorize();
+    const projectId = getProjectId();
+
+    const res = await fetch(
+      `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: {
+            token,
+            data,
+            android: { priority: "high" },
+            apns: {
+              headers: { "apns-priority": "10" },
+              payload: {
+                aps: { "content-available": 1 },
+                ...data,
+              },
+            },
+          },
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const errorCode = err?.error?.details?.[0]?.errorCode;
+      if (errorCode === "UNREGISTERED" || res.status === 404) {
+        return { success: false, unregistered: true };
+      }
+      console.error("[FCM] data-only send error:", res.status, err);
+      return { success: false };
+    }
+    return { success: true };
+  } catch (e) {
+    console.error("[FCM] data-only send exception:", e);
+    return { success: false };
+  }
+}
+
 /** 여러 토큰에 배치 발송 (10개씩 병렬) */
 export async function sendPushToTokens(
   tokens: string[],

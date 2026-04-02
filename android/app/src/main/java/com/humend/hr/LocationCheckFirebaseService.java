@@ -17,7 +17,7 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 import com.google.android.gms.tasks.CancellationTokenSource;
-import com.google.firebase.messaging.FirebaseMessagingService;
+import com.capacitorjs.plugins.pushnotifications.MessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 import java.io.OutputStream;
@@ -25,8 +25,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
-public class LocationCheckFirebaseService extends FirebaseMessagingService {
+public class LocationCheckFirebaseService extends MessagingService {
 
     private static final String TAG = "LocationCheckFCM";
 
@@ -57,12 +59,14 @@ public class LocationCheckFirebaseService extends FirebaseMessagingService {
     private void checkLocationAndCallAPI(String shiftId, double targetLat, double targetLng) {
         FusedLocationProviderClient client = LocationServices.getFusedLocationProviderClient(this);
         CancellationTokenSource cts = new CancellationTokenSource();
+        CountDownLatch latch = new CountDownLatch(1);
 
         try {
             client.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cts.getToken())
                 .addOnSuccessListener(location -> {
                     if (location == null) {
                         Log.w(TAG, "위치 획득 실패 (null)");
+                        latch.countDown();
                         return;
                     }
 
@@ -71,19 +75,27 @@ public class LocationCheckFirebaseService extends FirebaseMessagingService {
                     Log.i(TAG, "현재 거리: " + (int) distance + "m (shift: " + shiftId + ")");
 
                     if (distance <= 2000) {
-                        callNearbyAPI(shiftId);
+                        callNearbyAPISync(shiftId);
                         sendLocalNotification(shiftId);
                     }
+                    latch.countDown();
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "위치 획득 에러: " + e.getMessage());
+                    latch.countDown();
                 });
+
+            // 최대 15초 대기 (onMessageReceived는 20초 제한)
+            latch.await(15, TimeUnit.SECONDS);
         } catch (SecurityException e) {
             Log.e(TAG, "위치 권한 없음: " + e.getMessage());
+        } catch (InterruptedException e) {
+            Log.e(TAG, "대기 중단: " + e.getMessage());
         }
     }
 
-    private void callNearbyAPI(String shiftId) {
+    /** 동기 HTTP 호출 (onMessageReceived 스레드에서 실행 — 이미 백그라운드 스레드) */
+    private void callNearbyAPISync(String shiftId) {
         SharedPreferences prefs = getApplicationContext()
             .getSharedPreferences("NativeGeofence", Context.MODE_PRIVATE);
         String token = prefs.getString("supabase_access_token", null);
@@ -92,29 +104,27 @@ public class LocationCheckFirebaseService extends FirebaseMessagingService {
             return;
         }
 
-        new Thread(() -> {
-            try {
-                URL url = new URL("https://humendhr.com/api/native/attendance/nearby");
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setRequestProperty("Authorization", "Bearer " + token);
-                conn.setDoOutput(true);
-                conn.setConnectTimeout(10000);
-                conn.setReadTimeout(10000);
+        try {
+            URL url = new URL("https://humendhr.com/api/native/attendance/nearby");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Authorization", "Bearer " + token);
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
 
-                String body = "{\"shiftId\":\"" + shiftId + "\"}";
-                try (OutputStream os = conn.getOutputStream()) {
-                    os.write(body.getBytes(StandardCharsets.UTF_8));
-                }
-
-                int responseCode = conn.getResponseCode();
-                Log.i(TAG, "nearby API 응답: " + responseCode);
-                conn.disconnect();
-            } catch (Exception e) {
-                Log.e(TAG, "nearby API 에러: " + e.getMessage());
+            String body = "{\"shiftId\":\"" + shiftId + "\"}";
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(body.getBytes(StandardCharsets.UTF_8));
             }
-        }).start();
+
+            int responseCode = conn.getResponseCode();
+            Log.i(TAG, "nearby API 응답: " + responseCode);
+            conn.disconnect();
+        } catch (Exception e) {
+            Log.e(TAG, "nearby API 에러: " + e.getMessage());
+        }
     }
 
     private void sendLocalNotification(String shiftId) {

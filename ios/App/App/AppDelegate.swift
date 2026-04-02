@@ -16,6 +16,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // 앱 전체에서 공유하는 CLLocationManager (NativeGeofencePlugin에서도 사용)
     static let sharedLocationManager: CLLocationManager = CLLocationManager()
     static var locationDelegate: GeofenceLocationDelegate?
+    static var activeLocationChecker: LocationChecker?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         #if canImport(FirebaseCore)
@@ -125,10 +126,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
            let targetLng = Double(lngStr) {
             print("[LocationCheck] Silent Push 수신: shift_\(shiftId)")
 
-            let checker = LocationChecker(targetLat: targetLat, targetLng: targetLng, shiftId: shiftId) {
+            AppDelegate.activeLocationChecker = LocationChecker(targetLat: targetLat, targetLng: targetLng, shiftId: shiftId) {
+                AppDelegate.activeLocationChecker = nil
                 completionHandler(.newData)
             }
-            checker.check()
+            AppDelegate.activeLocationChecker?.check()
             return
         }
 
@@ -254,11 +256,38 @@ class LocationChecker: NSObject, CLLocationManagerDelegate {
         print("[LocationCheck] 현재 거리: \(Int(distance))m (shift: \(shiftId))")
 
         if distance <= 2000 {
-            let delegate = AppDelegate.locationDelegate
-            delegate?.callNearbyAPIPublic(shiftId: shiftId)
-            delegate?.sendLocalNotificationPublic(shiftId: shiftId)
+            // 로컬 알림은 즉시
+            AppDelegate.locationDelegate?.sendLocalNotificationPublic(shiftId: shiftId)
+            // API 호출 완료 후 finish
+            callNearbyAndFinish(shiftId: shiftId)
+        } else {
+            finish()
         }
-        finish()
+    }
+
+    private func callNearbyAndFinish(shiftId: String) {
+        guard let token = UserDefaults.standard.string(forKey: "supabase_access_token") else {
+            finish()
+            return
+        }
+        guard let url = URL(string: "https://humendhr.com/api/native/attendance/nearby") else {
+            finish()
+            return
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["shiftId": shiftId])
+
+        URLSession.shared.dataTask(with: request) { [weak self] _, response, error in
+            if let error = error {
+                print("[LocationCheck] nearby API 에러: \(error.localizedDescription)")
+            } else if let httpResponse = response as? HTTPURLResponse {
+                print("[LocationCheck] nearby API 응답: \(httpResponse.statusCode)")
+            }
+            self?.finish()
+        }.resume()
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {

@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
-import { sendPush } from "./fcm";
+import { sendPush, sendDataOnlyPush } from "./fcm";
 
 interface NotifyOptions {
   memberId: string;
@@ -108,7 +108,7 @@ export async function notifyAttendanceCheck(
   });
 }
 
-/** Silent Push로 위치 체크 요청 (2층: 백그라운드 위치 확인) */
+/** data-only Silent Push로 위치 체크 요청 (2층: 백그라운드 위치 확인) */
 export async function sendLocationCheckPush(
   memberId: string,
   shiftId: string,
@@ -125,16 +125,12 @@ export async function sendLocationCheckPush(
   if (!tokens || tokens.length === 0) return;
 
   for (const t of tokens) {
-    await sendPush(t.fcm_token, {
-      title: "",
-      body: "",
-      data: {
-        type: "location_check",
-        shiftId,
-        lat: String(latitude),
-        lng: String(longitude),
-        radius: "2000",
-      },
+    await sendDataOnlyPush(t.fcm_token, {
+      type: "location_check",
+      shiftId,
+      lat: String(latitude),
+      lng: String(longitude),
+      radius: "2000",
     });
   }
 }
