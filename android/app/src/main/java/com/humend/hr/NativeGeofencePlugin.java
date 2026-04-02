@@ -19,6 +19,9 @@ import com.google.android.gms.location.GeofencingClient;
 import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationServices;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import java.util.Collections;
 
 @CapacitorPlugin(name = "NativeGeofence")
@@ -72,6 +75,21 @@ public class NativeGeofencePlugin extends Plugin {
                     Log.e(TAG, "지오펜스 등록 실패: " + e.getMessage());
                     call.reject("지오펜스 등록 실패: " + e.getMessage());
                 });
+    }
+
+    @PluginMethod
+    public void setAuthToken(PluginCall call) {
+        String token = call.getString("token");
+        if (token == null) {
+            call.reject("token 필수");
+            return;
+        }
+        SharedPreferences prefs = getContext().getApplicationContext().getSharedPreferences("NativeGeofence", Context.MODE_PRIVATE);
+        prefs.edit().putString("supabase_access_token", token).apply();
+        Log.i(TAG, "auth token 저장됨");
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        call.resolve(ret);
     }
 
     @PluginMethod

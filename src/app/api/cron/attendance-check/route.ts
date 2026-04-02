@@ -4,6 +4,7 @@ import {
   notifyAttendanceCheck,
   notifyNoshowToMember,
   notifyNoshowToAdmin,
+  sendLocationCheckPush,
 } from "@/lib/push/attendance-notify";
 
 export async function GET(req: NextRequest) {
@@ -132,9 +133,37 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // 2층: nearby_at 미기록 + 미도착 shift에 location_check Silent Push 발송
+  const { data: nearbyPending } = await admin
+    .from("daily_shifts")
+    .select(`
+      id, member_id, start_time, nearby_at,
+      clients (latitude, longitude)
+    `)
+    .eq("work_date", today)
+    .is("nearby_at", null)
+    .in("arrival_status", ["pending", "notified", "confirmed"]);
+
+  let locationCheckCount = 0;
+  if (nearbyPending) {
+    for (const s of nearbyPending) {
+      const sStart = new Date(`${today}T${s.start_time}+09:00`);
+      const mUntil = (sStart.getTime() - now.getTime()) / 60000;
+      // 출근 60분 전 ~ 출근 시간 사이
+      if (mUntil <= 60 && mUntil > -30) {
+        const c = s.clients as unknown as { latitude: number | null; longitude: number | null };
+        if (c?.latitude && c?.longitude) {
+          sendLocationCheckPush(s.member_id, s.id, c.latitude, c.longitude).catch(console.error);
+          locationCheckCount++;
+        }
+      }
+    }
+  }
+
   return NextResponse.json({
     checked: shifts.length,
     notified: notifiedCount,
     noshow: noshowCount,
+    locationCheck: locationCheckCount,
   });
 }

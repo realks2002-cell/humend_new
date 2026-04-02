@@ -15,7 +15,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     // 앱 전체에서 공유하는 CLLocationManager (NativeGeofencePlugin에서도 사용)
     static let sharedLocationManager: CLLocationManager = CLLocationManager()
-    private static var locationDelegate: GeofenceLocationDelegate?
+    static var locationDelegate: GeofenceLocationDelegate?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         #if canImport(FirebaseCore)
@@ -115,6 +115,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             completionHandler(.newData)
             return
         }
+
+        // 2층: location_check Silent Push — GPS 1회 획득 후 거리 체크
+        if let type = userInfo["type"] as? String, type == "location_check",
+           let latStr = userInfo["lat"] as? String,
+           let lngStr = userInfo["lng"] as? String,
+           let shiftId = userInfo["shiftId"] as? String,
+           let targetLat = Double(latStr),
+           let targetLng = Double(lngStr) {
+            print("[LocationCheck] Silent Push 수신: shift_\(shiftId)")
+
+            let checker = LocationChecker(targetLat: targetLat, targetLng: targetLng, shiftId: shiftId) {
+                completionHandler(.newData)
+            }
+            checker.check()
+            return
+        }
+
         completionHandler(.noData)
     }
 }
@@ -124,7 +141,15 @@ class GeofenceLocationDelegate: NSObject, CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
         guard region is CLCircularRegion else { return }
         print("[NativeGeofence] 진입 감지: \(region.identifier)")
-        // Capacitor JS에 이벤트 전달
+
+        // 1. 네이티브에서 직접 nearby API 호출 (백그라운드에서도 동작)
+        if region.identifier.hasPrefix("shift_") {
+            let shiftId = String(region.identifier.dropFirst(6))
+            callNearbyAPI(shiftId: shiftId)
+            sendLocalNotification(shiftId: shiftId)
+        }
+
+        // 2. Capacitor JS에 이벤트 전달 (포그라운드일 때만 동작)
         NotificationCenter.default.post(
             name: NSNotification.Name("GeofenceEnter"),
             object: nil,
@@ -134,6 +159,125 @@ class GeofenceLocationDelegate: NSObject, CLLocationManagerDelegate {
 
     func locationManager(_ manager: CLLocationManager, monitoringDidFailFor region: CLRegion?, withError error: Error) {
         print("[NativeGeofence] 모니터링 에러: \(error.localizedDescription)")
+    }
+
+    func callNearbyAPIPublic(shiftId: String) { callNearbyAPI(shiftId: shiftId) }
+    func sendLocalNotificationPublic(shiftId: String) { sendLocalNotification(shiftId: shiftId) }
+
+    private func callNearbyAPI(shiftId: String) {
+        guard let token = UserDefaults.standard.string(forKey: "supabase_access_token") else {
+            print("[NativeGeofence] nearby API 실패: 토큰 없음")
+            return
+        }
+
+        // 백그라운드 실행 시간 확보
+        var bgTask: UIBackgroundTaskIdentifier = .invalid
+        bgTask = UIApplication.shared.beginBackgroundTask {
+            UIApplication.shared.endBackgroundTask(bgTask)
+        }
+
+        guard let url = URL(string: "https://humendhr.com/api/native/attendance/nearby") else {
+            UIApplication.shared.endBackgroundTask(bgTask)
+            return
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["shiftId": shiftId])
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            defer { UIApplication.shared.endBackgroundTask(bgTask) }
+            if let error = error {
+                print("[NativeGeofence] nearby API 에러: \(error.localizedDescription)")
+                return
+            }
+            if let httpResponse = response as? HTTPURLResponse {
+                print("[NativeGeofence] nearby API 응답: \(httpResponse.statusCode)")
+            }
+        }.resume()
+    }
+
+    private func sendLocalNotification(shiftId: String) {
+        let content = UNMutableNotificationContent()
+        content.title = "근무지 근처입니다"
+        content.body = "출근 확인을 위해 앱을 열어주세요."
+        content.sound = .default
+        content.userInfo = ["shiftId": shiftId, "action": "open_for_arrival"]
+
+        let request = UNNotificationRequest(
+            identifier: "nearby_\(shiftId)",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("[NativeGeofence] 로컬 알림 에러: \(error.localizedDescription)")
+            } else {
+                print("[NativeGeofence] 로컬 알림 발송: nearby_\(shiftId)")
+            }
+        }
+    }
+}
+
+// MARK: - Location Checker (2층: Silent Push → GPS 1회 → 거리 체크)
+class LocationChecker: NSObject, CLLocationManagerDelegate {
+    private let manager = CLLocationManager()
+    private let targetLat: Double
+    private let targetLng: Double
+    private let shiftId: String
+    private let completion: () -> Void
+    private var bgTask: UIBackgroundTaskIdentifier = .invalid
+
+    init(targetLat: Double, targetLng: Double, shiftId: String, completion: @escaping () -> Void) {
+        self.targetLat = targetLat
+        self.targetLng = targetLng
+        self.shiftId = shiftId
+        self.completion = completion
+        super.init()
+        manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+    }
+
+    func check() {
+        bgTask = UIApplication.shared.beginBackgroundTask { [weak self] in
+            self?.finish()
+        }
+        manager.requestLocation()
+    }
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let loc = locations.last else { finish(); return }
+
+        let distance = haversine(lat1: loc.coordinate.latitude, lng1: loc.coordinate.longitude,
+                                 lat2: targetLat, lng2: targetLng)
+        print("[LocationCheck] 현재 거리: \(Int(distance))m (shift: \(shiftId))")
+
+        if distance <= 2000 {
+            let delegate = AppDelegate.locationDelegate
+            delegate?.callNearbyAPIPublic(shiftId: shiftId)
+            delegate?.sendLocalNotificationPublic(shiftId: shiftId)
+        }
+        finish()
+    }
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("[LocationCheck] GPS 에러: \(error.localizedDescription)")
+        finish()
+    }
+
+    private func finish() {
+        completion()
+        UIApplication.shared.endBackgroundTask(bgTask)
+    }
+
+    private func haversine(lat1: Double, lng1: Double, lat2: Double, lng2: Double) -> Double {
+        let R = 6371000.0
+        let dLat = (lat2 - lat1) * .pi / 180
+        let dLng = (lng2 - lng1) * .pi / 180
+        let a = sin(dLat/2) * sin(dLat/2) +
+                cos(lat1 * .pi / 180) * cos(lat2 * .pi / 180) * sin(dLng/2) * sin(dLng/2)
+        return R * 2 * atan2(sqrt(a), sqrt(1 - a))
     }
 }
 

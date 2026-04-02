@@ -27,11 +27,16 @@ export async function onLoginComplete() {
     console.error("[onLogin] 푸시 토큰 에러:", e);
   }
 
-  // 2. 지오펜싱 시작 (로그인 직후 세션이 확실히 있는 토큰 전달)
+  // 2. 네이티브 저장소에 토큰 저장 (백그라운드 nearby API 호출용)
   try {
     const supabase = createClient();
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.access_token) {
+      const { setNativeAuthToken } = await import("@/lib/capacitor/native-geofence");
+      await setNativeAuthToken(session.access_token);
+      console.log("[onLogin] 네이티브 토큰 저장 완료");
+
+      // 3. 지오펜싱 시작
       const { checkAndStartGeofence } = await import("@/hooks/useAttendance");
       await checkAndStartGeofence(session.access_token);
     }

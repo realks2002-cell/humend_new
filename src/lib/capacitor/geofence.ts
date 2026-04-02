@@ -63,6 +63,8 @@ let nearbyTriggered = false;
 let arrivedTriggered = false;
 let departedState = false;
 let departDebounceCount = 0;
+let lastArrivedAttempt = 0;
+const ARRIVED_DEBOUNCE_MS = 5000; // 5초 내 중복 arrive 호출 방지
 
 const NEARBY_RADIUS = 2000; // 2km
 const ARRIVAL_RADIUS = 100; // 100m
@@ -91,6 +93,7 @@ export async function startGeofenceWatch(
   arrivedTriggered = false;
   departedState = false;
   departDebounceCount = 0;
+  lastArrivedAttempt = 0;
 
   try {
     const bgPlugin = getPlugin();
@@ -131,11 +134,14 @@ export async function startGeofenceWatch(
         if (!arrivedTriggered) {
           // ─── 출근 전: 접근 + 도착 감지 ───
 
-          // 30m 이내 → 출근 확인 (watch 계속 유지)
+          // 100m 이내 → 출근 확인 시도 (서버가 30m 검증, 5초 debounce)
           if (dist <= ARRIVAL_RADIUS) {
-            arrivedTriggered = true;
-            departDebounceCount = 0;
-            callbacks.onArrived(location.latitude, location.longitude);
+            const now = Date.now();
+            if (now - lastArrivedAttempt > ARRIVED_DEBOUNCE_MS) {
+              lastArrivedAttempt = now;
+              departDebounceCount = 0;
+              callbacks.onArrived(location.latitude, location.longitude);
+            }
             return;
           }
 
@@ -261,9 +267,17 @@ export async function stopGeofenceWatch(): Promise<void> {
     arrivedTriggered = false;
     departedState = false;
     departDebounceCount = 0;
+    lastArrivedAttempt = 0;
   }
 }
 
 export function isWatching(): boolean {
   return watcherId !== null;
+}
+
+/** arrive API 성공 시 호출 — 이탈 감지 모드로 전환 */
+export function setArrivedState(): void {
+  arrivedTriggered = true;
+  departedState = false;
+  departDebounceCount = 0;
 }

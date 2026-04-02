@@ -24,18 +24,36 @@ export async function registerPush(): Promise<string | null> {
     // iOS에서는 createChannel 미지원 — 무시
   }
 
-  await PushNotifications.register();
+  return new Promise<string | null>((resolve) => {
+    let resolved = false;
 
-  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        console.warn("[Push] 토큰 등록 타임아웃 (10s)");
+        resolve(null);
+      }
+    }, 10000);
+
     PushNotifications.addListener("registration", (token) => {
-      console.log("[Push] FCM token:", token.value);
-      resolve(token.value);
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timeout);
+        console.log("[Push] FCM token:", token.value);
+        resolve(token.value);
+      }
     });
 
     PushNotifications.addListener("registrationError", (err) => {
-      console.error("[Push] 등록 실패:", err);
-      resolve(null);
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timeout);
+        console.error("[Push] 등록 실패:", err);
+        resolve(null);
+      }
     });
+
+    PushNotifications.register();
   });
 }
 
@@ -46,7 +64,7 @@ export function setupPushListeners() {
     "pushNotificationReceived",
     async (notification) => {
       const data = notification.data;
-      if (data?.type === "geofence_register" || data?.action === "confirm_attendance") {
+      if (data?.type === "geofence_register" || data?.type === "location_check" || data?.action === "confirm_attendance") {
         console.log("[Push] 배정 알림 수신 → 지오펜싱 재시작");
         try {
           const { checkAndStartGeofence } = await import("@/hooks/useAttendance");

@@ -8,6 +8,7 @@ import {
   startDepartureWatch,
   stopGeofenceWatch,
   isWatching,
+  setArrivedState,
 } from "@/lib/capacitor/geofence";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
@@ -102,6 +103,12 @@ export async function checkAndStartGeofence(overrideToken?: string) {
 
   console.log("[Attendance] 지오펜싱 시작!");
 
+  // 네이티브 저장소에 토큰 갱신 (백그라운드 nearby API 호출용)
+  try {
+    const { setNativeAuthToken } = await import("@/lib/capacitor/native-geofence");
+    await setNativeAuthToken(initToken);
+  } catch {}
+
   // OS 네이티브 지오펜스 등록 (앱 종료 후에도 2km 진입 감지)
   try {
     const { registerWorkplaceGeofence } = await import("@/lib/capacitor/native-geofence");
@@ -146,7 +153,16 @@ export async function checkAndStartGeofence(overrideToken?: string) {
       callApi("/api/native/attendance/nearby", { shiftId: shift.id }).catch(console.error);
     },
     onArrived: (lat, lng) => {
-      callApi("/api/native/attendance/arrive", { shiftId: shift.id, lat, lng }).catch(console.error);
+      callApi("/api/native/attendance/arrive", { shiftId: shift.id, lat, lng })
+        .then((result) => {
+          if (result?.success) {
+            setArrivedState();
+            console.log("[Attendance] 출근 확인 성공 → 이탈 감지 모드 전환");
+          } else {
+            console.log("[Attendance] 출근 확인 실패 (거리 초과) → 재시도 대기");
+          }
+        })
+        .catch(console.error);
     },
     onDeparted: (lat, lng) => {
       callApi("/api/native/attendance/depart", { shiftId: shift.id, lat, lng }).catch(console.error);

@@ -10,6 +10,7 @@ interface NativeGeofencePlugin {
   }): Promise<{ success: boolean }>;
   remove(options: { identifier: string }): Promise<{ success: boolean }>;
   removeAll(): Promise<{ success: boolean }>;
+  setAuthToken(options: { token: string }): Promise<{ success: boolean }>;
   addListener(
     eventName: "geofenceEnter",
     callback: (data: { identifier: string }) => void
@@ -49,6 +50,18 @@ export async function registerWorkplaceGeofence(
   } catch (e) {
     console.error("[NativeGeofence] 등록 실패:", e);
     return false;
+  }
+}
+
+/**
+ * 네이티브 저장소에 인증 토큰 저장 (백그라운드 API 호출용)
+ */
+export async function setNativeAuthToken(token: string): Promise<void> {
+  if (!isNative()) return;
+  try {
+    await getPlugin().setAuthToken({ token });
+  } catch (e) {
+    console.error("[NativeGeofence] 토큰 저장 실패:", e);
   }
 }
 

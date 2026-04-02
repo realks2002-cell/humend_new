@@ -10,6 +10,7 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "register", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "remove", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "removeAll", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setAuthToken", returnType: CAPPluginReturnPromise),
     ]
 
     private var geofenceObserver: NSObjectProtocol?
@@ -70,6 +71,16 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin {
                 break
             }
         }
+        call.resolve(["success": true])
+    }
+
+    @objc func setAuthToken(_ call: CAPPluginCall) {
+        guard let token = call.getString("token") else {
+            call.reject("token 필수")
+            return
+        }
+        UserDefaults.standard.set(token, forKey: "supabase_access_token")
+        print("[NativeGeofence] auth token 저장됨")
         call.resolve(["success": true])
     }
 
