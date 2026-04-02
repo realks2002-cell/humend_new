@@ -39,16 +39,49 @@ export async function registerWorkplaceGeofence(
 
   try {
     const p = getPlugin();
+    // 2km 접근 감지 (ENTER)
     await p.register({
       latitude: lat,
       longitude: lng,
-      radius: 2000, // 2km
+      radius: 2000,
       identifier: `shift_${shiftId}`,
     });
-    console.log("[NativeGeofence] 등록:", shiftId);
+    // 200m 도착 감지 (ENTER)
+    await p.register({
+      latitude: lat,
+      longitude: lng,
+      radius: 200,
+      identifier: `arrive_${shiftId}`,
+    });
+    console.log("[NativeGeofence] 등록: shift+arrive", shiftId);
     return true;
   } catch (e) {
     console.error("[NativeGeofence] 등록 실패:", e);
+    return false;
+  }
+}
+
+/**
+ * 도착 후 이탈 감지 지오펜스 등록 (500m, EXIT)
+ */
+export async function registerDepartureGeofence(
+  lat: number,
+  lng: number,
+  shiftId: string
+): Promise<boolean> {
+  if (!isNative()) return false;
+  try {
+    const p = getPlugin();
+    await p.register({
+      latitude: lat,
+      longitude: lng,
+      radius: 500,
+      identifier: `depart_${shiftId}`,
+    });
+    console.log("[NativeGeofence] 이탈 감지 등록:", shiftId);
+    return true;
+  } catch (e) {
+    console.error("[NativeGeofence] 이탈 감지 등록 실패:", e);
     return false;
   }
 }

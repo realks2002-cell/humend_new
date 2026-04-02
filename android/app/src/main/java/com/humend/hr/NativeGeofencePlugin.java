@@ -52,15 +52,19 @@ public class NativeGeofencePlugin extends Plugin {
             return;
         }
 
+        boolean isDepart = identifier.startsWith("depart_");
+        int transitionType = isDepart ? Geofence.GEOFENCE_TRANSITION_EXIT : Geofence.GEOFENCE_TRANSITION_ENTER;
+        int initialTrigger = isDepart ? GeofencingRequest.INITIAL_TRIGGER_EXIT : GeofencingRequest.INITIAL_TRIGGER_ENTER;
+
         Geofence geofence = new Geofence.Builder()
                 .setRequestId(identifier)
                 .setCircularRegion(lat, lng, radius.floatValue())
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+                .setTransitionTypes(transitionType)
                 .build();
 
         GeofencingRequest request = new GeofencingRequest.Builder()
-                .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+                .setInitialTrigger(initialTrigger)
                 .addGeofence(geofence)
                 .build();
 

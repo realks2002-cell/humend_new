@@ -17,11 +17,12 @@ function haversineMeters(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const ARRIVAL_RADIUS_METERS = 30;
+const ARRIVAL_RADIUS_METERS = 200;
 
 /**
  * POST /api/native/attendance/arrive
- * 지오펜싱 도착 확인 — 30m 반경 진입 시 호출
+ * 지오펜싱 도착 확인 — 200m 반경 진입 시 호출
+ * lat/lng가 없으면 거리 검증 생략 (네이티브 지오펜스 진입으로 간주)
  */
 export async function POST(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 서버 측 거리 검증 (스푸핑 방지)
+  // 서버 측 거리 검증
   const distance = haversineMeters(lat, lng, client.latitude, client.longitude);
 
   if (distance > ARRIVAL_RADIUS_METERS) {

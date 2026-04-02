@@ -74,9 +74,13 @@ public class LocationCheckFirebaseService extends MessagingService {
                                                 targetLat, targetLng);
                     Log.i(TAG, "현재 거리: " + (int) distance + "m (shift: " + shiftId + ")");
 
-                    if (distance <= 2000) {
+                    if (distance <= 200) {
                         callNearbyAPISync(shiftId);
-                        sendLocalNotification(shiftId);
+                        callArriveAPISync(shiftId, location.getLatitude(), location.getLongitude());
+                        sendLocalNotification(shiftId, "출근 처리되었습니다", "근무를 시작합니다.");
+                    } else if (distance <= 2000) {
+                        callNearbyAPISync(shiftId);
+                        sendLocalNotification(shiftId, "근무지 근처입니다", "출근 확인을 위해 앱을 열어주세요.");
                     }
                     latch.countDown();
                 })
@@ -91,6 +95,35 @@ public class LocationCheckFirebaseService extends MessagingService {
             Log.e(TAG, "위치 권한 없음: " + e.getMessage());
         } catch (InterruptedException e) {
             Log.e(TAG, "대기 중단: " + e.getMessage());
+        }
+    }
+
+    private void callArriveAPISync(String shiftId, double lat, double lng) {
+        SharedPreferences prefs = getApplicationContext()
+            .getSharedPreferences("NativeGeofence", Context.MODE_PRIVATE);
+        String token = prefs.getString("supabase_access_token", null);
+        if (token == null) return;
+
+        try {
+            URL url = new URL("https://humendhr.com/api/native/attendance/arrive");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Authorization", "Bearer " + token);
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
+
+            String body = "{\"shiftId\":\"" + shiftId + "\",\"lat\":" + lat + ",\"lng\":" + lng + "}";
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(body.getBytes(StandardCharsets.UTF_8));
+            }
+
+            int responseCode = conn.getResponseCode();
+            Log.i(TAG, "arrive API 응답: " + responseCode);
+            conn.disconnect();
+        } catch (Exception e) {
+            Log.e(TAG, "arrive API 에러: " + e.getMessage());
         }
     }
 
@@ -127,7 +160,7 @@ public class LocationCheckFirebaseService extends MessagingService {
         }
     }
 
-    private void sendLocalNotification(String shiftId) {
+    private void sendLocalNotification(String shiftId, String title, String body) {
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
 
@@ -146,8 +179,8 @@ public class LocationCheckFirebaseService extends MessagingService {
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "default")
             .setSmallIcon(android.R.drawable.ic_dialog_map)
-            .setContentTitle("근무지 근처입니다")
-            .setContentText("출근 확인을 위해 앱을 열어주세요.")
+            .setContentTitle(title)
+            .setContentText(body)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pi);

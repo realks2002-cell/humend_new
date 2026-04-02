@@ -17,6 +17,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     static let sharedLocationManager: CLLocationManager = CLLocationManager()
     static var locationDelegate: GeofenceLocationDelegate?
     static var activeLocationChecker: LocationChecker?
+    static var activeArriveHelper: ArriveLocationHelper?
+    static var activeArriveLocManager: CLLocationManager?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         #if canImport(FirebaseCore)
@@ -112,7 +114,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             region.notifyOnExit = false
 
             AppDelegate.sharedLocationManager.startMonitoring(for: region)
-            print("[GeofenceFCM] 지오펜스 등록: shift_\(shiftId) (\(lat),\(lng) r=\(radius)m)")
+
+            // 200m 도착 감지 지오펜스 추가 등록
+            let arriveRegion = CLCircularRegion(
+                center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
+                radius: min(200.0, AppDelegate.sharedLocationManager.maximumRegionMonitoringDistance),
+                identifier: "arrive_\(shiftId)"
+            )
+            arriveRegion.notifyOnEntry = true
+            arriveRegion.notifyOnExit = false
+            AppDelegate.sharedLocationManager.startMonitoring(for: arriveRegion)
+
+            // 좌표 저장 (arrive 성공 시 depart 지오펜스 등록에 사용)
+            UserDefaults.standard.set(String(lat), forKey: "arrive_lat_\(shiftId)")
+            UserDefaults.standard.set(String(lng), forKey: "arrive_lng_\(shiftId)")
+
+            print("[GeofenceFCM] 지오펜스 등록: shift+arrive_\(shiftId) (\(lat),\(lng))")
             completionHandler(.newData)
             return
         }
@@ -144,14 +161,16 @@ class GeofenceLocationDelegate: NSObject, CLLocationManagerDelegate {
         guard region is CLCircularRegion else { return }
         print("[NativeGeofence] 진입 감지: \(region.identifier)")
 
-        // 1. 네이티브에서 직접 nearby API 호출 (백그라운드에서도 동작)
         if region.identifier.hasPrefix("shift_") {
             let shiftId = String(region.identifier.dropFirst(6))
             callNearbyAPI(shiftId: shiftId)
-            sendLocalNotification(shiftId: shiftId)
+            sendLocalNotification(shiftId: shiftId, title: "근무지 근처입니다", body: "출근 확인을 위해 앱을 열어주세요.")
+        } else if region.identifier.hasPrefix("arrive_") {
+            let shiftId = String(region.identifier.dropFirst(7))
+            callArriveWithLocation(shiftId: shiftId)
         }
 
-        // 2. Capacitor JS에 이벤트 전달 (포그라운드일 때만 동작)
+        // Capacitor JS에 이벤트 전달 (포그라운드일 때만)
         NotificationCenter.default.post(
             name: NSNotification.Name("GeofenceEnter"),
             object: nil,
@@ -159,12 +178,26 @@ class GeofenceLocationDelegate: NSObject, CLLocationManagerDelegate {
         )
     }
 
+    func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
+        guard region is CLCircularRegion else { return }
+        print("[NativeGeofence] 이탈 감지: \(region.identifier)")
+
+        if region.identifier.hasPrefix("depart_") {
+            let shiftId = String(region.identifier.dropFirst(7))
+            callDepartAPI(shiftId: shiftId)
+            sendLocalNotification(shiftId: shiftId, title: "근무지를 이탈했습니다", body: "근무지로 복귀해주세요.")
+        }
+    }
+
     func locationManager(_ manager: CLLocationManager, monitoringDidFailFor region: CLRegion?, withError error: Error) {
         print("[NativeGeofence] 모니터링 에러: \(error.localizedDescription)")
     }
 
     func callNearbyAPIPublic(shiftId: String) { callNearbyAPI(shiftId: shiftId) }
-    func sendLocalNotificationPublic(shiftId: String) { sendLocalNotification(shiftId: shiftId) }
+    func callArriveWithLocationPublic(shiftId: String) { callArriveWithLocation(shiftId: shiftId) }
+    func sendLocalNotificationPublic(shiftId: String, title: String = "근무지 근처입니다", body: String = "출근 확인을 위해 앱을 열어주세요.") {
+        sendLocalNotification(shiftId: shiftId, title: title, body: body)
+    }
 
     private func callNearbyAPI(shiftId: String) {
         guard let token = UserDefaults.standard.string(forKey: "supabase_access_token") else {
@@ -200,10 +233,94 @@ class GeofenceLocationDelegate: NSObject, CLLocationManagerDelegate {
         }.resume()
     }
 
-    private func sendLocalNotification(shiftId: String) {
+    /// 200m 진입 → GPS 1회 → arrive API (beginBackgroundTask 포함)
+    private func callArriveWithLocation(shiftId: String) {
+        var bgTask: UIBackgroundTaskIdentifier = .invalid
+        bgTask = UIApplication.shared.beginBackgroundTask {
+            UIApplication.shared.endBackgroundTask(bgTask)
+        }
+
+        let locManager = CLLocationManager()
+        let arriveHelper = ArriveLocationHelper(shiftId: shiftId) { [weak self] lat, lng in
+            self?.callAPI(
+                path: "/api/native/attendance/arrive",
+                body: ["shiftId": shiftId, "lat": lat, "lng": lng],
+                label: "arrive"
+            ) {
+                // 도착 성공 → 이탈 감지 지오펜스 등록
+                if let latStr = UserDefaults.standard.string(forKey: "arrive_lat_\(shiftId)"),
+                   let lngStr = UserDefaults.standard.string(forKey: "arrive_lng_\(shiftId)"),
+                   let workLat = Double(latStr), let workLng = Double(lngStr) {
+                    let departRegion = CLCircularRegion(
+                        center: CLLocationCoordinate2D(latitude: workLat, longitude: workLng),
+                        radius: 500,
+                        identifier: "depart_\(shiftId)"
+                    )
+                    departRegion.notifyOnEntry = false
+                    departRegion.notifyOnExit = true
+                    AppDelegate.sharedLocationManager.startMonitoring(for: departRegion)
+                    print("[NativeGeofence] 이탈 감지 등록: depart_\(shiftId)")
+                }
+                self?.sendLocalNotification(shiftId: shiftId, title: "출근 처리되었습니다", body: "근무를 시작합니다.")
+                UIApplication.shared.endBackgroundTask(bgTask)
+            }
+        } onFailure: {
+            UIApplication.shared.endBackgroundTask(bgTask)
+        }
+        arriveHelper.requestLocation(manager: locManager)
+        // retain
+        AppDelegate.activeArriveHelper = arriveHelper
+        AppDelegate.activeArriveLocManager = locManager
+    }
+
+    /// depart API 호출
+    private func callDepartAPI(shiftId: String) {
+        callAPI(path: "/api/native/attendance/depart", body: ["shiftId": shiftId], label: "depart")
+    }
+
+    /// 범용 API 호출 (beginBackgroundTask 포함)
+    private func callAPI(path: String, body: [String: Any], label: String, completion: (() -> Void)? = nil) {
+        guard let token = UserDefaults.standard.string(forKey: "supabase_access_token") else {
+            print("[NativeGeofence] \(label) API 실패: 토큰 없음")
+            completion?()
+            return
+        }
+
+        var bgTask: UIBackgroundTaskIdentifier = .invalid
+        bgTask = UIApplication.shared.beginBackgroundTask {
+            UIApplication.shared.endBackgroundTask(bgTask)
+        }
+
+        guard let url = URL(string: "https://humendhr.com\(path)") else {
+            UIApplication.shared.endBackgroundTask(bgTask)
+            completion?()
+            return
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            defer {
+                UIApplication.shared.endBackgroundTask(bgTask)
+                completion?()
+            }
+            if let error = error {
+                print("[NativeGeofence] \(label) API 에러: \(error.localizedDescription)")
+                return
+            }
+            if let httpResponse = response as? HTTPURLResponse {
+                print("[NativeGeofence] \(label) API 응답: \(httpResponse.statusCode)")
+            }
+        }.resume()
+    }
+
+    private func sendLocalNotification(shiftId: String, title: String = "근무지 근처입니다", body: String = "출근 확인을 위해 앱을 열어주세요.") {
         let content = UNMutableNotificationContent()
-        content.title = "근무지 근처입니다"
-        content.body = "출근 확인을 위해 앱을 열어주세요."
+        content.title = title
+        content.body = body
         content.sound = .default
         content.userInfo = ["shiftId": shiftId, "action": "open_for_arrival"]
 
@@ -255,10 +372,13 @@ class LocationChecker: NSObject, CLLocationManagerDelegate {
                                  lat2: targetLat, lng2: targetLng)
         print("[LocationCheck] 현재 거리: \(Int(distance))m (shift: \(shiftId))")
 
-        if distance <= 2000 {
-            // 로컬 알림은 즉시
+        if distance <= 200 {
+            // 200m 이내 → nearby + arrive 둘 다 호출
+            AppDelegate.locationDelegate?.sendLocalNotificationPublic(shiftId: shiftId, title: "출근 처리되었습니다", body: "근무를 시작합니다.")
+            callNearbyAndArriveAndFinish(shiftId: shiftId, lat: loc.coordinate.latitude, lng: loc.coordinate.longitude)
+        } else if distance <= 2000 {
+            // 2km 이내 → nearby만
             AppDelegate.locationDelegate?.sendLocalNotificationPublic(shiftId: shiftId)
-            // API 호출 완료 후 finish
             callNearbyAndFinish(shiftId: shiftId)
         } else {
             finish()
@@ -290,6 +410,43 @@ class LocationChecker: NSObject, CLLocationManagerDelegate {
         }.resume()
     }
 
+    private func callNearbyAndArriveAndFinish(shiftId: String, lat: Double, lng: Double) {
+        guard let token = UserDefaults.standard.string(forKey: "supabase_access_token") else {
+            finish()
+            return
+        }
+        guard let nearbyUrl = URL(string: "https://humendhr.com/api/native/attendance/nearby") else {
+            finish()
+            return
+        }
+        var nearbyReq = URLRequest(url: nearbyUrl)
+        nearbyReq.httpMethod = "POST"
+        nearbyReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        nearbyReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        nearbyReq.httpBody = try? JSONSerialization.data(withJSONObject: ["shiftId": shiftId])
+
+        URLSession.shared.dataTask(with: nearbyReq) { [weak self] _, _, _ in
+            guard let arriveUrl = URL(string: "https://humendhr.com/api/native/attendance/arrive") else {
+                self?.finish()
+                return
+            }
+            var arriveReq = URLRequest(url: arriveUrl)
+            arriveReq.httpMethod = "POST"
+            arriveReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            arriveReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            arriveReq.httpBody = try? JSONSerialization.data(withJSONObject: ["shiftId": shiftId, "lat": lat, "lng": lng])
+
+            URLSession.shared.dataTask(with: arriveReq) { _, response, error in
+                if let error = error {
+                    print("[LocationCheck] arrive API 에러: \(error.localizedDescription)")
+                } else if let httpResponse = response as? HTTPURLResponse {
+                    print("[LocationCheck] arrive API 응답: \(httpResponse.statusCode)")
+                }
+                self?.finish()
+            }.resume()
+        }.resume()
+    }
+
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print("[LocationCheck] GPS 에러: \(error.localizedDescription)")
         finish()
@@ -307,6 +464,47 @@ class LocationChecker: NSObject, CLLocationManagerDelegate {
         let a = sin(dLat/2) * sin(dLat/2) +
                 cos(lat1 * .pi / 180) * cos(lat2 * .pi / 180) * sin(dLng/2) * sin(dLng/2)
         return R * 2 * atan2(sqrt(a), sqrt(1 - a))
+    }
+}
+
+// MARK: - Arrive Location Helper (200m 진입 시 GPS 1회 → arrive API)
+class ArriveLocationHelper: NSObject, CLLocationManagerDelegate {
+    private let shiftId: String
+    private let onSuccess: (Double, Double) -> Void
+    private let onFailure: () -> Void
+    private var manager: CLLocationManager?
+
+    init(shiftId: String, onSuccess: @escaping (Double, Double) -> Void, onFailure: @escaping () -> Void) {
+        self.shiftId = shiftId
+        self.onSuccess = onSuccess
+        self.onFailure = onFailure
+        super.init()
+    }
+
+    func requestLocation(manager: CLLocationManager) {
+        self.manager = manager
+        manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyBest
+        manager.requestLocation()
+    }
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let loc = locations.last else { cleanup(); onFailure(); return }
+        print("[ArriveHelper] GPS 획득: \(loc.coordinate.latitude),\(loc.coordinate.longitude)")
+        onSuccess(loc.coordinate.latitude, loc.coordinate.longitude)
+        cleanup()
+    }
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("[ArriveHelper] GPS 에러: \(error.localizedDescription)")
+        onFailure()
+        cleanup()
+    }
+
+    private func cleanup() {
+        manager = nil
+        AppDelegate.activeArriveHelper = nil
+        AppDelegate.activeArriveLocManager = nil
     }
 }
 

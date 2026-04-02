@@ -67,7 +67,7 @@ let lastArrivedAttempt = 0;
 const ARRIVED_DEBOUNCE_MS = 5000; // 5초 내 중복 arrive 호출 방지
 
 const NEARBY_RADIUS = 2000; // 2km
-const ARRIVAL_RADIUS = 100; // 100m
+const ARRIVAL_RADIUS = 200; // 200m (네이티브 지오펜스와 동일)
 const DEPARTURE_RADIUS = 500; // 500m
 const DISTANCE_FILTER = 200; // 200m (이탈 감지를 위해 500→200으로 축소)
 const MAX_ACCURACY = 100; // 100m 이하만 수용

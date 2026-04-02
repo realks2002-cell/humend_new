@@ -15,10 +15,18 @@ import androidx.core.app.NotificationCompat;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.GeofencingClient;
+import com.google.android.gms.location.GeofencingRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
+import com.google.android.gms.tasks.CancellationTokenSource;
+
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 
 public class GeofenceBroadcastReceiver extends BroadcastReceiver {
@@ -35,25 +43,38 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
             return;
         }
 
-        if (geofencingEvent.getGeofenceTransition() == Geofence.GEOFENCE_TRANSITION_ENTER) {
-            List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
-            if (triggeringGeofences == null) return;
+        int transition = geofencingEvent.getGeofenceTransition();
+        List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
+        if (triggeringGeofences == null) return;
 
-            // goAsync()로 BroadcastReceiver 수명 연장 (HTTP 완료까지)
-            final PendingResult pendingResult = goAsync();
-            String firstShiftId = null;
+        final PendingResult pendingResult = goAsync();
+        String apiShiftId = null;
+        String apiType = null; // "nearby", "arrive", "depart"
 
-            for (Geofence geofence : triggeringGeofences) {
-                String id = geofence.getRequestId();
-                Log.i(TAG, "지오펜스 진입: " + id);
+        for (Geofence geofence : triggeringGeofences) {
+            String id = geofence.getRequestId();
+            Log.i(TAG, "지오펜스 이벤트: " + id + " transition=" + transition);
 
-                // 1. 네이티브에서 직접 nearby API 호출 (첫 번째만)
-                if (id.startsWith("shift_") && firstShiftId == null) {
-                    firstShiftId = id.substring(6);
-                    sendLocalNotification(context, firstShiftId);
+            if (transition == Geofence.GEOFENCE_TRANSITION_ENTER) {
+                if (id.startsWith("shift_") && apiShiftId == null) {
+                    apiShiftId = id.substring(6);
+                    apiType = "nearby";
+                    sendLocalNotification(context, apiShiftId, "근무지 근처입니다", "출근 확인을 위해 앱을 열어주세요.");
+                } else if (id.startsWith("arrive_") && apiShiftId == null) {
+                    apiShiftId = id.substring(7);
+                    apiType = "arrive";
+                    sendLocalNotification(context, apiShiftId, "출근 처리되었습니다", "근무를 시작합니다.");
                 }
+            } else if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+                if (id.startsWith("depart_") && apiShiftId == null) {
+                    apiShiftId = id.substring(7);
+                    apiType = "depart";
+                    sendLocalNotification(context, apiShiftId, "근무지를 이탈했습니다", "근무지로 복귀해주세요.");
+                }
+            }
 
-                // 2. 앱을 깨움 (launch intent)
+            // 앱 깨우기
+            if (transition == Geofence.GEOFENCE_TRANSITION_ENTER) {
                 Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
                 if (launchIntent != null) {
                     launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -61,29 +82,126 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
                     context.startActivity(launchIntent);
                 }
             }
+        }
 
-            // API 호출은 1회만 (pendingResult.finish()도 1회)
-            if (firstShiftId != null) {
-                callNearbyAPI(context, firstShiftId, pendingResult);
+        if (apiShiftId != null && apiType != null) {
+            if ("arrive".equals(apiType)) {
+                // arrive: GPS 1회 획득 → arrive API (lat/lng 포함) + depart 지오펜스 등록
+                callArriveWithLocation(context, apiShiftId, pendingResult);
             } else {
-                pendingResult.finish();
+                callAttendanceAPI(context, apiShiftId, apiType, pendingResult);
             }
+        } else {
+            pendingResult.finish();
         }
     }
 
-    private void callNearbyAPI(Context context, String shiftId, PendingResult pendingResult) {
+    private void callArriveWithLocation(Context context, String shiftId, PendingResult pendingResult) {
+        try {
+            FusedLocationProviderClient locClient = LocationServices.getFusedLocationProviderClient(context);
+            CancellationTokenSource cts = new CancellationTokenSource();
+
+            locClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.getToken())
+                .addOnSuccessListener(location -> {
+                    new Thread(() -> {
+                        try {
+                            if (location != null) {
+                                // arrive API with lat/lng
+                                callAPISync(context, "/api/native/attendance/arrive",
+                                    "{\"shiftId\":\"" + shiftId + "\",\"lat\":" + location.getLatitude() + ",\"lng\":" + location.getLongitude() + "}");
+
+                                // depart 지오펜스 등록 (500m EXIT)
+                                registerDepartGeofence(context, shiftId, location.getLatitude(), location.getLongitude());
+                            } else {
+                                // GPS 실패 — shiftId만으로 호출
+                                callAPISync(context, "/api/native/attendance/arrive",
+                                    "{\"shiftId\":\"" + shiftId + "\"}");
+                            }
+                        } finally {
+                            pendingResult.finish();
+                        }
+                    }).start();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "arrive GPS 에러: " + e.getMessage());
+                    pendingResult.finish();
+                });
+        } catch (SecurityException e) {
+            Log.e(TAG, "arrive 위치 권한 없음: " + e.getMessage());
+            pendingResult.finish();
+        }
+    }
+
+    private void registerDepartGeofence(Context context, String shiftId, double lat, double lng) {
+        try {
+            GeofencingClient geoClient = LocationServices.getGeofencingClient(context);
+            Geofence depart = new Geofence.Builder()
+                .setRequestId("depart_" + shiftId)
+                .setCircularRegion(lat, lng, 500f)
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_EXIT)
+                .build();
+            GeofencingRequest req = new GeofencingRequest.Builder()
+                .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_EXIT)
+                .addGeofence(depart)
+                .build();
+            Intent intent = new Intent(context, GeofenceBroadcastReceiver.class);
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) flags |= PendingIntent.FLAG_MUTABLE;
+            PendingIntent pi = PendingIntent.getBroadcast(context, 0, intent, flags);
+            geoClient.addGeofences(req, pi);
+            Log.i(TAG, "depart 지오펜스 등록: " + shiftId);
+        } catch (SecurityException e) {
+            Log.e(TAG, "depart 지오펜스 권한 없음: " + e.getMessage());
+        }
+    }
+
+    private void callAPISync(Context context, String path, String body) {
+        SharedPreferences prefs = context.getApplicationContext()
+            .getSharedPreferences("NativeGeofence", Context.MODE_PRIVATE);
+        String token = prefs.getString("supabase_access_token", null);
+        if (token == null) { Log.w(TAG, "API 실패: 토큰 없음"); return; }
+
+        try {
+            URL url = new URL("https://humendhr.com" + path);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Authorization", "Bearer " + token);
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(body.getBytes(StandardCharsets.UTF_8));
+            }
+            int code = conn.getResponseCode();
+            Log.i(TAG, path + " 응답: " + code);
+            conn.disconnect();
+        } catch (Exception e) {
+            Log.e(TAG, path + " 에러: " + e.getMessage());
+        }
+    }
+
+    private void callAttendanceAPI(Context context, String shiftId, String type, PendingResult pendingResult) {
         SharedPreferences prefs = context.getApplicationContext()
             .getSharedPreferences("NativeGeofence", Context.MODE_PRIVATE);
         String token = prefs.getString("supabase_access_token", null);
         if (token == null) {
-            Log.w(TAG, "nearby API 실패: 토큰 없음");
+            Log.w(TAG, type + " API 실패: 토큰 없음");
             pendingResult.finish();
             return;
         }
 
+        String path;
+        switch (type) {
+            case "arrive": path = "/api/native/attendance/arrive"; break;
+            case "depart": path = "/api/native/attendance/depart"; break;
+            default: path = "/api/native/attendance/nearby"; break;
+        }
+
         new Thread(() -> {
             try {
-                URL url = new URL("https://humendhr.com/api/native/attendance/nearby");
+                URL url = new URL("https://humendhr.com" + path);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Content-Type", "application/json");
@@ -98,17 +216,17 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
                 }
 
                 int responseCode = conn.getResponseCode();
-                Log.i(TAG, "nearby API 응답: " + responseCode);
+                Log.i(TAG, type + " API 응답: " + responseCode);
                 conn.disconnect();
             } catch (Exception e) {
-                Log.e(TAG, "nearby API 에러: " + e.getMessage());
+                Log.e(TAG, type + " API 에러: " + e.getMessage());
             } finally {
                 pendingResult.finish();
             }
         }).start();
     }
 
-    private void sendLocalNotification(Context context, String shiftId) {
+    private void sendLocalNotification(Context context, String shiftId, String title, String body) {
         NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
 
@@ -127,8 +245,8 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "default")
             .setSmallIcon(android.R.drawable.ic_dialog_map)
-            .setContentTitle("근무지 근처입니다")
-            .setContentText("출근 확인을 위해 앱을 열어주세요.")
+            .setContentTitle(title)
+            .setContentText(body)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pi);

@@ -49,8 +49,9 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin {
             radius: min(radius, manager.maximumRegionMonitoringDistance),
             identifier: identifier
         )
-        region.notifyOnEntry = true
-        region.notifyOnExit = false
+        let isDepart = identifier.hasPrefix("depart_")
+        region.notifyOnEntry = !isDepart
+        region.notifyOnExit = isDepart
 
         manager.startMonitoring(for: region)
         print("[NativeGeofence] 등록: \(identifier) (\(lat),\(lng) r=\(radius)m)")
