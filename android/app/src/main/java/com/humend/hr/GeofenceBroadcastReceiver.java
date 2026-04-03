@@ -59,17 +59,14 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
                 if (id.startsWith("shift_") && apiShiftId == null) {
                     apiShiftId = id.substring(6);
                     apiType = "nearby";
-                    sendLocalNotification(context, apiShiftId, "근무지 근처입니다", "출근 확인을 위해 앱을 열어주세요.");
                 } else if (id.startsWith("arrive_") && apiShiftId == null) {
                     apiShiftId = id.substring(7);
                     apiType = "arrive";
-                    sendLocalNotification(context, apiShiftId, "출근 처리되었습니다", "근무를 시작합니다.");
                 }
             } else if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) {
                 if (id.startsWith("depart_") && apiShiftId == null) {
                     apiShiftId = id.substring(7);
                     apiType = "depart";
-                    sendLocalNotification(context, apiShiftId, "근무지를 이탈했습니다", "근무지로 복귀해주세요.");
                 }
             }
 

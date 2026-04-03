@@ -22,15 +22,24 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       }
 
       // 고아 유저 체크: auth에 있지만 members에 없으면 추가정보 입력으로
-      const { data: member } = await supabase
+      const { data: memberById } = await supabase
         .from("members")
         .select("id")
         .eq("id", user.id)
         .maybeSingle();
 
-      if (!member) {
-        router.replace("/signup/complete");
-        return;
+      if (!memberById) {
+        // google_uid 또는 apple_uid로 매칭 시도
+        const { data: memberByUid } = await supabase
+          .from("members")
+          .select("id")
+          .or(`google_uid.eq.${user.id},apple_uid.eq.${user.id}`)
+          .maybeSingle();
+
+        if (!memberByUid) {
+          router.replace("/signup/complete");
+          return;
+        }
       }
 
       setChecked(true);

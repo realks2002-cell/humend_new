@@ -164,7 +164,6 @@ class GeofenceLocationDelegate: NSObject, CLLocationManagerDelegate {
         if region.identifier.hasPrefix("shift_") {
             let shiftId = String(region.identifier.dropFirst(6))
             callNearbyAPI(shiftId: shiftId)
-            sendLocalNotification(shiftId: shiftId, title: "근무지 근처입니다", body: "출근 확인을 위해 앱을 열어주세요.")
         } else if region.identifier.hasPrefix("arrive_") {
             let shiftId = String(region.identifier.dropFirst(7))
             callArriveWithLocation(shiftId: shiftId)
@@ -185,7 +184,6 @@ class GeofenceLocationDelegate: NSObject, CLLocationManagerDelegate {
         if region.identifier.hasPrefix("depart_") {
             let shiftId = String(region.identifier.dropFirst(7))
             callDepartAPI(shiftId: shiftId)
-            sendLocalNotification(shiftId: shiftId, title: "근무지를 이탈했습니다", body: "근무지로 복귀해주세요.")
         }
     }
 
@@ -261,7 +259,6 @@ class GeofenceLocationDelegate: NSObject, CLLocationManagerDelegate {
                     AppDelegate.sharedLocationManager.startMonitoring(for: departRegion)
                     print("[NativeGeofence] 이탈 감지 등록: depart_\(shiftId)")
                 }
-                self?.sendLocalNotification(shiftId: shiftId, title: "출근 처리되었습니다", body: "근무를 시작합니다.")
                 UIApplication.shared.endBackgroundTask(bgTask)
             }
         } onFailure: {
@@ -373,12 +370,8 @@ class LocationChecker: NSObject, CLLocationManagerDelegate {
         print("[LocationCheck] 현재 거리: \(Int(distance))m (shift: \(shiftId))")
 
         if distance <= 200 {
-            // 200m 이내 → nearby + arrive 둘 다 호출
-            AppDelegate.locationDelegate?.sendLocalNotificationPublic(shiftId: shiftId, title: "출근 처리되었습니다", body: "근무를 시작합니다.")
             callNearbyAndArriveAndFinish(shiftId: shiftId, lat: loc.coordinate.latitude, lng: loc.coordinate.longitude)
         } else if distance <= 2000 {
-            // 2km 이내 → nearby만
-            AppDelegate.locationDelegate?.sendLocalNotificationPublic(shiftId: shiftId)
             callNearbyAndFinish(shiftId: shiftId)
         } else {
             finish()

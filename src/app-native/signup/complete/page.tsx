@@ -28,13 +28,35 @@ export default function SignupCompletePage() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    // 구글 프로필에서 이름 가져오기
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) {
         router.push("/login");
         return;
       }
+
+      // 이미 members에 있으면 홈으로 (중복 진입 방지)
+      const { data: memberById } = await supabase
+        .from("members")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (memberById) {
+        router.replace("/my");
+        return;
+      }
+
+      // google_uid/apple_uid로 이미 연동된 회원이면 홈으로
+      const { data: memberByUid } = await supabase
+        .from("members")
+        .select("id")
+        .or(`google_uid.eq.${user.id},apple_uid.eq.${user.id}`)
+        .maybeSingle();
+      if (memberByUid) {
+        router.replace("/my");
+        return;
+      }
+
       const googleName =
         user.user_metadata?.full_name ||
         user.user_metadata?.name ||
@@ -70,6 +92,7 @@ export default function SignupCompletePage() {
     }
 
     toast.success("가입이 완료되었습니다!");
+    import("@/lib/capacitor/register-push-token").then(m => m.onLoginComplete());
     setDone(true);
   };
 

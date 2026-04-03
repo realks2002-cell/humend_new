@@ -86,8 +86,6 @@ export async function GET(req: NextRequest) {
           .update({ arrival_status: "noshow" })
           .eq("id", shift.id);
 
-        notifyNoshowToMember(shift.member_id, shift.id).catch(console.error);
-
         const { data: admins } = await admin
           .from("admins")
           .select("id");

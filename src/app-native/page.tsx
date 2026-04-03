@@ -69,7 +69,7 @@ export default function NativeHomePage() {
 
       <main className="pt-16 pb-24">
         {/* Hero Section */}
-        <section className="relative px-6 pt-4 pb-16 overflow-hidden">
+        <section className="relative px-6 pt-20 pb-16 overflow-hidden -mt-16">
           <div className="relative z-10">
             <span className="inline-block bg-hd-primary-container/10 text-hd-primary px-3 py-1 rounded-full text-xs font-bold mb-4 tracking-wider uppercase">
               Quick Staffing

@@ -77,10 +77,8 @@ public class LocationCheckFirebaseService extends MessagingService {
                     if (distance <= 200) {
                         callNearbyAPISync(shiftId);
                         callArriveAPISync(shiftId, location.getLatitude(), location.getLongitude());
-                        sendLocalNotification(shiftId, "출근 처리되었습니다", "근무를 시작합니다.");
                     } else if (distance <= 2000) {
                         callNearbyAPISync(shiftId);
-                        sendLocalNotification(shiftId, "근무지 근처입니다", "출근 확인을 위해 앱을 열어주세요.");
                     }
                     latch.countDown();
                 })
