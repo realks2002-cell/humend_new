@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Home, User, Briefcase, Wallet, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,6 +45,23 @@ export default function BottomNav() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleHomeLongPress = useCallback(() => {
+    longPressTimer.current = setTimeout(async () => {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/login");
+    }, 5000);
+  }, [router]);
+
   const tabs = [
     { href: "/", label: "홈", icon: Home },
     { href: "/jobs", label: "채용공고", icon: Briefcase },
@@ -68,6 +85,11 @@ export default function BottomNav() {
               onClick={() => {
                 if (!active) router.push(tab.href);
               }}
+              {...(tab.href === "/" ? {
+                onTouchStart: handleHomeLongPress,
+                onTouchEnd: clearLongPress,
+                onTouchCancel: clearLongPress,
+              } : {})}
               className={cn(
                 "flex flex-col items-center gap-0.5 py-2 text-[10px] transition-all active:scale-95 active:opacity-70",
                 active ? "text-primary" : "text-muted-foreground"
