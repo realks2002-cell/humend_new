@@ -26,6 +26,7 @@ import {
   Settings,
   CalendarDays,
   FlaskConical,
+  MessageCircle,
 } from "lucide-react";
 
 const sidebarLinks = [
@@ -40,6 +41,7 @@ const sidebarLinks = [
   { href: "/admin/partners", label: "파트너 문의", icon: Handshake },
   { href: "/admin/notifications", label: "알림 관리", icon: Bell },
   { href: "/admin/settings", label: "관리자 설정", icon: Settings },
+  // { href: "/admin/chat", label: "채팅", icon: MessageCircle }, // TODO: 채팅 기능 배포 시 활성화
   { href: "/admin/shifts", label: "근무표 관리", icon: CalendarDays },
   { href: "/admin/test", label: "테스트", icon: FlaskConical },
 ];

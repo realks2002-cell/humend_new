@@ -78,6 +78,52 @@ async function notifyAll(opts: {
   return result.sent;
 }
 
+/** 채팅 메시지 알림 (회원에게) */
+export async function notifyChatMessage(
+  memberId: string,
+  senderName: string,
+  messagePreview: string
+) {
+  await notifyMember({
+    memberId,
+    title: senderName,
+    body: messagePreview.slice(0, 100),
+    url: "/chat",
+    triggerType: "auto",
+  });
+}
+
+/** 채팅 에스컬레이션 알림 (관리자 전체에게) */
+export async function notifyChatEscalation(
+  memberName: string,
+  reason: string
+) {
+  const supabase = createAdminClient();
+
+  const { data: adminUsers } = await supabase
+    .from("admins")
+    .select("id");
+
+  if (!adminUsers || adminUsers.length === 0) return;
+
+  for (const admin of adminUsers) {
+    const { data: tokens } = await supabase
+      .from("device_tokens")
+      .select("fcm_token")
+      .eq("member_id", admin.id);
+
+    if (!tokens || tokens.length === 0) continue;
+
+    for (const t of tokens) {
+      await sendPush(t.fcm_token, {
+        title: "채팅 관리자 전환 요청",
+        body: `${memberName}: ${reason.slice(0, 80)}`,
+        data: { url: "/admin/chat", type: "chat_escalation" },
+      });
+    }
+  }
+}
+
 // ========== 이벤트별 알림 함수 ==========
 
 /** 지원 승인 알림 */
