@@ -59,6 +59,7 @@ function haversineMeters(
 // ─── 상태 ───
 
 let watcherId: string | null = null;
+let approachingTriggered = false;
 let nearbyTriggered = false;
 let arrivedTriggered = false;
 let departedState = false;
@@ -66,6 +67,7 @@ let departDebounceCount = 0;
 let lastArrivedAttempt = 0;
 const ARRIVED_DEBOUNCE_MS = 5000; // 5초 내 중복 arrive 호출 방지
 
+const APPROACHING_RADIUS = 5000; // 5km
 const NEARBY_RADIUS = 2000; // 2km
 const ARRIVAL_RADIUS = 200; // 200m (네이티브 지오펜스와 동일)
 const DEPARTURE_RADIUS = 500; // 500m
@@ -74,6 +76,7 @@ const MAX_ACCURACY = 100; // 100m 이하만 수용
 const DEPART_DEBOUNCE = 2; // 연속 2회 이상 500m 초과 시 이탈 판정
 
 export interface GeofenceCallbacks {
+  onApproaching?: (lat: number, lng: number) => void;
   onNearby: (lat: number, lng: number) => void;
   onArrived: (lat: number, lng: number) => void;
   onDeparted?: (lat: number, lng: number) => void;
@@ -89,6 +92,7 @@ export async function startGeofenceWatch(
   if (!isNative()) return false;
   if (watcherId) await stopGeofenceWatch();
 
+  approachingTriggered = false;
   nearbyTriggered = false;
   arrivedTriggered = false;
   departedState = false;
@@ -145,10 +149,16 @@ export async function startGeofenceWatch(
             return;
           }
 
-          // 2km 이내 → 접근 감지 (1회)
+          // 2km 이내 → 근접 감지 (1회)
           if (!nearbyTriggered && dist <= NEARBY_RADIUS) {
             nearbyTriggered = true;
             callbacks.onNearby(location.latitude, location.longitude);
+          }
+
+          // 5km 이내 → 접근 감지 (1회)
+          if (!approachingTriggered && dist <= APPROACHING_RADIUS) {
+            approachingTriggered = true;
+            callbacks.onApproaching?.(location.latitude, location.longitude);
           }
         } else {
           // ─── 출근 후: 이탈/복귀 감지 ───
@@ -263,6 +273,7 @@ export async function stopGeofenceWatch(): Promise<void> {
     console.error("[Geofence] stop error:", e);
   } finally {
     watcherId = null;
+    approachingTriggered = false;
     nearbyTriggered = false;
     arrivedTriggered = false;
     departedState = false;

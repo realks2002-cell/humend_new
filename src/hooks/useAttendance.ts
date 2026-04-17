@@ -149,6 +149,9 @@ export async function checkAndStartGeofence(overrideToken?: string) {
 
   // pending/notified/confirmed → 출근 감지 + 이탈 감지 통합 watch
   await startGeofenceWatch(client.latitude, client.longitude, {
+    onApproaching: (_lat, _lng) => {
+      callApi("/api/native/attendance/approaching", { shiftId: shift.id }).catch(console.error);
+    },
     onNearby: (_lat, _lng) => {
       callApi("/api/native/attendance/nearby", { shiftId: shift.id }).catch(console.error);
     },
