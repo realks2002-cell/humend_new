@@ -176,9 +176,16 @@
 input, select {
   font-size: 13px !important;
   height: 2rem !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 textarea {
   font-size: 13px !important;
+}
+
+/* Android WebView 글자 크기 보정 */
+body.android * {
+  -webkit-text-size-adjust: 90% !important;
 }
 
 @keyframes marquee-scroll {

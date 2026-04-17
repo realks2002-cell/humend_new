@@ -2,6 +2,7 @@ package com.humend.hr;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginHandle;
@@ -19,6 +20,9 @@ public class MainActivity extends BridgeActivity
         registerPlugin(PushNotificationsPlugin.class);
         registerPlugin(NativeGeofencePlugin.class);
         super.onCreate(savedInstanceState);
+
+        WebView webView = getBridge().getWebView();
+        webView.getSettings().setTextZoom(90);
     }
 
     @Override

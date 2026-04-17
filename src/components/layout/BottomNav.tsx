@@ -83,7 +83,7 @@ export default function BottomNav() {
             <button
               key={tab.href}
               onClick={() => {
-                if (!active) router.push(tab.href);
+                if (!active || pathname !== tab.href) router.push(tab.href);
               }}
               {...(tab.href === "/" ? {
                 onTouchStart: handleHomeLongPress,
