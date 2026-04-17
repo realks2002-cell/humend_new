@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useTransition, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -38,7 +38,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import type { AttendanceStatus } from "@/types/location";
-import { createShift, deleteShift, updateShiftGroup, sendGroupFcm } from "./actions";
+import { DndContext, closestCenter, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, useSortable, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { createShift, deleteShift, deleteShiftGroup, updateShiftGroup, updateShiftSortOrder, sendGroupFcm } from "./actions";
 import { ShiftMapModal } from "./shift-map-modal";
 
 export interface NotificationLog {
@@ -72,6 +75,7 @@ export interface ShiftWithDetails {
   nearby_at: string | null;
   alert_minutes_before: number;
   notification_sent_count: number;
+  sort_order: number;
   departure_logs?: DepartureLog[];
   clients: {
     company_name: string;
@@ -362,7 +366,7 @@ export function ShiftTable({
     return { total: shifts.length, on, arrived, noshow, off };
   }, [shifts]);
 
-  const groupedShifts = useMemo(() => {
+  const groupedShiftsBase = useMemo(() => {
     const map = new Map<string, ShiftWithDetails[]>();
     for (const shift of shifts) {
       const key = `${shift.client_id}_${shift.start_time}_${shift.end_time}`;
@@ -370,8 +374,37 @@ export function ShiftTable({
       if (group) group.push(shift);
       else map.set(key, [shift]);
     }
-    return Array.from(map.entries()).map(([key, s]) => ({ key, shifts: s }));
+    return Array.from(map.entries())
+      .map(([key, s]) => ({ key, shifts: s }))
+      .sort((a, b) => Math.min(...a.shifts.map(s => s.sort_order)) - Math.min(...b.shifts.map(s => s.sort_order)));
   }, [shifts]);
+
+  const [cardOrder, setCardOrder] = useState<string[]>([]);
+  const currentKeys = groupedShiftsBase.map(g => g.key).join(",");
+  useEffect(() => {
+    setCardOrder(groupedShiftsBase.map(g => g.key));
+  }, [currentKeys]);
+
+  const groupedShifts = useMemo(() => {
+    const map = new Map(groupedShiftsBase.map(g => [g.key, g]));
+    return cardOrder.map(key => map.get(key)).filter(Boolean) as typeof groupedShiftsBase;
+  }, [groupedShiftsBase, cardOrder]);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = cardOrder.indexOf(active.id as string);
+    const newIndex = cardOrder.indexOf(over.id as string);
+    const newOrder = arrayMove(cardOrder, oldIndex, newIndex);
+    setCardOrder(newOrder);
+    const updates = newOrder.map((key, i) => {
+      const group = groupedShiftsBase.find(g => g.key === key);
+      return { shiftIds: group!.shifts.map(s => s.id), sortOrder: i };
+    });
+    updateShiftSortOrder(updates);
+  }
 
   const filteredMembers = useMemo(() => {
     if (!memberSearch) return members;
@@ -435,7 +468,7 @@ export function ShiftTable({
     });
   }, [members]);
 
-  const selectedWorkDate = formDateKey ? formDateKey.split("|")[0] : (testMode ? selectedDate : "");
+  const selectedWorkDate = formDateKey ? formDateKey.split("|")[0] : selectedDate;
 
   async function handleCreate() {
     if (!formClientId || !selectedWorkDate || selectedMembers.length === 0) return;
@@ -601,31 +634,27 @@ export function ShiftTable({
                       </Select>
                     </div>
 
-                    {formClientId && (
+                    {formClientId && selectedClientPostings.length > 0 && (
                       <div>
-                        <Label>근무일 선택</Label>
-                        {selectedClientPostings.length > 0 ? (
-                          <Select value={formDateKey} onValueChange={handleDateSelect}>
-                            <SelectTrigger><SelectValue placeholder="공고 날짜를 선택하세요" /></SelectTrigger>
-                            <SelectContent>
-                              {selectedClientPostings.map((p) => (
-                                <SelectItem key={`${p.workDate}|${p.startTime}|${p.endTime}|${p.postingId}`} value={`${p.workDate}|${p.startTime}|${p.endTime}|${p.postingId}`}>
-                                  {p.workDate} ({p.startTime.slice(0, 5)}~{p.endTime.slice(0, 5)})
-                                  {p.approvedMembers.length > 0 && ` · ${p.approvedMembers.length}명 승인`}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <p className="text-sm text-muted-foreground mt-1">해당 고객사에 등록된 공고가 없습니다.</p>
-                        )}
+                        <Label>근무일 선택 (공고 기반)</Label>
+                        <Select value={formDateKey} onValueChange={handleDateSelect}>
+                          <SelectTrigger><SelectValue placeholder="공고 날짜를 선택하세요" /></SelectTrigger>
+                          <SelectContent>
+                            {selectedClientPostings.map((p) => (
+                              <SelectItem key={`${p.workDate}|${p.startTime}|${p.endTime}|${p.postingId}`} value={`${p.workDate}|${p.startTime}|${p.endTime}|${p.postingId}`}>
+                                {p.workDate} ({p.startTime.slice(0, 5)}~{p.endTime.slice(0, 5)})
+                                {p.approvedMembers.length > 0 && ` · ${p.approvedMembers.length}명 승인`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     )}
 
-                    {formStartTime && formEndTime && (
+                    {formClientId && (
                       <div className="grid grid-cols-2 gap-3">
-                        <div><Label>시작 시간</Label><Input value={formStartTime} disabled /></div>
-                        <div><Label>종료 시간</Label><Input value={formEndTime} disabled /></div>
+                        <div><Label>시작 시간</Label><Input type="time" value={formStartTime} onChange={(e) => setFormStartTime(e.target.value)} /></div>
+                        <div><Label>종료 시간</Label><Input type="time" value={formEndTime} onChange={(e) => setFormEndTime(e.target.value)} /></div>
                       </div>
                     )}
                   </>
@@ -634,7 +663,7 @@ export function ShiftTable({
             )}
 
             {/* 알림 설정 */}
-            {(formDateKey || editGroup || (testMode && formClientId)) && (
+            {(formDateKey || editGroup || (testMode && formClientId) || (formClientId && formStartTime && formEndTime)) && (
               <>
                 <Separator />
                 <p className="text-sm font-medium">알림 설정</p>
@@ -666,7 +695,7 @@ export function ShiftTable({
             )}
 
             {/* 회원 선택 */}
-            {(formDateKey || editGroup || (testMode && formClientId)) && (
+            {(formDateKey || editGroup || (testMode && formClientId) || (formClientId && formStartTime && formEndTime)) && (
               <>
                 <Separator />
                 <div>
@@ -751,6 +780,8 @@ export function ShiftTable({
       {shifts.length === 0 ? (
         <div className="rounded-lg border border-dashed p-12 text-center text-muted-foreground">해당 날짜에 배정된 근무가 없습니다.</div>
       ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={cardOrder} strategy={rectSortingStrategy}>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {groupedShifts.map(({ key, shifts: gs }) => {
             const f = gs[0];
@@ -758,13 +789,14 @@ export function ShiftTable({
             const noshowN = gs.filter((s) => s.arrival_status === "noshow").length;
             const onN = gs.filter((s) => s.confirmed_at != null && s.arrival_status !== "arrived" && s.arrival_status !== "noshow").length;
             return (
-              <div key={key} className="rounded-lg border bg-card overflow-hidden">
+              <SortableCard key={key} id={key}>
                 <div className="p-4 pb-2 space-y-0.5">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold truncate">{f.clients.company_name}</p>
                     <div className="flex items-center gap-0.5 shrink-0">
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setMapShifts(gs)} title="지도 보기"><MapIcon className="h-4 w-4" /></Button>
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditDialog(gs)} title="수정"><Pencil className="h-4 w-4" /></Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600" disabled={isPending} title="전체 삭제" onClick={() => { if (confirm(`${f.clients.company_name} ${f.start_time.slice(0,5)}~${f.end_time.slice(0,5)} 배정 ${gs.length}명을 모두 삭제하시겠습니까?`)) startTransition(async () => { const result = await deleteShiftGroup(gs.map(s => s.id)); if (result.error) alert(result.error); }); }}><Trash2 className="h-4 w-4" /></Button>
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3 shrink-0" /><span className="truncate">{f.clients.location}</span></p>
@@ -833,13 +865,28 @@ export function ShiftTable({
                     );
                   })}
                 </div>
-              </div>
+              </SortableCard>
             );
           })}
         </div>
+        </SortableContext>
+        </DndContext>
       )}
 
       <ShiftMapModal open={mapShifts !== null} onOpenChange={(o) => { if (!o) setMapShifts(null); }} shifts={mapShifts ?? []} />
+    </div>
+  );
+}
+
+function SortableCard({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style: React.CSSProperties = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} className="rounded-lg border bg-card overflow-hidden">
+      <div {...listeners} className="h-2 cursor-grab active:cursor-grabbing bg-muted/50 hover:bg-muted flex items-center justify-center">
+        <div className="w-8 h-0.5 rounded-full bg-muted-foreground/30" />
+      </div>
+      {children}
     </div>
   );
 }

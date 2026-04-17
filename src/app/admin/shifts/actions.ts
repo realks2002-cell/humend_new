@@ -111,6 +111,44 @@ export async function deleteShift(shiftId: string) {
   return { error: null };
 }
 
+export async function deleteShiftGroup(shiftIds: string[]) {
+  const supabase = createAdminClient();
+
+  const { data: shifts } = await supabase
+    .from("daily_shifts")
+    .select("id, member_id, work_date, start_time, clients(company_name)")
+    .in("id", shiftIds);
+
+  const { error } = await supabase
+    .from("daily_shifts")
+    .delete()
+    .in("id", shiftIds);
+
+  if (error) return { error: error.message };
+
+  if (shifts && shifts.length > 0) {
+    await Promise.allSettled(
+      shifts.map((s) => {
+        const info = s as unknown as {
+          member_id: string;
+          work_date: string;
+          start_time: string;
+          clients: { company_name: string } | null;
+        };
+        return notifyShiftCancelled(
+          info.member_id,
+          info.clients?.company_name ?? "근무지",
+          info.work_date,
+          info.start_time
+        );
+      })
+    );
+  }
+
+  revalidatePath("/admin/shifts");
+  return { error: null };
+}
+
 export async function updateShiftGroup(
   shiftIds: string[],
   clientId: string,
@@ -239,6 +277,18 @@ export async function updateShiftStatus(
     return { error: error.message };
   }
 
+  revalidatePath("/admin/shifts");
+  return { error: null };
+}
+
+export async function updateShiftSortOrder(updates: { shiftIds: string[]; sortOrder: number }[]) {
+  const supabase = createAdminClient();
+  for (const { shiftIds, sortOrder } of updates) {
+    await supabase
+      .from("daily_shifts")
+      .update({ sort_order: sortOrder })
+      .in("id", shiftIds);
+  }
   revalidatePath("/admin/shifts");
   return { error: null };
 }

@@ -23,13 +23,14 @@ export default async function AdminShiftsPage({
       id, client_id, member_id, work_date, start_time, end_time,
       arrival_status, arrived_at, confirmed_at, nearby_at,
       alert_minutes_before, notification_sent_count,
-      created_at, updated_at,
+      sort_order, created_at, updated_at,
       clients!inner (company_name, location, latitude, longitude, contact_phone),
       members (name, phone),
       departure_logs (id, departed_at, returned_at, duration_minutes)
     `
     )
     .eq("work_date", selectedDate)
+    .order("sort_order", { ascending: true })
     .order("start_time", { ascending: true });
 
   const { data: clients } = await supabase
