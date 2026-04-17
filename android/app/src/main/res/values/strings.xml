@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Humend HR</string>
-    <string name="title_activity_main">Humend HR</string>
+    <string name="app_name">휴멘드</string>
+    <string name="title_activity_main">휴멘드</string>
     <string name="package_name">com.humend.hr</string>
     <string name="custom_url_scheme">com.humend.hr</string>
     <string name="server_client_id">133410524921-94i1t8skrfkfggmrpdhnfkclh9h8o4bv.apps.googleusercontent.com</string>
