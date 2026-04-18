@@ -1,18 +1,16 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { authenticateMember } from "@/lib/supabase/member-auth";
 import { NextRequest, NextResponse } from "next/server";
 
+const TRACKING_WINDOW_MS = 60 * 60 * 1000; // 출근 시간 후 1시간
+
 export async function POST(req: NextRequest) {
-  const token = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) {
+  const memberId = await authenticateMember(req);
+  if (!memberId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const admin = createAdminClient();
-  const { data: { user }, error: authError } = await admin.auth.getUser(token);
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const { shiftId, lat, lng } = (await req.json()) as {
     shiftId?: string;
     lat?: number;
@@ -25,21 +23,25 @@ export async function POST(req: NextRequest) {
 
   const { data: shift } = await admin
     .from("daily_shifts")
-    .select("id, member_id, arrival_status")
+    .select("id, member_id, arrival_status, work_date, start_time")
     .eq("id", shiftId)
     .single();
 
   if (!shift) {
     return NextResponse.json({ error: "Shift not found" }, { status: 404 });
   }
-  if (shift.member_id !== user.id) {
+  if (shift.member_id !== memberId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   if (shift.arrival_status !== "arrived") {
     return NextResponse.json({ error: "Not arrived yet" }, { status: 422 });
   }
 
-  // 이미 이탈 중인지 확인 (returned_at이 NULL인 레코드)
+  const shiftStartKst = new Date(`${shift.work_date}T${shift.start_time}+09:00`);
+  if (Date.now() > shiftStartKst.getTime() + TRACKING_WINDOW_MS) {
+    return NextResponse.json({ success: false, status: "tracking_ended" });
+  }
+
   const { data: existing } = await admin
     .from("departure_logs")
     .select("id")
@@ -55,7 +57,7 @@ export async function POST(req: NextRequest) {
     .from("departure_logs")
     .insert({
       shift_id: shiftId,
-      member_id: user.id,
+      member_id: memberId,
       departed_at: new Date().toISOString(),
       departed_lat: lat ?? null,
       departed_lng: lng ?? null,

@@ -1,18 +1,14 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { authenticateMember } from "@/lib/supabase/member-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const token = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) {
+  const memberId = await authenticateMember(req);
+  if (!memberId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const admin = createAdminClient();
-  const { data: { user }, error: authError } = await admin.auth.getUser(token);
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const { shiftId } = (await req.json()) as { shiftId?: string };
 
   if (!shiftId) {
@@ -28,11 +24,10 @@ export async function POST(req: NextRequest) {
   if (!shift) {
     return NextResponse.json({ error: "Shift not found" }, { status: 404 });
   }
-  if (shift.member_id !== user.id) {
+  if (shift.member_id !== memberId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // 가장 최근 이탈 중인 레코드 찾기
   const { data: departure } = await admin
     .from("departure_logs")
     .select("id, departed_at")

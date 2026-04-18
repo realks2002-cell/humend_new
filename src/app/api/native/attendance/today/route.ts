@@ -39,21 +39,26 @@ export async function GET(req: NextRequest) {
     .eq("work_date", today)
     .order("start_time", { ascending: true });
 
+  const { data: member } = await admin
+    .from("members")
+    .select("api_key")
+    .eq("id", user.id)
+    .single();
+  const apiKey = member?.api_key ?? null;
+
   if (!shifts || shifts.length === 0) {
-    return NextResponse.json({ shift: null });
+    return NextResponse.json({ shift: null, apiKey });
   }
 
-  // 미완료 근무(pending/notified/confirmed) 중 가장 빠른 것 우선
   const pending = shifts.find(
     (s) => s.arrival_status !== "arrived" && s.arrival_status !== "noshow"
   );
   if (pending) {
-    return NextResponse.json({ shift: pending });
+    return NextResponse.json({ shift: pending, apiKey });
   }
 
-  // 모두 완료면 가장 최근 arrived 반환 (이탈 감지용)
   const arrived = [...shifts]
     .reverse()
     .find((s) => s.arrival_status === "arrived");
-  return NextResponse.json({ shift: arrived ?? null });
+  return NextResponse.json({ shift: arrived ?? null, apiKey });
 }

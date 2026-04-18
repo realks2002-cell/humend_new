@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { authenticateMember } from "@/lib/supabase/member-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 function haversineMeters(
@@ -17,29 +18,19 @@ function haversineMeters(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const ARRIVAL_RADIUS_METERS = 200;
+const ARRIVAL_RADIUS_METERS = 300;
 
 /**
  * POST /api/native/attendance/arrive
- * 지오펜싱 도착 확인 — 200m 반경 진입 시 호출
- * lat/lng가 없으면 거리 검증 생략 (네이티브 지오펜스 진입으로 간주)
+ * 지오펜싱 도착 확인 — 300m 반경 진입 시 호출
  */
 export async function POST(req: NextRequest) {
-  const token = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) {
+  const memberId = await authenticateMember(req);
+  if (!memberId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const admin = createAdminClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await admin.auth.getUser(token);
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const { shiftId, lat, lng } = (await req.json()) as {
     shiftId?: string;
     lat?: number;
@@ -53,7 +44,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // shift + client 좌표 조회
   const { data: shift } = await admin
     .from("daily_shifts")
     .select("id, member_id, arrival_status, clients(latitude, longitude)")
@@ -63,7 +53,7 @@ export async function POST(req: NextRequest) {
   if (!shift) {
     return NextResponse.json({ error: "Shift not found" }, { status: 404 });
   }
-  if (shift.member_id !== user.id) {
+  if (shift.member_id !== memberId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   if (shift.arrival_status === "arrived") {
@@ -82,7 +72,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 서버 측 거리 검증
   const distance = haversineMeters(lat, lng, client.latitude, client.longitude);
 
   if (distance > ARRIVAL_RADIUS_METERS) {
