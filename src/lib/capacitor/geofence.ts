@@ -72,7 +72,9 @@ const NEARBY_RADIUS = 2000; // 2km
 const ARRIVAL_RADIUS = 200; // 200m (네이티브 지오펜스와 동일)
 const DEPARTURE_RADIUS = 500; // 500m
 const DISTANCE_FILTER = 200; // 200m (이탈 감지를 위해 500→200으로 축소)
-const MAX_ACCURACY = 100; // 100m 이하만 수용
+const MAX_ACCURACY_FAR = 300; // 5km 접근: 300m 이하
+const MAX_ACCURACY_MID = 200; // 2km 근접, 500m 이탈: 200m 이하
+const MAX_ACCURACY_NEAR = 150; // 200m 출근: 150m 이하 (서버 이중 검증)
 const DEPART_DEBOUNCE = 2; // 연속 2회 이상 500m 초과 시 이탈 판정
 
 export interface GeofenceCallbacks {
@@ -120,12 +122,7 @@ export async function startGeofenceWatch(
 
         console.log(`[Geofence] 위치: ${location.latitude.toFixed(4)},${location.longitude.toFixed(4)} acc=${location.accuracy.toFixed(0)}m`);
 
-        // 정확도 필터
-        if (location.accuracy > MAX_ACCURACY) {
-          console.log(`[Geofence] 정확도 초과 (${location.accuracy.toFixed(0)}m > ${MAX_ACCURACY}m) → 스킵`);
-          return;
-        }
-
+        const acc = location.accuracy;
         const dist = haversineMeters(
           location.latitude,
           location.longitude,
@@ -133,38 +130,37 @@ export async function startGeofenceWatch(
           clientLng
         );
 
-        console.log(`[Geofence] 거리: ${dist.toFixed(0)}m`);
+        console.log(`[Geofence] 거리: ${dist.toFixed(0)}m, 정확도: ${acc.toFixed(0)}m`);
 
         if (!arrivedTriggered) {
-          // ─── 출근 전: 접근 + 도착 감지 ───
+          // ─── 출근 전: 5km → 2km → 200m 순서로 체크 ───
 
-          // 100m 이내 → 출근 확인 시도 (서버가 30m 검증, 5초 debounce)
-          if (dist <= ARRIVAL_RADIUS) {
+          // 5km 이내 → 접근 감지 (1회, 정확도 300m 이하)
+          if (!approachingTriggered && dist <= APPROACHING_RADIUS && acc <= MAX_ACCURACY_FAR) {
+            approachingTriggered = true;
+            callbacks.onApproaching?.(location.latitude, location.longitude);
+          }
+
+          // 2km 이내 → 근접 감지 (1회, 정확도 200m 이하)
+          if (!nearbyTriggered && dist <= NEARBY_RADIUS && acc <= MAX_ACCURACY_MID) {
+            nearbyTriggered = true;
+            callbacks.onNearby(location.latitude, location.longitude);
+          }
+
+          // 200m 이내 → 출근 확인 (정확도 150m 이하, 서버 이중 검증)
+          if (dist <= ARRIVAL_RADIUS && acc <= MAX_ACCURACY_NEAR) {
             const now = Date.now();
             if (now - lastArrivedAttempt > ARRIVED_DEBOUNCE_MS) {
               lastArrivedAttempt = now;
               departDebounceCount = 0;
               callbacks.onArrived(location.latitude, location.longitude);
             }
-            return;
-          }
-
-          // 2km 이내 → 근접 감지 (1회)
-          if (!nearbyTriggered && dist <= NEARBY_RADIUS) {
-            nearbyTriggered = true;
-            callbacks.onNearby(location.latitude, location.longitude);
-          }
-
-          // 5km 이내 → 접근 감지 (1회)
-          if (!approachingTriggered && dist <= APPROACHING_RADIUS) {
-            approachingTriggered = true;
-            callbacks.onApproaching?.(location.latitude, location.longitude);
           }
         } else {
-          // ─── 출근 후: 이탈/복귀 감지 ───
+          // ─── 출근 후: 이탈/복귀 감지 (정확도 200m 이하) ───
+          if (acc > MAX_ACCURACY_MID) return;
 
           if (!departedState) {
-            // 근무 중 — 500m 이상 이탈 감지 (debounce)
             if (dist > DEPARTURE_RADIUS) {
               departDebounceCount++;
               if (departDebounceCount >= DEPART_DEBOUNCE) {
@@ -176,7 +172,6 @@ export async function startGeofenceWatch(
               departDebounceCount = 0;
             }
           } else {
-            // 이탈 중 — 500m 이내 복귀 감지
             if (dist <= DEPARTURE_RADIUS) {
               departedState = false;
               departDebounceCount = 0;
@@ -226,7 +221,7 @@ export async function startDepartureWatch(
           return;
         }
         if (!location) return;
-        if (location.accuracy > MAX_ACCURACY) return;
+        if (location.accuracy > MAX_ACCURACY_MID) return;
 
         const dist = haversineMeters(
           location.latitude,

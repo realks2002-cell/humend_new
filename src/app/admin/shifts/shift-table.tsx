@@ -72,6 +72,7 @@ export interface ShiftWithDetails {
   arrival_status: AttendanceStatus;
   arrived_at: string | null;
   confirmed_at: string | null;
+  approaching_at: string | null;
   nearby_at: string | null;
   alert_minutes_before: number;
   notification_sent_count: number;
@@ -842,7 +843,8 @@ export function ShiftTable({
                             <>
                               <Badge variant={isOn ? "default" : "destructive"} className={cn("shrink-0 text-[11px] px-1.5", isOn ? "bg-green-600" : "bg-red-500")}>{isOn ? "ON" : "OFF"}</Badge>
                               {activeDeparture && <Badge variant="destructive" className="shrink-0 text-[11px] px-1.5 bg-orange-500 animate-pulse">이탈 중</Badge>}
-                              {shift.nearby_at && <span className="text-blue-600 text-xs shrink-0 tabular-nums">근접 {fmtTime(shift.nearby_at)}</span>}
+                              {shift.approaching_at && <span className="text-purple-600 text-xs shrink-0 tabular-nums">5km {fmtTime(shift.approaching_at)}</span>}
+                              {shift.nearby_at && <span className="text-blue-600 text-xs shrink-0 tabular-nums">2km {fmtTime(shift.nearby_at)}</span>}
                               {isArrived && shift.arrived_at && <span className="text-green-600 text-xs shrink-0 tabular-nums">출근 {fmtTime(shift.arrived_at)}</span>}
                             </>
                           )}
