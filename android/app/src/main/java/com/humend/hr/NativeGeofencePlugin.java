@@ -4,7 +4,10 @@ import android.Manifest;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
@@ -19,10 +22,17 @@ import com.google.android.gms.location.GeofencingClient;
 import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationServices;
 
+import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.NetworkType;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 @CapacitorPlugin(name = "NativeGeofence")
 public class NativeGeofencePlugin extends Plugin {
@@ -91,6 +101,94 @@ public class NativeGeofencePlugin extends Plugin {
         SharedPreferences prefs = getContext().getApplicationContext().getSharedPreferences("NativeGeofence", Context.MODE_PRIVATE);
         prefs.edit().putString("supabase_access_token", token).apply();
         Log.i(TAG, "auth token 저장됨");
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void startPeriodicLocationBackup(PluginCall call) {
+        try {
+            Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+
+            PeriodicWorkRequest work = new PeriodicWorkRequest.Builder(
+                LocationBackupWorker.class, 15, TimeUnit.MINUTES)
+                .setConstraints(constraints)
+                .build();
+
+            WorkManager.getInstance(getContext()).enqueueUniquePeriodicWork(
+                "location_backup_worker",
+                ExistingPeriodicWorkPolicy.KEEP,
+                work
+            );
+            Log.i(TAG, "주기 위치 백업 시작됨 (15분)");
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("주기 위치 백업 시작 실패: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void stopPeriodicLocationBackup(PluginCall call) {
+        try {
+            WorkManager.getInstance(getContext()).cancelUniqueWork("location_backup_worker");
+            Log.i(TAG, "주기 위치 백업 중단됨");
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("주기 위치 백업 중단 실패: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void isBatteryOptimizationIgnored(PluginCall call) {
+        JSObject ret = new JSObject();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
+            boolean ignored = pm != null && pm.isIgnoringBatteryOptimizations(getContext().getPackageName());
+            ret.put("ignored", ignored);
+        } else {
+            ret.put("ignored", true);
+        }
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void requestBatteryOptimizationExemption(PluginCall call) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setData(Uri.parse("package:" + getContext().getPackageName()));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(intent);
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                call.resolve(ret);
+            } catch (Exception e) {
+                call.reject("배터리 최적화 예외 요청 실패: " + e.getMessage());
+            }
+        } else {
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+        }
+    }
+
+    @PluginMethod
+    public void setApiKey(PluginCall call) {
+        String apiKey = call.getString("apiKey");
+        if (apiKey == null) {
+            call.reject("apiKey 필수");
+            return;
+        }
+        SharedPreferences prefs = getContext().getApplicationContext().getSharedPreferences("NativeGeofence", Context.MODE_PRIVATE);
+        prefs.edit().putString("member_api_key", apiKey).apply();
+        Log.i(TAG, "api key 저장됨");
         JSObject ret = new JSObject();
         ret.put("success", true);
         call.resolve(ret);

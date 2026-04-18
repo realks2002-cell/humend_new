@@ -31,6 +31,8 @@ import java.util.concurrent.TimeUnit;
 public class LocationCheckFirebaseService extends MessagingService {
 
     private static final String TAG = "LocationCheckFCM";
+    private static final String FG_CHANNEL_ID = "location_check_fg";
+    private static final int FG_NOTIFICATION_ID = 9001;
 
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
@@ -44,11 +46,24 @@ public class LocationCheckFirebaseService extends MessagingService {
 
             if (shiftId == null || latStr == null || lngStr == null) return;
 
-            double targetLat = Double.parseDouble(latStr);
-            double targetLng = Double.parseDouble(lngStr);
+            double targetLat, targetLng;
+            try {
+                targetLat = Double.parseDouble(latStr);
+                targetLng = Double.parseDouble(lngStr);
+            } catch (NumberFormatException e) {
+                Log.e(TAG, "lat/lng 파싱 실패: " + e.getMessage());
+                return;
+            }
 
             Log.i(TAG, "location_check 수신: shift_" + shiftId);
-            checkLocationAndCallAPI(shiftId, targetLat, targetLng);
+
+            // Foreground Service 전환 — 백그라운드 제한 우회
+            boolean fgStarted = startAsForegroundService();
+            try {
+                checkLocationAndCallAPI(shiftId, targetLat, targetLng);
+            } finally {
+                if (fgStarted) stopForegroundService();
+            }
             return;
         }
 
@@ -56,58 +71,183 @@ public class LocationCheckFirebaseService extends MessagingService {
         super.onMessageReceived(remoteMessage);
     }
 
+    private boolean startAsForegroundService() {
+        try {
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && nm != null) {
+                NotificationChannel channel = new NotificationChannel(
+                    FG_CHANNEL_ID, "출근 확인",
+                    NotificationManager.IMPORTANCE_LOW
+                );
+                channel.setDescription("근무지 접근 확인 중");
+                nm.createNotificationChannel(channel);
+            }
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, FG_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_map)
+                .setContentTitle("휴멘드 출근확인")
+                .setContentText("근무지 접근 확인 중...")
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setOngoing(true);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(FG_NOTIFICATION_ID, builder.build(),
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+            } else {
+                startForeground(FG_NOTIFICATION_ID, builder.build());
+            }
+            Log.i(TAG, "Foreground Service 시작");
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Foreground Service 시작 실패 (백그라운드 모드로 계속): " + e.getMessage());
+            return false;
+        }
+    }
+
+    private void stopForegroundService() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE);
+            } else {
+                stopForeground(true);
+            }
+            Log.i(TAG, "Foreground Service 종료");
+        } catch (Exception e) {
+            Log.e(TAG, "Foreground Service 종료 실패: " + e.getMessage());
+        }
+    }
+
     private void checkLocationAndCallAPI(String shiftId, double targetLat, double targetLng) {
         FusedLocationProviderClient client = LocationServices.getFusedLocationProviderClient(this);
+
+        // 1순위: getLastLocation (즉시, 5~10분 이내 캐시)
+        try {
+            CountDownLatch latch = new CountDownLatch(1);
+            client.getLastLocation()
+                .addOnSuccessListener(location -> {
+                    if (location != null && location.getAccuracy() <= 400) {
+                        long age = System.currentTimeMillis() - location.getTime();
+                        Log.i(TAG, "lastLocation: acc=" + (int) location.getAccuracy() + "m, age=" + (age / 1000) + "s");
+                        if (age < 180000) { // 3분 이내 캐시면 사용
+                            processLocation(shiftId, location, targetLat, targetLng);
+                            latch.countDown();
+                            return;
+                        }
+                    }
+                    latch.countDown();
+                })
+                .addOnFailureListener(e -> latch.countDown());
+            latch.await(3, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            Log.w(TAG, "lastLocation 실패: " + e.getMessage());
+        }
+
+        // 2순위: BALANCED (WiFi+셀룰러, 빠름)
+        if (!tryGetLocation(client, Priority.PRIORITY_BALANCED_POWER_ACCURACY, 5,
+                           shiftId, targetLat, targetLng)) {
+            // 3순위: HIGH_ACCURACY (GPS, 정확함)
+            tryGetLocation(client, Priority.PRIORITY_HIGH_ACCURACY, 10,
+                          shiftId, targetLat, targetLng);
+        }
+    }
+
+    private boolean tryGetLocation(FusedLocationProviderClient client, int priority, int timeoutSec,
+                                    String shiftId, double targetLat, double targetLng) {
         CancellationTokenSource cts = new CancellationTokenSource();
         CountDownLatch latch = new CountDownLatch(1);
+        final boolean[] success = {false};
 
         try {
-            client.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cts.getToken())
+            client.getCurrentLocation(priority, cts.getToken())
                 .addOnSuccessListener(location -> {
-                    if (location == null) {
-                        Log.w(TAG, "위치 획득 실패 (null)");
-                        latch.countDown();
-                        return;
-                    }
-
-                    double distance = haversine(location.getLatitude(), location.getLongitude(),
-                                                targetLat, targetLng);
-                    Log.i(TAG, "현재 거리: " + (int) distance + "m (shift: " + shiftId + ")");
-
-                    if (distance <= 200) {
-                        callNearbyAPISync(shiftId);
-                        callArriveAPISync(shiftId, location.getLatitude(), location.getLongitude());
-                    } else if (distance <= 2000) {
-                        callNearbyAPISync(shiftId);
+                    if (location != null && location.getAccuracy() <= 500) {
+                        Log.i(TAG, "priority=" + priority + " acc=" + (int) location.getAccuracy() + "m");
+                        processLocation(shiftId, location, targetLat, targetLng);
+                        success[0] = true;
+                    } else {
+                        Log.w(TAG, "priority=" + priority + " 위치 품질 부족");
                     }
                     latch.countDown();
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "위치 획득 에러: " + e.getMessage());
+                    Log.e(TAG, "priority=" + priority + " 에러: " + e.getMessage());
                     latch.countDown();
                 });
-
-            // 최대 15초 대기 (onMessageReceived는 20초 제한)
-            latch.await(15, TimeUnit.SECONDS);
+            latch.await(timeoutSec, TimeUnit.SECONDS);
         } catch (SecurityException e) {
             Log.e(TAG, "위치 권한 없음: " + e.getMessage());
         } catch (InterruptedException e) {
             Log.e(TAG, "대기 중단: " + e.getMessage());
+        }
+        return success[0];
+    }
+
+    private void processLocation(String shiftId, Location location, double targetLat, double targetLng) {
+        double distance = haversine(location.getLatitude(), location.getLongitude(),
+                                    targetLat, targetLng);
+        Log.i(TAG, "현재 거리: " + (int) distance + "m (shift: " + shiftId + ")");
+
+        if (distance <= 300) {
+            callNearbyAPISync(shiftId);
+            callArriveAPISync(shiftId, location.getLatitude(), location.getLongitude());
+        } else if (distance <= 2000) {
+            callNearbyAPISync(shiftId);
+        } else if (distance <= 5000) {
+            callApproachingAPISync(shiftId);
+        }
+    }
+
+    private void callApproachingAPISync(String shiftId) {
+        SharedPreferences prefs = getApplicationContext()
+            .getSharedPreferences("NativeGeofence", Context.MODE_PRIVATE);
+        String apiKey = prefs.getString("member_api_key", null);
+        String token = prefs.getString("supabase_access_token", null);
+        if (apiKey == null && token == null) return;
+
+        try {
+            URL url = new URL("https://humendhr.com/api/native/attendance/approaching");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            setAuthHeader(conn, prefs);
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(("{\"shiftId\":\"" + shiftId + "\"}").getBytes(StandardCharsets.UTF_8));
+            }
+            Log.i(TAG, "approaching API 응답: " + conn.getResponseCode());
+            conn.disconnect();
+        } catch (Exception e) {
+            Log.e(TAG, "approaching API 에러: " + e.getMessage());
+        }
+    }
+
+    private void setAuthHeader(HttpURLConnection conn, SharedPreferences prefs) {
+        String apiKey = prefs.getString("member_api_key", null);
+        if (apiKey != null) {
+            conn.setRequestProperty("X-API-Key", apiKey);
+            return;
+        }
+        String token = prefs.getString("supabase_access_token", null);
+        if (token != null) {
+            conn.setRequestProperty("Authorization", "Bearer " + token);
         }
     }
 
     private void callArriveAPISync(String shiftId, double lat, double lng) {
         SharedPreferences prefs = getApplicationContext()
             .getSharedPreferences("NativeGeofence", Context.MODE_PRIVATE);
+        String apiKey = prefs.getString("member_api_key", null);
         String token = prefs.getString("supabase_access_token", null);
-        if (token == null) return;
+        if (apiKey == null && token == null) return;
 
         try {
             URL url = new URL("https://humendhr.com/api/native/attendance/arrive");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Authorization", "Bearer " + token);
+            setAuthHeader(conn, prefs);
             conn.setDoOutput(true);
             conn.setConnectTimeout(10000);
             conn.setReadTimeout(10000);
@@ -129,9 +269,10 @@ public class LocationCheckFirebaseService extends MessagingService {
     private void callNearbyAPISync(String shiftId) {
         SharedPreferences prefs = getApplicationContext()
             .getSharedPreferences("NativeGeofence", Context.MODE_PRIVATE);
+        String apiKey = prefs.getString("member_api_key", null);
         String token = prefs.getString("supabase_access_token", null);
-        if (token == null) {
-            Log.w(TAG, "nearby API 실패: 토큰 없음");
+        if (apiKey == null && token == null) {
+            Log.w(TAG, "nearby API 실패: 인증 없음");
             return;
         }
 
@@ -140,7 +281,7 @@ public class LocationCheckFirebaseService extends MessagingService {
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Authorization", "Bearer " + token);
+            setAuthHeader(conn, prefs);
             conn.setDoOutput(true);
             conn.setConnectTimeout(10000);
             conn.setReadTimeout(10000);

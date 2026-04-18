@@ -58,7 +58,16 @@ export async function checkAndStartGeofence(overrideToken?: string) {
   });
   const data = await res.json();
   const shift = data?.shift;
+  const apiKey = data?.apiKey;
   console.log("[Attendance] shift:", shift ? `${shift.id} / ${shift.arrival_status}` : "없음");
+
+  // 네이티브 저장소에 API Key 저장 (만료 없는 영구 인증)
+  if (apiKey) {
+    try {
+      const { setNativeApiKey } = await import("@/lib/capacitor/native-geofence");
+      await setNativeApiKey(apiKey);
+    } catch {}
+  }
 
   if (!shift) return;
 
@@ -117,6 +126,17 @@ export async function checkAndStartGeofence(overrideToken?: string) {
     console.warn("[Attendance] 네이티브 지오펜스 등록 실패:", e);
   }
 
+  // WorkManager 주기 백업 시작 (15분, 앱 종료돼도 OS가 실행)
+  try {
+    const { startPeriodicLocationBackup } = await import("@/lib/capacitor/native-geofence");
+    await startPeriodicLocationBackup();
+  } catch {}
+
+  // 출근 시간 ISO (KST) — 이탈 추적 1시간 제한용
+  const shiftStartIso = shift.work_date && shift.start_time
+    ? `${shift.work_date}T${shift.start_time}+09:00`
+    : undefined;
+
   if (shift.arrival_status === "arrived") {
     const supabase = createClient();
     const { data: openDeparture } = await supabase
@@ -142,7 +162,8 @@ export async function checkAndStartGeofence(overrideToken?: string) {
           console.error("[Attendance] departure watch error:", code);
         },
       },
-      alreadyDeparted
+      alreadyDeparted,
+      shiftStartIso
     );
     return;
   }
@@ -176,7 +197,7 @@ export async function checkAndStartGeofence(overrideToken?: string) {
     onError: (code) => {
       console.error("[Attendance] geofence error:", code);
     },
-  });
+  }, shiftStartIso);
 }
 
 export function useAttendance() {

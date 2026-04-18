@@ -103,14 +103,10 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
                     new Thread(() -> {
                         try {
                             if (location != null) {
-                                // arrive API with lat/lng
                                 callAPISync(context, "/api/native/attendance/arrive",
                                     "{\"shiftId\":\"" + shiftId + "\",\"lat\":" + location.getLatitude() + ",\"lng\":" + location.getLongitude() + "}");
-
-                                // depart 지오펜스 등록 (500m EXIT)
                                 registerDepartGeofence(context, shiftId, location.getLatitude(), location.getLongitude());
                             } else {
-                                // GPS 실패 — shiftId만으로 호출
                                 callAPISync(context, "/api/native/attendance/arrive",
                                     "{\"shiftId\":\"" + shiftId + "\"}");
                             }
@@ -126,6 +122,19 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
         } catch (SecurityException e) {
             Log.e(TAG, "arrive 위치 권한 없음: " + e.getMessage());
             pendingResult.finish();
+        }
+    }
+
+    /** API Key 우선, 없으면 access token 사용 */
+    private static void setAuthHeader(HttpURLConnection conn, SharedPreferences prefs) {
+        String apiKey = prefs.getString("member_api_key", null);
+        if (apiKey != null) {
+            conn.setRequestProperty("X-API-Key", apiKey);
+            return;
+        }
+        String token = prefs.getString("supabase_access_token", null);
+        if (token != null) {
+            conn.setRequestProperty("Authorization", "Bearer " + token);
         }
     }
 
@@ -156,15 +165,16 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
     private void callAPISync(Context context, String path, String body) {
         SharedPreferences prefs = context.getApplicationContext()
             .getSharedPreferences("NativeGeofence", Context.MODE_PRIVATE);
+        String apiKey = prefs.getString("member_api_key", null);
         String token = prefs.getString("supabase_access_token", null);
-        if (token == null) { Log.w(TAG, "API 실패: 토큰 없음"); return; }
+        if (apiKey == null && token == null) { Log.w(TAG, "API 실패: 인증 없음"); return; }
 
         try {
             URL url = new URL("https://humendhr.com" + path);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Authorization", "Bearer " + token);
+            setAuthHeader(conn, prefs);
             conn.setDoOutput(true);
             conn.setConnectTimeout(10000);
             conn.setReadTimeout(10000);
@@ -182,9 +192,10 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
     private void callAttendanceAPI(Context context, String shiftId, String type, PendingResult pendingResult) {
         SharedPreferences prefs = context.getApplicationContext()
             .getSharedPreferences("NativeGeofence", Context.MODE_PRIVATE);
+        String apiKey = prefs.getString("member_api_key", null);
         String token = prefs.getString("supabase_access_token", null);
-        if (token == null) {
-            Log.w(TAG, type + " API 실패: 토큰 없음");
+        if (apiKey == null && token == null) {
+            Log.w(TAG, type + " API 실패: 인증 없음");
             pendingResult.finish();
             return;
         }
@@ -202,7 +213,7 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Content-Type", "application/json");
-                conn.setRequestProperty("Authorization", "Bearer " + token);
+                setAuthHeader(conn, prefs);
                 conn.setDoOutput(true);
                 conn.setConnectTimeout(10000);
                 conn.setReadTimeout(10000);

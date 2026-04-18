@@ -1,5 +1,5 @@
 /**
- * 지오펜싱 — 2km 접근 감지 + 30m 출근 확인 + 500m 이탈 감지
+ * 지오펜싱 — 5km 접근 + 2km 근접 + 300m 출근 + 500m 이탈 감지
  * @capacitor-community/background-geolocation 플러그인 사용 (백그라운드 동작)
  */
 import { registerPlugin } from "@capacitor/core";
@@ -69,13 +69,14 @@ const ARRIVED_DEBOUNCE_MS = 5000; // 5초 내 중복 arrive 호출 방지
 
 const APPROACHING_RADIUS = 5000; // 5km
 const NEARBY_RADIUS = 2000; // 2km
-const ARRIVAL_RADIUS = 200; // 200m (네이티브 지오펜스와 동일)
+const ARRIVAL_RADIUS = 300; // 300m (서버 재검증 시 300m 기준)
 const DEPARTURE_RADIUS = 500; // 500m
-const DISTANCE_FILTER = 200; // 200m (이탈 감지를 위해 500→200으로 축소)
-const MAX_ACCURACY_FAR = 300; // 5km 접근: 300m 이하
-const MAX_ACCURACY_MID = 200; // 2km 근접, 500m 이탈: 200m 이하
-const MAX_ACCURACY_NEAR = 150; // 200m 출근: 150m 이하 (서버 이중 검증)
+const DISTANCE_FILTER = 50; // 50m (정지 상태에서도 업데이트 빈도 증가)
+const MAX_ACCURACY_FAR = 500; // 5km 접근: 500m 이하
+const MAX_ACCURACY_MID = 400; // 2km 근접, 500m 이탈: 400m 이하
+const MAX_ACCURACY_NEAR = 300; // 300m 출근: 300m 이하 (서버 이중 검증)
 const DEPART_DEBOUNCE = 2; // 연속 2회 이상 500m 초과 시 이탈 판정
+const DEPARTURE_TRACKING_MS = 60 * 60 * 1000; // 출근 시간 후 1시간만 이탈 추적
 
 export interface GeofenceCallbacks {
   onApproaching?: (lat: number, lng: number) => void;
@@ -86,10 +87,14 @@ export interface GeofenceCallbacks {
   onError?: (error: string) => void;
 }
 
+/** 이탈 추적 종료 시간 (출근 시간 + 1시간). null이면 추적 계속 */
+let departureTrackingEndMs: number | null = null;
+
 export async function startGeofenceWatch(
   clientLat: number,
   clientLng: number,
-  callbacks: GeofenceCallbacks
+  callbacks: GeofenceCallbacks,
+  shiftStartIso?: string
 ): Promise<boolean> {
   if (!isNative()) return false;
   if (watcherId) await stopGeofenceWatch();
@@ -100,6 +105,9 @@ export async function startGeofenceWatch(
   departedState = false;
   departDebounceCount = 0;
   lastArrivedAttempt = 0;
+  departureTrackingEndMs = shiftStartIso
+    ? new Date(shiftStartIso).getTime() + DEPARTURE_TRACKING_MS
+    : null;
 
   try {
     const bgPlugin = getPlugin();
@@ -133,21 +141,21 @@ export async function startGeofenceWatch(
         console.log(`[Geofence] 거리: ${dist.toFixed(0)}m, 정확도: ${acc.toFixed(0)}m`);
 
         if (!arrivedTriggered) {
-          // ─── 출근 전: 5km → 2km → 200m 순서로 체크 ───
+          // ─── 출근 전: 5km → 2km → 300m 순서로 체크 ───
 
-          // 5km 이내 → 접근 감지 (1회, 정확도 300m 이하)
+          // 5km 이내 → 접근 감지 (1회, 정확도 500m 이하)
           if (!approachingTriggered && dist <= APPROACHING_RADIUS && acc <= MAX_ACCURACY_FAR) {
             approachingTriggered = true;
             callbacks.onApproaching?.(location.latitude, location.longitude);
           }
 
-          // 2km 이내 → 근접 감지 (1회, 정확도 200m 이하)
+          // 2km 이내 → 근접 감지 (1회, 정확도 400m 이하)
           if (!nearbyTriggered && dist <= NEARBY_RADIUS && acc <= MAX_ACCURACY_MID) {
             nearbyTriggered = true;
             callbacks.onNearby(location.latitude, location.longitude);
           }
 
-          // 200m 이내 → 출근 확인 (정확도 150m 이하, 서버 이중 검증)
+          // 300m 이내 → 출근 확인 (정확도 300m 이하, 서버 이중 검증)
           if (dist <= ARRIVAL_RADIUS && acc <= MAX_ACCURACY_NEAR) {
             const now = Date.now();
             if (now - lastArrivedAttempt > ARRIVED_DEBOUNCE_MS) {
@@ -157,8 +165,15 @@ export async function startGeofenceWatch(
             }
           }
         } else {
-          // ─── 출근 후: 이탈/복귀 감지 (정확도 200m 이하) ───
+          // ─── 출근 후: 이탈/복귀 감지 (정확도 400m 이하) ───
           if (acc > MAX_ACCURACY_MID) return;
+
+          // 출근 시간 후 1시간 경과 → watcher 자체 중단 (배터리 절약)
+          if (departureTrackingEndMs !== null && Date.now() > departureTrackingEndMs) {
+            console.log("[Geofence] 이탈 추적 시간 종료 → watcher 중단");
+            stopGeofenceWatch();
+            return;
+          }
 
           if (!departedState) {
             if (dist > DEPARTURE_RADIUS) {
@@ -194,9 +209,23 @@ export async function startDepartureWatch(
   clientLat: number,
   clientLng: number,
   callbacks: Pick<GeofenceCallbacks, "onDeparted" | "onReturned" | "onError">,
-  alreadyDeparted = false
+  alreadyDeparted = false,
+  shiftStartIso?: string
 ): Promise<boolean> {
   if (!isNative()) return false;
+
+  // 출근 시간 후 1시간 경과면 이탈 추적 시작 안 함
+  if (shiftStartIso) {
+    const endMs = new Date(shiftStartIso).getTime() + DEPARTURE_TRACKING_MS;
+    if (Date.now() > endMs) {
+      console.log("[Geofence] 이탈 추적 시간 종료 → watch 시작 안 함");
+      return false;
+    }
+    departureTrackingEndMs = endMs;
+  } else {
+    departureTrackingEndMs = null;
+  }
+
   if (watcherId) await stopGeofenceWatch();
 
   nearbyTriggered = true;
@@ -222,6 +251,13 @@ export async function startDepartureWatch(
         }
         if (!location) return;
         if (location.accuracy > MAX_ACCURACY_MID) return;
+
+        // 출근 시간 후 1시간 경과 → watcher 자체 중단 (배터리 절약)
+        if (departureTrackingEndMs !== null && Date.now() > departureTrackingEndMs) {
+          console.log("[Geofence] 이탈 추적 시간 종료 → watcher 중단");
+          stopGeofenceWatch();
+          return;
+        }
 
         const dist = haversineMeters(
           location.latitude,

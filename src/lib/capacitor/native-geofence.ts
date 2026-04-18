@@ -11,6 +11,11 @@ interface NativeGeofencePlugin {
   remove(options: { identifier: string }): Promise<{ success: boolean }>;
   removeAll(): Promise<{ success: boolean }>;
   setAuthToken(options: { token: string }): Promise<{ success: boolean }>;
+  setApiKey(options: { apiKey: string }): Promise<{ success: boolean }>;
+  isBatteryOptimizationIgnored(): Promise<{ ignored: boolean }>;
+  requestBatteryOptimizationExemption(): Promise<{ success: boolean }>;
+  startPeriodicLocationBackup(): Promise<{ success: boolean }>;
+  stopPeriodicLocationBackup(): Promise<{ success: boolean }>;
   addListener(
     eventName: "geofenceEnter",
     callback: (data: { identifier: string }) => void
@@ -96,6 +101,70 @@ export async function setNativeAuthToken(token: string): Promise<void> {
   } catch (e) {
     console.error("[NativeGeofence] 토큰 저장 실패:", e);
   }
+}
+
+/**
+ * 네이티브 저장소에 영구 API Key 저장 (만료 없음)
+ */
+export async function setNativeApiKey(apiKey: string): Promise<void> {
+  if (!isNative()) return;
+  try {
+    await getPlugin().setApiKey({ apiKey });
+  } catch (e) {
+    console.error("[NativeGeofence] API Key 저장 실패:", e);
+  }
+}
+
+/**
+ * 배터리 최적화 예외 상태 확인
+ */
+export async function isBatteryOptimizationIgnored(): Promise<boolean> {
+  if (!isNative()) return true;
+  try {
+    const result = await getPlugin().isBatteryOptimizationIgnored();
+    return result.ignored;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 배터리 최적화 예외 요청 (시스템 다이얼로그)
+ */
+export async function requestBatteryOptimizationExemption(): Promise<boolean> {
+  if (!isNative()) return true;
+  try {
+    const result = await getPlugin().requestBatteryOptimizationExemption();
+    return result.success;
+  } catch (e) {
+    console.error("[NativeGeofence] 배터리 최적화 예외 요청 실패:", e);
+    return false;
+  }
+}
+
+/**
+ * WorkManager 주기 위치 백업 시작 (15분)
+ * 앱 종료 상태에서도 OS가 강제 실행
+ */
+export async function startPeriodicLocationBackup(): Promise<boolean> {
+  if (!isNative()) return false;
+  try {
+    const result = await getPlugin().startPeriodicLocationBackup();
+    return result.success;
+  } catch (e) {
+    console.error("[NativeGeofence] 주기 백업 시작 실패:", e);
+    return false;
+  }
+}
+
+/**
+ * WorkManager 주기 위치 백업 중단
+ */
+export async function stopPeriodicLocationBackup(): Promise<void> {
+  if (!isNative()) return;
+  try {
+    await getPlugin().stopPeriodicLocationBackup();
+  } catch {}
 }
 
 /**

@@ -117,9 +117,16 @@ export async function sendDataOnlyPush(
           message: {
             token,
             data,
-            android: { priority: "high" },
+            android: {
+              priority: "high",
+              ttl: "600s",
+              collapse_key: data.type ?? "location_check",
+            },
             apns: {
-              headers: { "apns-priority": "10" },
+              headers: {
+                "apns-priority": "10",
+                "apns-push-type": "background",
+              },
               payload: {
                 aps: { "content-available": 1 },
                 ...data,
