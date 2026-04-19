@@ -16,6 +16,8 @@ interface NativeGeofencePlugin {
   requestBatteryOptimizationExemption(): Promise<{ success: boolean }>;
   startPeriodicLocationBackup(): Promise<{ success: boolean }>;
   stopPeriodicLocationBackup(): Promise<{ success: boolean }>;
+  requestAlwaysAuthorization?(): Promise<{ success: boolean }>;
+  getAuthorizationStatus?(): Promise<{ status: string }>;
   addListener(
     eventName: "geofenceEnter",
     callback: (data: { identifier: string }) => void
@@ -44,7 +46,14 @@ export async function registerWorkplaceGeofence(
 
   try {
     const p = getPlugin();
-    // 2km 접근 감지 (ENTER)
+    // 5km 접근 감지 (ENTER) — 3레이어 안전장치 Layer 1
+    await p.register({
+      latitude: lat,
+      longitude: lng,
+      radius: 5000,
+      identifier: `approach_${shiftId}`,
+    });
+    // 2km 근접 감지 (ENTER)
     await p.register({
       latitude: lat,
       longitude: lng,
@@ -58,7 +67,7 @@ export async function registerWorkplaceGeofence(
       radius: 200,
       identifier: `arrive_${shiftId}`,
     });
-    console.log("[NativeGeofence] 등록: shift+arrive", shiftId);
+    console.log("[NativeGeofence] 등록: approach+shift+arrive", shiftId);
     return true;
   } catch (e) {
     console.error("[NativeGeofence] 등록 실패:", e);
@@ -165,6 +174,38 @@ export async function stopPeriodicLocationBackup(): Promise<void> {
   try {
     await getPlugin().stopPeriodicLocationBackup();
   } catch {}
+}
+
+/**
+ * iOS "항상 허용" 권한 요청 (When In Use 팝업 → Always 업그레이드 팝업)
+ * Android에서는 no-op
+ */
+export async function requestAlwaysAuthorization(): Promise<boolean> {
+  if (!isNative()) return false;
+  try {
+    const p = getPlugin();
+    if (typeof p.requestAlwaysAuthorization !== "function") return false;
+    const result = await p.requestAlwaysAuthorization();
+    return result.success;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * iOS 위치 권한 상태 조회
+ * 반환값: notDetermined | restricted | denied | whenInUse | always | unknown
+ */
+export async function getIosAuthorizationStatus(): Promise<string | null> {
+  if (!isNative()) return null;
+  try {
+    const p = getPlugin();
+    if (typeof p.getAuthorizationStatus !== "function") return null;
+    const result = await p.getAuthorizationStatus();
+    return result.status;
+  } catch {
+    return null;
+  }
 }
 
 /**

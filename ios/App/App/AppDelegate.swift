@@ -105,6 +105,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             let radiusStr = userInfo["radius"] as? String ?? "2000"
             let radius = min(Double(radiusStr) ?? 2000.0, AppDelegate.sharedLocationManager.maximumRegionMonitoringDistance)
 
+            // 5km 접근 감지 (3레이어 안전장치 Layer 1)
+            let approachRegion = CLCircularRegion(
+                center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
+                radius: min(5000.0, AppDelegate.sharedLocationManager.maximumRegionMonitoringDistance),
+                identifier: "approach_\(shiftId)"
+            )
+            approachRegion.notifyOnEntry = true
+            approachRegion.notifyOnExit = false
+            AppDelegate.sharedLocationManager.startMonitoring(for: approachRegion)
+            AppDelegate.sharedLocationManager.requestState(for: approachRegion)
+
+            // 2km 근접 감지
             let region = CLCircularRegion(
                 center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
                 radius: radius,
@@ -112,10 +124,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             )
             region.notifyOnEntry = true
             region.notifyOnExit = false
-
             AppDelegate.sharedLocationManager.startMonitoring(for: region)
+            AppDelegate.sharedLocationManager.requestState(for: region)
 
-            // 500m 도착 감지 지오펜스 추가 등록 (실내 진입 전 포착)
+            // 500m 도착 감지 지오펜스 (실내 진입 전 포착)
             let arriveRegion = CLCircularRegion(
                 center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
                 radius: min(500.0, AppDelegate.sharedLocationManager.maximumRegionMonitoringDistance),
@@ -124,14 +136,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             arriveRegion.notifyOnEntry = true
             arriveRegion.notifyOnExit = false
             AppDelegate.sharedLocationManager.startMonitoring(for: arriveRegion)
-            // 이미 반경 내부라면 즉시 수동 트리거
             AppDelegate.sharedLocationManager.requestState(for: arriveRegion)
 
             // 좌표 저장 (arrive 성공 시 depart 지오펜스 등록에 사용)
             UserDefaults.standard.set(String(lat), forKey: "arrive_lat_\(shiftId)")
             UserDefaults.standard.set(String(lng), forKey: "arrive_lng_\(shiftId)")
 
-            print("[GeofenceFCM] 지오펜스 등록: shift+arrive_\(shiftId) (\(lat),\(lng))")
+            print("[GeofenceFCM] 지오펜스 등록: approach+shift+arrive_\(shiftId) (\(lat),\(lng))")
             completionHandler(.newData)
             return
         }
@@ -163,7 +174,10 @@ class GeofenceLocationDelegate: NSObject, CLLocationManagerDelegate {
         guard region is CLCircularRegion else { return }
         print("[NativeGeofence] 진입 감지: \(region.identifier)")
 
-        if region.identifier.hasPrefix("shift_") {
+        if region.identifier.hasPrefix("approach_") {
+            let shiftId = String(region.identifier.dropFirst(9))
+            callApproachingAPI(shiftId: shiftId)
+        } else if region.identifier.hasPrefix("shift_") {
             let shiftId = String(region.identifier.dropFirst(6))
             callNearbyAPI(shiftId: shiftId)
         } else if region.identifier.hasPrefix("arrive_") {
@@ -194,7 +208,10 @@ class GeofenceLocationDelegate: NSObject, CLLocationManagerDelegate {
         guard state == .inside, region is CLCircularRegion else { return }
         print("[NativeGeofence] 이미 내부: \(region.identifier)")
 
-        if region.identifier.hasPrefix("arrive_") {
+        if region.identifier.hasPrefix("approach_") {
+            let shiftId = String(region.identifier.dropFirst(9))
+            callApproachingAPI(shiftId: shiftId)
+        } else if region.identifier.hasPrefix("arrive_") {
             let shiftId = String(region.identifier.dropFirst(7))
             callArriveWithLocation(shiftId: shiftId)
         } else if region.identifier.hasPrefix("shift_") {
@@ -242,6 +259,39 @@ class GeofenceLocationDelegate: NSObject, CLLocationManagerDelegate {
             }
             if let httpResponse = response as? HTTPURLResponse {
                 print("[NativeGeofence] nearby API 응답: \(httpResponse.statusCode)")
+            }
+        }.resume()
+    }
+
+    /// 5km 접근 감지 API 호출 (3레이어 안전장치 Layer 1)
+    private func callApproachingAPI(shiftId: String) {
+        var bgTask: UIBackgroundTaskIdentifier = .invalid
+        bgTask = UIApplication.shared.beginBackgroundTask {
+            UIApplication.shared.endBackgroundTask(bgTask)
+        }
+
+        guard let url = URL(string: "https://humendhr.com/api/native/attendance/approaching") else {
+            UIApplication.shared.endBackgroundTask(bgTask)
+            return
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        guard LocationChecker.setAuthHeader(on: &request) else {
+            print("[NativeGeofence] approaching API 실패: 인증 없음")
+            UIApplication.shared.endBackgroundTask(bgTask)
+            return
+        }
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["shiftId": shiftId])
+
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            defer { UIApplication.shared.endBackgroundTask(bgTask) }
+            if let error = error {
+                print("[NativeGeofence] approaching API 에러: \(error.localizedDescription)")
+                return
+            }
+            if let httpResponse = response as? HTTPURLResponse {
+                print("[NativeGeofence] approaching API 응답: \(httpResponse.statusCode)")
             }
         }.resume()
     }
@@ -412,7 +462,7 @@ class LocationChecker: NSObject, CLLocationManagerDelegate {
             return
         }
 
-        timeoutTimer?.invalidate()
+        timeoutWorkItem?.cancel()
         let distance = haversine(lat1: loc.coordinate.latitude, lng1: loc.coordinate.longitude,
                                  lat2: targetLat, lng2: targetLng)
         print("[LocationCheck] 거리: \(Int(distance))m, 정확도: \(Int(loc.horizontalAccuracy))m")

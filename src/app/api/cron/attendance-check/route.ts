@@ -131,27 +131,24 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 2층: approaching_at/nearby_at 미기록 + 미도착 shift에 location_check Silent Push 발송
+  // 2층: arrived_at null인 shift에 location_check Silent Push 발송 (출근 확정까지 반복)
   const { data: locationPending } = await admin
     .from("daily_shifts")
     .select(`
-      id, member_id, start_time, approaching_at, nearby_at,
+      id, member_id, start_time, arrived_at,
       clients (latitude, longitude)
     `)
     .eq("work_date", today)
+    .is("arrived_at", null)
     .in("arrival_status", ["pending", "notified", "confirmed"]);
 
   let locationCheckCount = 0;
   if (locationPending) {
     for (const s of locationPending) {
-      // approaching_at, nearby_at 둘 다 있으면 스킵
-      if (s.approaching_at && s.nearby_at) continue;
-
       const sStart = new Date(`${today}T${s.start_time}+09:00`);
       const mUntil = (sStart.getTime() - now.getTime()) / 60000;
-      // approaching_at 미기록: 출근 90분 전부터, nearby_at 미기록: 출근 60분 전부터
-      const threshold = !s.approaching_at ? 90 : 60;
-      if (mUntil <= threshold && mUntil > -30) {
+      // 출근 90분 전 ~ 출근 후 180분 까지 반복 발송 (지각 대비 + arrive 확정까지)
+      if (mUntil <= 90 && mUntil > -180) {
         const c = s.clients as unknown as { latitude: number | null; longitude: number | null };
         if (c?.latitude && c?.longitude) {
           sendLocationCheckPush(s.member_id, s.id, c.latitude, c.longitude).catch(console.error);

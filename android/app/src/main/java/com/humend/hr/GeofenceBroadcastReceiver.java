@@ -56,7 +56,10 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
             Log.i(TAG, "지오펜스 이벤트: " + id + " transition=" + transition);
 
             if (transition == Geofence.GEOFENCE_TRANSITION_ENTER) {
-                if (id.startsWith("shift_") && apiShiftId == null) {
+                if (id.startsWith("approach_") && apiShiftId == null) {
+                    apiShiftId = id.substring(9);
+                    apiType = "approaching";
+                } else if (id.startsWith("shift_") && apiShiftId == null) {
                     apiShiftId = id.substring(6);
                     apiType = "nearby";
                 } else if (id.startsWith("arrive_") && apiShiftId == null) {
@@ -204,6 +207,7 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
         switch (type) {
             case "arrive": path = "/api/native/attendance/arrive"; break;
             case "depart": path = "/api/native/attendance/depart"; break;
+            case "approaching": path = "/api/native/attendance/approaching"; break;
             default: path = "/api/native/attendance/nearby"; break;
         }
 

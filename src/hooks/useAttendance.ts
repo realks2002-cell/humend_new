@@ -91,19 +91,54 @@ export async function checkAndStartGeofence(overrideToken?: string) {
     const { Geolocation } = await import("@capacitor/geolocation");
     const perm = await Geolocation.checkPermissions();
     console.log("[Attendance] 위치 권한:", JSON.stringify(perm));
-    if (perm.location !== "granted" && perm.coarseLocation !== "granted") {
-      const req = await Geolocation.requestPermissions({ permissions: ["location"] });
-      if (req.location !== "granted" && req.coarseLocation !== "granted") {
-        console.log("[Attendance] 위치 권한 거부 → 설정 유도");
+
+    // iOS: 네이티브 requestAlwaysAuthorization 직접 호출 (Always 업그레이드 팝업)
+    const { Capacitor } = await import("@capacitor/core");
+    if (Capacitor.getPlatform() === "ios") {
+      const { requestAlwaysAuthorization, getIosAuthorizationStatus } = await import("@/lib/capacitor/native-geofence");
+      const status = await getIosAuthorizationStatus();
+      console.log("[Attendance] iOS 권한 상태:", status);
+
+      if (status === "notDetermined") {
+        // 첫 권한 요청 — 사전 안내로 2단계 플로우 이해시키기
+        window.alert(
+          "출근 자동 확인을 위해 위치 권한이 필요합니다.\n\n" +
+          "팝업이 2번 연속으로 뜹니다:\n\n" +
+          "1번째 팝업 → \"앱을 사용하는 동안 허용\"\n" +
+          "2번째 팝업 → \"항상 허용\"\n\n" +
+          "⚠️ \"한 번 허용\"을 선택하면 출근 확인이 안 됩니다."
+        );
+        await requestAlwaysAuthorization();
+      } else if (status === "whenInUse") {
+        // 이미 When In Use — Always 업그레이드만 요청
+        await requestAlwaysAuthorization();
+      } else if (status === "denied" || status === "restricted") {
         const { Browser } = await import("@capacitor/browser");
         const confirmed = window.confirm(
           "출근 확인을 위해 위치 권한이 필요합니다.\n\n" +
-          "설정 → 앱 → Humend HR → 권한 → 위치 → '항상 허용'으로 변경해주세요."
+          "설정 → 휴멘드 → 위치 → '항상' 선택해주세요."
         );
         if (confirmed) {
           await Browser.open({ url: "app-settings:" });
         }
         return;
+      }
+    } else {
+      // Android: 기존 Capacitor Geolocation 플로우
+      if (perm.location !== "granted" && perm.coarseLocation !== "granted") {
+        const req = await Geolocation.requestPermissions({ permissions: ["location"] });
+        if (req.location !== "granted" && req.coarseLocation !== "granted") {
+          console.log("[Attendance] 위치 권한 거부 → 설정 유도");
+          const { Browser } = await import("@capacitor/browser");
+          const confirmed = window.confirm(
+            "출근 확인을 위해 위치 권한이 필요합니다.\n\n" +
+            "설정 → 앱 → 휴멘드 → 권한 → 위치 → '항상 허용'으로 변경해주세요."
+          );
+          if (confirmed) {
+            await Browser.open({ url: "app-settings:" });
+          }
+          return;
+        }
       }
     }
   } catch (e) {

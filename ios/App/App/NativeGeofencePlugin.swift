@@ -16,6 +16,8 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "requestBatteryOptimizationExemption", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "startPeriodicLocationBackup", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "stopPeriodicLocationBackup", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "requestAlwaysAuthorization", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getAuthorizationStatus", returnType: CAPPluginReturnPromise),
     ]
 
     private var geofenceObserver: NSObjectProtocol?
@@ -128,5 +130,37 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin {
         }
         print("[NativeGeofence] 전체 제거")
         call.resolve(["success": true])
+    }
+
+    /// iOS CLLocationManager.requestAlwaysAuthorization() 직접 호출
+    /// - notDetermined: When In Use 팝업 → 선택 후 Always 업그레이드 팝업 자동 표시
+    /// - authorizedWhenInUse: Always 업그레이드 팝업 즉시 표시
+    @objc func requestAlwaysAuthorization(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            AppDelegate.sharedLocationManager.requestAlwaysAuthorization()
+            print("[NativeGeofence] requestAlwaysAuthorization 호출")
+            call.resolve(["success": true])
+        }
+    }
+
+    /// 현재 위치 권한 상태 반환
+    @objc func getAuthorizationStatus(_ call: CAPPluginCall) {
+        let status: CLAuthorizationStatus
+        if #available(iOS 14.0, *) {
+            status = AppDelegate.sharedLocationManager.authorizationStatus
+        } else {
+            status = CLLocationManager.authorizationStatus()
+        }
+
+        let statusStr: String
+        switch status {
+        case .notDetermined: statusStr = "notDetermined"
+        case .restricted: statusStr = "restricted"
+        case .denied: statusStr = "denied"
+        case .authorizedWhenInUse: statusStr = "whenInUse"
+        case .authorizedAlways: statusStr = "always"
+        @unknown default: statusStr = "unknown"
+        }
+        call.resolve(["status": statusStr])
     }
 }
