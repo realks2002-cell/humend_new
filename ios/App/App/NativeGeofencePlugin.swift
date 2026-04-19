@@ -11,6 +11,11 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "remove", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "removeAll", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setAuthToken", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setApiKey", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "isBatteryOptimizationIgnored", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "requestBatteryOptimizationExemption", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "startPeriodicLocationBackup", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "stopPeriodicLocationBackup", returnType: CAPPluginReturnPromise),
     ]
 
     private var geofenceObserver: NSObjectProtocol?
@@ -82,6 +87,35 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin {
         }
         UserDefaults.standard.set(token, forKey: "supabase_access_token")
         print("[NativeGeofence] auth token 저장됨")
+        call.resolve(["success": true])
+    }
+
+    @objc func setApiKey(_ call: CAPPluginCall) {
+        guard let apiKey = call.getString("apiKey") else {
+            call.reject("apiKey 필수")
+            return
+        }
+        UserDefaults.standard.set(apiKey, forKey: "member_api_key")
+        print("[NativeGeofence] api key 저장됨")
+        call.resolve(["success": true])
+    }
+
+    @objc func isBatteryOptimizationIgnored(_ call: CAPPluginCall) {
+        // iOS는 배터리 최적화 개념이 Android와 다름 — 항상 true 반환
+        call.resolve(["ignored": true])
+    }
+
+    @objc func requestBatteryOptimizationExemption(_ call: CAPPluginCall) {
+        // iOS 미지원 — no-op
+        call.resolve(["success": true])
+    }
+
+    @objc func startPeriodicLocationBackup(_ call: CAPPluginCall) {
+        // iOS는 WorkManager 없음 — Silent Push + 지오펜스로 대체
+        call.resolve(["success": true])
+    }
+
+    @objc func stopPeriodicLocationBackup(_ call: CAPPluginCall) {
         call.resolve(["success": true])
     }
 

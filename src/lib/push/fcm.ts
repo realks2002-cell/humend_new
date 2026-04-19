@@ -124,7 +124,7 @@ export async function sendDataOnlyPush(
             },
             apns: {
               headers: {
-                "apns-priority": "10",
+                "apns-priority": "5",
                 "apns-push-type": "background",
               },
               payload: {
