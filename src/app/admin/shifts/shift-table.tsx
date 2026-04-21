@@ -783,7 +783,7 @@ export function ShiftTable({
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={cardOrder} strategy={rectSortingStrategy}>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {groupedShifts.map(({ key, shifts: gs }) => {
             const f = gs[0];
             const arrivedN = gs.filter((s) => s.arrival_status === "arrived").length;
@@ -843,9 +843,9 @@ export function ShiftTable({
                             <>
                               <Badge variant={isOn ? "default" : "destructive"} className={cn("shrink-0 text-[11px] px-1.5", isOn ? "bg-green-600" : "bg-red-500")}>{isOn ? "ON" : "OFF"}</Badge>
                               {activeDeparture && <Badge variant="destructive" className="shrink-0 text-[11px] px-1.5 bg-orange-500 animate-pulse">이탈 중</Badge>}
-                              {shift.approaching_at && <span className="text-purple-600 text-xs shrink-0 tabular-nums">5km {fmtTime(shift.approaching_at)}</span>}
-                              {shift.nearby_at && <span className="text-blue-600 text-xs shrink-0 tabular-nums">2km {fmtTime(shift.nearby_at)}</span>}
-                              {isArrived && shift.arrived_at && <span className="text-green-600 text-xs shrink-0 tabular-nums">출근 {fmtTime(shift.arrived_at)}</span>}
+                              {shift.approaching_at && <Badge variant="outline" className="shrink-0 text-[11px] px-1.5 border-purple-400 text-purple-700 bg-purple-50 tabular-nums">5km {fmtTime(shift.approaching_at)}</Badge>}
+                              {shift.nearby_at && <Badge variant="outline" className="shrink-0 text-[11px] px-1.5 border-blue-400 text-blue-700 bg-blue-50 tabular-nums">2km {fmtTime(shift.nearby_at)}</Badge>}
+                              {isArrived && shift.arrived_at && <Badge variant="outline" className="shrink-0 text-[11px] px-1.5 border-green-400 text-green-700 bg-green-50 tabular-nums">출근 {fmtTime(shift.arrived_at)}</Badge>}
                             </>
                           )}
                           <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-red-600 shrink-0" onClick={() => handleDelete(shift.id)} disabled={isPending} title="삭제">
