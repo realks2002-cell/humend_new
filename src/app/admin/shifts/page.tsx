@@ -41,7 +41,8 @@ export default async function AdminShiftsPage({
   const { data: members } = await supabase
     .from("members")
     .select("id, name, phone")
-    .order("name");
+    .order("name")
+    .limit(10000);
 
   // 전체 공고 조회 (캐스케이드 드롭다운용)
   const { data: dailyPostings } = await supabase

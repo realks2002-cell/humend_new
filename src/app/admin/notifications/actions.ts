@@ -84,7 +84,8 @@ export async function getMembers() {
     .from("members")
     .select("id, name, phone")
     .eq("status", "active")
-    .order("name", { ascending: true });
+    .order("name", { ascending: true })
+    .limit(10000);
 
   return (data ?? []) as Array<{ id: string; name: string | null; phone: string }>;
 }

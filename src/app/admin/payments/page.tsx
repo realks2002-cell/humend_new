@@ -1,28 +1,25 @@
 export const dynamic = "force-dynamic";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { MonthSelector } from "@/components/ui/month-selector";
 import type { Member, ParentalConsent } from "@/lib/supabase/queries";
 import { createAdminClient } from "@/lib/supabase/server";
-import { getPaymentsByMonthPaginated } from "./actions";
+import { getAllPayments } from "./actions";
 import { getParentalConsentsByMemberIds } from "@/lib/supabase/queries";
 import { PaymentsTable } from "./payments-table";
 
 const PAGE_SIZE = 50;
 
 interface Props {
-  searchParams: Promise<{ month?: string; page?: string }>;
+  searchParams: Promise<{ page?: string; search?: string }>;
 }
 
 export default async function PaymentsPage({ searchParams }: Props) {
   const params = await searchParams;
-  const now = new Date();
-  const currentMonth = params.month ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const page = Math.max(1, Number(params.page) || 1);
+  const search = params.search?.trim() || undefined;
 
-  const { data: payments, total } = await getPaymentsByMonthPaginated(currentMonth, page, PAGE_SIZE);
+  const { data: payments, total } = await getAllPayments(page, PAGE_SIZE, search);
 
-  // payments에서 member_id 추출 → 필요한 회원만 조회
   const memberIds = [...new Set(
     payments.map((p) => p.work_record?.member_id).filter(Boolean) as string[]
   )];
@@ -44,9 +41,6 @@ export default async function PaymentsPage({ searchParams }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">급여지급 내역</h1>
-          <div className="mt-3">
-            <MonthSelector currentMonth={currentMonth} basePath="/admin/payments" />
-          </div>
         </div>
       </div>
 
@@ -57,7 +51,7 @@ export default async function PaymentsPage({ searchParams }: Props) {
             membersMap={membersMap}
             consentsMap={consentsMap}
             profileImageUrls={{}}
-            currentMonth={currentMonth}
+            initialSearch={search ?? ""}
             page={page}
             pageSize={PAGE_SIZE}
             total={total}

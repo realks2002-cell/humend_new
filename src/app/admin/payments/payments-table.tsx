@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,15 +38,16 @@ interface PaymentsTableProps {
   membersMap: Record<string, Member>;
   consentsMap: Record<string, ParentalConsent>;
   profileImageUrls: Record<string, string>;
-  currentMonth: string;
+  initialSearch: string;
   page: number;
   pageSize: number;
   total: number;
 }
 
-export function PaymentsTable({ payments, membersMap, consentsMap, profileImageUrls, currentMonth, page, pageSize, total }: PaymentsTableProps) {
+export function PaymentsTable({ payments, membersMap, consentsMap, profileImageUrls, initialSearch, page, pageSize, total }: PaymentsTableProps) {
   const router = useRouter();
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [filterStartDate, setFilterStartDate] = useState("");
   const [filterEndDate, setFilterEndDate] = useState("");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
@@ -55,6 +56,29 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
   const [payslipData, setPayslipData] = useState<PayslipRecord | null>(null);
   const [consentData, setConsentData] = useState<{ consent: ParentalConsent; member: Member } | null>(null);
   const [isLoadingConsent, startConsentTransition] = useTransition();
+
+  useEffect(() => {
+    setSearchInput(initialSearch);
+  }, [initialSearch]);
+
+  function handleSearchChange(value: string) {
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const params = new URLSearchParams();
+      if (value.trim()) params.set("search", value.trim());
+      params.set("page", "1");
+      router.push(`/admin/payments?${params.toString()}`);
+    }, 400);
+  }
+
+  function handleReset() {
+    setSearchInput("");
+    setFilterStartDate("");
+    setFilterEndDate("");
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    router.push("/admin/payments");
+  }
 
   function handleConsentClick(memberId: string) {
     const consent = consentsMap[memberId];
@@ -68,7 +92,7 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
 
   function goToPage(p: number) {
     const params = new URLSearchParams();
-    params.set("month", currentMonth);
+    if (initialSearch) params.set("search", initialSearch);
     params.set("page", String(p));
     router.push(`/admin/payments?${params.toString()}`);
   }
@@ -90,36 +114,27 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
   const [csvLoading, setCsvLoading] = useState(false);
 
   const filtered = useMemo(() => {
+    if (!filterStartDate && !filterEndDate) return payments;
     return payments.filter((p) => {
       const d = p.work_record?.work_date ?? "";
       if (filterStartDate && d < filterStartDate) return false;
       if (filterEndDate && d > filterEndDate) return false;
-      if (!search) return true;
-      const s = search.replace(/-/g, "");
-      const name = p.work_record?.members?.name ?? "";
-      const phone = (p.work_record?.members?.phone ?? "").replace(/-/g, "");
-      const client = p.work_record?.client_name ?? "";
-      return (
-        name.includes(search) ||
-        phone.includes(s) ||
-        client.includes(search)
-      );
+      return true;
     });
-  }, [payments, search, filterStartDate, filterEndDate]);
+  }, [payments, filterStartDate, filterEndDate]);
 
   async function handleCsvExport() {
-    if (!startDate || !endDate) {
-      toast.error("시작일과 종료일을 선택해주세요");
-      return;
-    }
-    if (startDate > endDate) {
+    if (startDate && endDate && startDate > endDate) {
       toast.error("시작일이 종료일보다 늦을 수 없습니다");
       return;
     }
 
+    const start = startDate ? toDateStr(startDate) : "1900-01-01";
+    const end = endDate ? toDateStr(endDate) : "2999-12-31";
+
     setCsvLoading(true);
     try {
-      const result = await getPaymentsForCsvExport(toDateStr(startDate), toDateStr(endDate));
+      const result = await getPaymentsForCsvExport(start, end);
       if (result.error) {
         toast.error("데이터 조회 실패", { description: result.error });
         return;
@@ -175,7 +190,9 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `급여지급내역_${toDateStr(startDate)}_${toDateStr(endDate)}.csv`;
+      a.download = startDate && endDate
+        ? `급여지급내역_${start}_${end}.csv`
+        : `급여지급내역_전체.csv`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success(`${result.data.length}건 CSV 내보내기 완료`);
@@ -189,10 +206,10 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
       {/* Toolbar */}
       <div className="mb-4 flex flex-wrap items-center gap-2 px-4">
         <Input
-          placeholder="이름, 전화번호 검색..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-[180px] h-9 text-sm"
+          placeholder="이름, 전화번호, 근무지 검색..."
+          value={searchInput}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          className="w-[220px] h-9 text-sm"
         />
         <Input
           type="date"
@@ -207,16 +224,16 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
           onChange={(e) => setFilterEndDate(e.target.value)}
           className="w-[145px] h-9 text-sm"
         />
-        {(search || filterStartDate || filterEndDate) && (
+        {(searchInput || filterStartDate || filterEndDate) && (
           <button
             type="button"
             className="text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => { setSearch(""); setFilterStartDate(""); setFilterEndDate(""); }}
+            onClick={handleReset}
           >
             초기화
           </button>
         )}
-        <span className="text-xs text-muted-foreground">{filtered.length}건</span>
+        <span className="text-xs text-muted-foreground">총 {total.toLocaleString()}건</span>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {/* CSV Export */}
           <Popover open={startOpen} onOpenChange={setStartOpen}>
@@ -254,7 +271,7 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
             variant="outline"
             size="sm"
             onClick={handleCsvExport}
-            disabled={csvLoading || !startDate || !endDate}
+            disabled={csvLoading}
           >
             <Download className="mr-1 h-3 w-3" />
             {csvLoading ? "내보내는 중..." : "CSV 내보내기"}

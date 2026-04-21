@@ -1,4 +1,5 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { escapeIlike, orValue } from "@/lib/supabase/filter-escape";
 
 // ========== 타입 ==========
 
@@ -376,14 +377,18 @@ export async function getAllMembersWithStats(): Promise<MemberWithStats[]> {
 }
 
 export async function getWorkRecordsByMemberId(memberId: string) {
+  // 급여지급 기준: payments 테이블에 entry가 있는 근무만 (확정된 급여 내역)
   const admin = createAdminClient();
   const { data } = await admin
     .from("work_records")
-    .select("client_name, work_date")
+    .select("client_name, work_date, payments!inner(id)")
     .eq("member_id", memberId)
     .order("work_date", { ascending: false });
 
-  return (data ?? []) as { client_name: string; work_date: string }[];
+  return ((data ?? []) as Array<{ client_name: string; work_date: string }>).map((r) => ({
+    client_name: r.client_name,
+    work_date: r.work_date,
+  }));
 }
 
 export async function getAllClients() {
@@ -402,7 +407,8 @@ export async function getAllApplications() {
   const { data } = await admin
     .from("applications")
     .select(`*, job_postings(*, clients(company_name, location, hourly_wage, wage_type, daily_wage, monthly_wage)), members(name, phone)`)
-    .order("applied_at", { ascending: false });
+    .order("applied_at", { ascending: false })
+    .limit(10000);
 
   return (data ?? []) as (Application & { members: { name: string; phone: string } })[];
 }
@@ -523,7 +529,7 @@ export async function getAllWorkRecords(filters?: { month?: string; status?: str
     query = query.not("signature_url", "is", null);
   }
 
-  const { data } = await query;
+  const { data } = await query.limit(50000);
   // payments is 1:1 via UNIQUE — unwrap array to single object
   const results = ((data ?? []) as unknown[]).map((r: unknown) => {
     const rec = r as Record<string, unknown>;
@@ -658,17 +664,31 @@ export async function getSignedContracts(
   }
 
   if (filters?.search) {
-    // 이름/전화번호/고객사 OR 검색은 PostgREST 단일 쿼리로 불가 → 전체 조회 후 필터
-    const { data } = await query.limit(5000);
-    const contracts = unwrap(data ?? []);
-    const s = filters.search.replace(/-/g, "");
-    const filtered = contracts.filter((r) => {
-      const name = r.members?.name ?? "";
-      const phone = (r.members?.phone ?? "").replace(/-/g, "");
-      return name.includes(filters.search!) || phone.includes(s) || r.client_name.includes(filters.search!);
-    });
-    const paginated = filtered.slice(from, from + pageSize);
-    return { data: paginated, total: filtered.length };
+    // 서버 SQL 레벨 필터링 (max-rows 우회)
+    const s = filters.search.trim();
+    const sPhone = s.replace(/-/g, "");
+    const escS = escapeIlike(s);
+    const escPhone = escapeIlike(sPhone);
+
+    // 1) name/phone 매칭되는 member_id 조회
+    const { data: matchedMembers } = await admin
+      .from("members")
+      .select("id")
+      .or(`name.ilike.${orValue(`%${escS}%`)},phone.ilike.${orValue(`%${escPhone}%`)}`)
+      .limit(10000);
+    const memberIds = (matchedMembers ?? []).map((m: { id: string }) => m.id);
+
+    // 2) work_records: member_id IN (...) OR client_name ILIKE
+    if (memberIds.length > 0) {
+      query = query.or(
+        `member_id.in.(${memberIds.join(",")}),client_name.ilike.${orValue(`%${escS}%`)}`,
+      );
+    } else {
+      query = query.ilike("client_name", `%${escS}%`);
+    }
+
+    const { data, count } = await query.range(from, from + pageSize - 1);
+    return { data: unwrap(data ?? []), total: count ?? 0 };
   }
 
   const { data, count } = await query.range(from, from + pageSize - 1);
