@@ -50,6 +50,15 @@ yarn-error.log*
 *.keystore
 release-signing.properties
 
+# ios (capacitor)
+/ios/build/
+/ios/App/CapApp-SPM/.build/
+/ios/App/CapApp-SPM/.swiftpm/
+/ios/App/.next/
+**/DerivedData/
+**/xcuserdata/
+*.xcuserstate
+
 # vercel
 .vercel
 
