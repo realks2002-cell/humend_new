@@ -219,7 +219,9 @@ export async function importPayrollFromSheets(month: string) {
       .select("id, client_name, work_date, members(name, phone)")
       .gte("signed_at", startTs)
       .lt("signed_at", endTs)
-      .not("signature_url", "is", null);
+      .not("signature_url", "is", null)
+      .order("signed_at", { ascending: false })
+      .limit(100000);
 
     const dbRecords = (workRecords ?? []) as Array<Record<string, unknown>>;
     console.log("🗄️ DB work_records:", dbRecords.length, "건");
@@ -251,9 +253,12 @@ export async function importPayrollFromSheets(month: string) {
       // 2. DB에서 매칭되는 work_record 찾기
       const matched = dbRecords.find((wr) => {
         if (usedIds.has(wr.id as string)) return false; // 이미 매칭된 ID 제외
-        const m = wr.members as Record<string, unknown> | null;
-        const dbName = (m?.name as string)?.trim();
-        const dbPhone = (m?.phone as string)?.replace(/\D/g, "");
+        const rawMembers = wr.members as Record<string, unknown> | Array<Record<string, unknown>> | null;
+        const m: Record<string, unknown> | null = Array.isArray(rawMembers)
+          ? (rawMembers[0] ?? null)
+          : (rawMembers ?? null);
+        const dbName = (m?.name as string | undefined)?.trim();
+        const dbPhone = (m?.phone as string | undefined)?.replace(/\D/g, "");
         const dbDate = wr.work_date as string;
         const dbClient = (wr.client_name as string)?.trim();
 
@@ -316,7 +321,7 @@ export async function importPayrollFromSheets(month: string) {
           work_date: sheetDate,
           start_time: decimalToTime(row["시작시간"]),
           end_time: decimalToTime(row["종료시간"]),
-          break_hours: parseNum(row["휴게시간"]),
+          break_minutes: Math.round(parseNum(row["휴게시간"]) * 60),
           work_hours: paymentData.work_hours,
           overtime_hours: 0,
           hourly_wage: paymentData.hourly_wage,
