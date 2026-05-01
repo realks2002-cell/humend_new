@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -78,7 +77,6 @@ function TableRow({ label, value, label2, value2 }: { label: string; value: stri
 }
 
 export function DirectSalaryModal({ clients, worker, hasProfile }: { clients: Client[]; worker: WorkerInfo; hasProfile: boolean }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [profileAlertOpen, setProfileAlertOpen] = useState(false);
   const [step, setStep] = useState<"form" | "contract" | "sign">("form");
@@ -126,7 +124,7 @@ export function DirectSalaryModal({ clients, worker, hasProfile }: { clients: Cl
     toast.success("별도 근무 급여신청이 완료되었습니다");
     setOpen(false);
     resetForm();
-    router.refresh();
+    setTimeout(() => window.location.reload(), 800);
   }
 
   function resetForm() {

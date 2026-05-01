@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -88,7 +87,6 @@ function TableRow({ label, value, label2, value2 }: { label: string; value: stri
 }
 
 export function ContractModal({ record, worker, hasProfile }: { record: WorkRecord; worker: WorkerInfo; hasProfile: boolean }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [profileAlertOpen, setProfileAlertOpen] = useState(false);
   const [step, setStep] = useState<"confirm" | "contract" | "sign">("confirm");
@@ -130,8 +128,7 @@ export function ContractModal({ record, worker, hasProfile }: { record: WorkReco
     }
     toast.success("일일계약서가 체결되었습니다");
     setOpen(false);
-    setStep("contract");
-    router.refresh();
+    setTimeout(() => window.location.reload(), 800);
   }
 
   function handleOpenChange(v: boolean) {
