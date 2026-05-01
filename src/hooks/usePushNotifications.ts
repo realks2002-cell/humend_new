@@ -19,6 +19,9 @@ export function usePushNotifications() {
 
       if (cleanup) return;
 
+      // 리스너 먼저 등록 (탭 이벤트 즉시 처리)
+      setupPushListeners();
+
       const token = await registerPush();
       if (!token) return;
 
@@ -34,10 +37,6 @@ export function usePushNotifications() {
           console.warn("[Push] 토큰 등록 실패:", result);
         }
       });
-
-      if (!cleanup) {
-        setupPushListeners();
-      }
     }
 
     async function init() {

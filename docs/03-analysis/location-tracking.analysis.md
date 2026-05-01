@@ -1,5 +1,12 @@
 # 출근 위치추적 / 노쇼-지각 사전 판별 Gap Analysis Report
 
+> ⚠️ **이 분석은 2026.03 시점 기준이며, 이후 구현이 크게 확장되었습니다.**
+> **현재 구현 상태는 `지오펜싱설명.md`를 참조하세요.**
+>
+> 이후 추가된 주요 기능: 5km OS 네이티브 지오펜스, 3레이어 안전장치,
+> arrive 3회 debounce, API Key 영구 인증, 이탈 추적 1시간 제한,
+> iOS 권한 2단계 자동화, GPS Fallback Chain.
+>
 > **Analysis Type**: Design-Implementation Gap Analysis (PDCA Check Phase)
 >
 > **Project**: HumendHR

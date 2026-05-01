@@ -65,7 +65,7 @@ npm run cap:release      # 정적 빌드 + Release AAB 빌드
 
 - **Android 앱 전체**: 빌드, 로그인, 푸시, 지오펜싱, UI 모두 완성. **Android 관련 코드/설정 절대 수정 금지.**
 - **FCM 푸시 알림 시스템**: 배정 알림, cron 재알림, 수동 발송 (`lib/push/`, `api/cron/attendance-check`)
-- **지오펜싱 출근 확인**: 접근 감지(2km) → 도착 확인(30m) → 이탈 감지(500m) (`lib/capacitor/geofence.ts`, `hooks/useAttendance.ts`)
+- **지오펜싱 출근 확인**: 접근 감지(5km) → 근접 감지(2km) → 도착 확인(300m, 3회 연속 검증) → 이탈 감지(500m, 1시간 한정) (`lib/capacitor/geofence.ts`, `hooks/useAttendance.ts`). 3레이어 안전장치 (OS 네이티브 + Silent Push + JS).
 - **근무 이탈 감지**: 이탈/복귀 기록 + 관리자 이력 표시 (`api/native/attendance/depart`, `return`, `departure_logs`)
 - **근무표 관리** (`admin/shifts/`): ShiftTable, 배정 등록/수정/삭제, FCM 발송 기록
 - **회원 가입/로그인**: 전화번호 + 비밀번호, 구글 OAuth (`app-native/signup/`, `app-native/login/`)
@@ -254,8 +254,13 @@ npm run build:capacitor → Android Studio Build APK → 설치
 - `useAttendance` 훅 기반 → 앱이 열려야 시작됨 (React hook)
 - `arrived`/`noshow`만 제외, 나머지 상태(`pending`/`notified`/`confirmed`)에서 모두 시작
 - `@capacitor-community/background-geolocation` → 백그라운드 동작 O, 앱 강제 종료 시 중단
-- 2km 접근 감지(1회) → 30m 출근 확인(watch 중단)
+- **반경**: 5km 접근 → 2km 근접 → 300m 출근 → 500m 이탈
+- **3레이어 안전장치**: OS 네이티브 지오펜스 + Silent Push + JS 포그라운드 (각 반경 모두)
+- **arrive 3회 연속 검증**: GPS 튐 방어 (047 마이그레이션)
+- **이탈 추적 1시간 제한**: 출근 시간 + 1시간까지만 기록
+- **API Key 영구 인증**: `members.api_key` UUID (046 마이그레이션) — 토큰 만료 회피
 - 회원에게 **배터리 최적화 제외** 안내 필요 (삼성/샤오미 등에서 강제 종료 방지)
+- iOS는 "**항상 허용**" 필수 — 앱에서 `requestAlwaysAuthorization()`로 2단계 자동 팝업
 
 ### Dialog body lock 주의
 ```typescript

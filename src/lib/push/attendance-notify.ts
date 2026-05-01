@@ -97,8 +97,27 @@ export async function notifyAttendanceCheck(
 ) {
   await notifyMember({
     memberId,
-    title: customTitle || "출근 예정이신가요?",
-    body: customBody || `${companyName} ${startTime} 출근 — 터치하여 출근 의사를 알려주세요.`,
+    title: customTitle || "[휴멘드] 오늘 근무, 준비되셨나요?",
+    body: customBody || "클릭하여 '출근확정'을 완료해 주세요! ✔️",
+    data: {
+      action: "confirm_attendance",
+      shiftId,
+      url: "/my/attendance",
+    },
+    shiftId,
+  });
+}
+
+export async function notifyAttendanceRepeat(
+  memberId: string,
+  shiftId: string,
+  customTitle?: string,
+  customBody?: string
+) {
+  await notifyMember({
+    memberId,
+    title: customTitle || "[휴멘드] 출근 확정 확인이 아직 안 되었어요!",
+    body: customBody || "지금 바로 클릭 ⚠️",
     data: {
       action: "confirm_attendance",
       shiftId,

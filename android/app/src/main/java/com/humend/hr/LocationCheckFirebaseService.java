@@ -189,11 +189,52 @@ public class LocationCheckFirebaseService extends MessagingService {
 
         if (distance <= 300) {
             callNearbyAPISync(shiftId);
-            callArriveAPISync(shiftId, location.getLatitude(), location.getLongitude());
+            // 서버 arrive debounce(3회 연속) 충족 — 6초 간격 3샘플
+            arriveRetryLoop(shiftId, location, targetLat, targetLng);
         } else if (distance <= 2000) {
             callNearbyAPISync(shiftId);
         } else if (distance <= 5000) {
             callApproachingAPISync(shiftId);
+        }
+    }
+
+    /** 6초 간격 3회 arrive API 호출. 매회 getLastLocation으로 새 좌표 조회. */
+    private void arriveRetryLoop(String shiftId, Location firstLoc, double targetLat, double targetLng) {
+        callArriveAPISync(shiftId, firstLoc.getLatitude(), firstLoc.getLongitude());
+        for (int i = 1; i < 3; i++) {
+            try { Thread.sleep(6000); } catch (InterruptedException e) { return; }
+            Location loc = fetchCachedLocationBlocking();
+            if (loc == null) {
+                Log.w(TAG, "arrive 샘플 " + (i + 1) + "/3 GPS 없음 — skip");
+                continue;
+            }
+            double dist = haversine(loc.getLatitude(), loc.getLongitude(), targetLat, targetLng);
+            if (dist <= 300) {
+                Log.i(TAG, "arrive 샘플 " + (i + 1) + "/3 dist=" + (int) dist + "m");
+                callArriveAPISync(shiftId, loc.getLatitude(), loc.getLongitude());
+            } else {
+                Log.w(TAG, "arrive 샘플 " + (i + 1) + "/3 dist=" + (int) dist + "m — 범위 이탈, 호출 안함");
+            }
+        }
+    }
+
+    /** getLastLocation 빠른 조회 (2초 타임아웃, 재시도용) */
+    private Location fetchCachedLocationBlocking() {
+        try {
+            FusedLocationProviderClient client = LocationServices.getFusedLocationProviderClient(this);
+            CountDownLatch latch = new CountDownLatch(1);
+            final Location[] out = { null };
+            client.getLastLocation()
+                .addOnSuccessListener(loc -> { out[0] = loc; latch.countDown(); })
+                .addOnFailureListener(e -> latch.countDown());
+            latch.await(2, TimeUnit.SECONDS);
+            return out[0];
+        } catch (SecurityException e) {
+            Log.e(TAG, "fetchCachedLocation 권한 없음: " + e.getMessage());
+            return null;
+        } catch (Exception e) {
+            Log.e(TAG, "fetchCachedLocation 실패: " + e.getMessage());
+            return null;
         }
     }
 

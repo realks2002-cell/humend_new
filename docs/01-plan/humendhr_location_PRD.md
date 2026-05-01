@@ -1,5 +1,20 @@
 # HumendHR — 출근 위치추적 · 노쇼/지각 사전 판별 기능 PRD
 
+> ⚠️ **이 문서는 초기 설계 단계(2026.03) PRD로, 이후 기능이 크게 확장되었습니다.**
+> **현재 구현 상태는 프로젝트 루트의 `지오펜싱설명.md`를 참조하세요.**
+>
+> **주요 변경사항 (2026.04 기준)**:
+> - 반경: 2km/100m → **5km/2km/300m/500m** (4단계)
+> - 3레이어 안전장치 추가 (OS 네이티브 + Silent Push + JS 포그라운드)
+> - arrive 3회 연속 검증 (GPS 튐 방어)
+> - `members.api_key` UUID 영구 인증 (토큰 만료 회피)
+> - 이탈 추적 1시간 제한
+> - iOS 권한 2단계 자동 팝업 (requestAlwaysAuthorization)
+> - GPS Fallback Chain (실내 감지 개선)
+> - FCM Silent Push apns-priority 5로 수정 (iOS 전달 안정화)
+> - 테이블 변경: `location_logs` 대신 `departure_logs` 사용
+> - `workplaces` → `clients` 테이블 사용
+>
 > Product Requirements Document v1.1 | 2026.03  
 > 연동 앱: HumendHR (로컬번들 하이브리드앱) | 백엔드: Supabase | 배포: Android / iOS
 

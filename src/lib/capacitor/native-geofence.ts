@@ -53,6 +53,20 @@ export async function registerWorkplaceGeofence(
       radius: 5000,
       identifier: `approach_${shiftId}`,
     });
+    // 4km 접근 백업 (5km 누락 대비)
+    await p.register({
+      latitude: lat,
+      longitude: lng,
+      radius: 4000,
+      identifier: `approach2_${shiftId}`,
+    });
+    // 3km 접근 백업 (4km까지 누락 대비)
+    await p.register({
+      latitude: lat,
+      longitude: lng,
+      radius: 3000,
+      identifier: `approach3_${shiftId}`,
+    });
     // 2km 근접 감지 (ENTER)
     await p.register({
       latitude: lat,
@@ -67,7 +81,7 @@ export async function registerWorkplaceGeofence(
       radius: 200,
       identifier: `arrive_${shiftId}`,
     });
-    console.log("[NativeGeofence] 등록: approach+shift+arrive", shiftId);
+    console.log("[NativeGeofence] 등록: approach(5/4/3km)+shift+arrive", shiftId);
     return true;
   } catch (e) {
     console.error("[NativeGeofence] 등록 실패:", e);

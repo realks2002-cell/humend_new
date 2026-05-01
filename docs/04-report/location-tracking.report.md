@@ -1,5 +1,11 @@
 # Location Tracking Feature Completion Report
 
+> ⚠️ **이 리포트는 2026.03 초기 완료 시점의 보고서입니다.**
+> **현재 구현 상태는 `지오펜싱설명.md`를 참조하세요.**
+>
+> 이후 확장: 5km 네이티브 지오펜스, 3레이어 안전장치, arrive 3회 debounce,
+> API Key, 이탈 1시간 제한, iOS 권한 2단계 자동화, GPS Fallback.
+>
 > **Summary**: PDCA completion report for location-tracking (출근 위치추적 · 노쇼/지각 사전 판별)
 >
 > **Project**: HumendHR (인력파견 플랫폼)

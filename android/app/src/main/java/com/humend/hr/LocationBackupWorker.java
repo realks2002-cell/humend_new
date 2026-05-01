@@ -99,8 +99,24 @@ public class LocationBackupWorker extends Worker {
 
             if (distance <= 300) {
                 callAPI(prefs, "/api/native/attendance/nearby", "{\"shiftId\":\"" + shiftId + "\"}");
+                // 서버 arrive debounce(3회 연속) 충족 — 6초 간격 3샘플
                 callAPI(prefs, "/api/native/attendance/arrive",
                     "{\"shiftId\":\"" + shiftId + "\",\"lat\":" + location.getLatitude() + ",\"lng\":" + location.getLongitude() + "}");
+                for (int i = 1; i < 3; i++) {
+                    try { Thread.sleep(6000); } catch (InterruptedException e) { break; }
+                    Location fresh = fetchFreshLocation(client);
+                    if (fresh == null) {
+                        Log.w(TAG, "arrive 샘플 " + (i + 1) + "/3 GPS 없음");
+                        continue;
+                    }
+                    double dist = haversine(fresh.getLatitude(), fresh.getLongitude(), targetLat, targetLng);
+                    if (dist <= 300) {
+                        callAPI(prefs, "/api/native/attendance/arrive",
+                            "{\"shiftId\":\"" + shiftId + "\",\"lat\":" + fresh.getLatitude() + ",\"lng\":" + fresh.getLongitude() + "}");
+                    } else {
+                        Log.w(TAG, "arrive 샘플 " + (i + 1) + "/3 dist=" + (int) dist + "m — 범위 이탈");
+                    }
+                }
             } else if (distance <= 2000) {
                 callAPI(prefs, "/api/native/attendance/nearby", "{\"shiftId\":\"" + shiftId + "\"}");
             } else if (distance <= 5000) {
@@ -172,6 +188,22 @@ public class LocationBackupWorker extends Worker {
         String token = prefs.getString("supabase_access_token", null);
         if (token != null) {
             conn.setRequestProperty("Authorization", "Bearer " + token);
+        }
+    }
+
+    /** 재시도용 빠른 GPS 조회 (5초 타임아웃) */
+    private Location fetchFreshLocation(FusedLocationProviderClient client) {
+        try {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            return Tasks.await(
+                client.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cts.getToken()),
+                5, TimeUnit.SECONDS
+            );
+        } catch (SecurityException e) {
+            return null;
+        } catch (Exception e) {
+            Log.w(TAG, "재시도 GPS 실패: " + e.getMessage());
+            return null;
         }
     }
 

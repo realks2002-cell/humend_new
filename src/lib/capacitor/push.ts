@@ -81,28 +81,33 @@ export function setupPushListeners() {
     async (notification) => {
       const data = notification.notification.data;
 
-      // 출근 의사 확인 알림 탭
+      // 출근 의사 확인 알림 탭 — 모달 즉시 오픈, API는 백그라운드
       if (data?.action === "confirm_attendance" && data?.shiftId) {
-        try {
-          const { createClient } = await import("@/lib/supabase/client");
-          const supabase = createClient();
-          const { data: { session } } = await supabase.auth.getSession();
-          const token = session?.access_token;
+        const { openAttendanceModal } = await import("@/lib/attendance-modal-store");
+        openAttendanceModal();
 
-          if (token) {
-            const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
-            await fetch(`${API_BASE}/api/native/attendance/confirm`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ shiftId: data.shiftId }),
-            });
+        (async () => {
+          try {
+            const { createClient } = await import("@/lib/supabase/client");
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            if (token) {
+              const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
+              await fetch(`${API_BASE}/api/native/attendance/confirm`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ shiftId: data.shiftId }),
+              });
+            }
+          } catch (e) {
+            console.error("[Push] 출근 확인 실패:", e);
           }
-        } catch (e) {
-          console.error("[Push] 출근 확인 실패:", e);
-        }
+        })();
       }
 
       // 지오펜싱 재시작 (알림 터치 시)
@@ -111,10 +116,12 @@ export function setupPushListeners() {
         await checkAndStartGeofence();
       } catch {}
 
-      // URL 이동
-      const url = data?.url;
-      if (url && typeof url === "string") {
-        window.location.href = url;
+      // URL 이동 — confirm_attendance 는 모달이 대체하므로 skip
+      if (data?.action !== "confirm_attendance") {
+        const url = data?.url;
+        if (url && typeof url === "string") {
+          window.location.href = url;
+        }
       }
     }
   );

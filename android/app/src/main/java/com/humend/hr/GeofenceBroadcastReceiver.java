@@ -21,6 +21,8 @@ import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 import com.google.android.gms.tasks.CancellationTokenSource;
+import com.google.android.gms.tasks.Tasks;
+import android.location.Location;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -28,6 +30,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class GeofenceBroadcastReceiver extends BroadcastReceiver {
 
@@ -56,7 +59,15 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
             Log.i(TAG, "지오펜스 이벤트: " + id + " transition=" + transition);
 
             if (transition == Geofence.GEOFENCE_TRANSITION_ENTER) {
-                if (id.startsWith("approach_") && apiShiftId == null) {
+                if (id.startsWith("approach2_") && apiShiftId == null) {
+                    // 4km 백업 진입
+                    apiShiftId = id.substring(10);
+                    apiType = "approaching";
+                } else if (id.startsWith("approach3_") && apiShiftId == null) {
+                    // 3km 백업 진입
+                    apiShiftId = id.substring(10);
+                    apiType = "approaching";
+                } else if (id.startsWith("approach_") && apiShiftId == null) {
                     apiShiftId = id.substring(9);
                     apiType = "approaching";
                 } else if (id.startsWith("shift_") && apiShiftId == null) {
@@ -97,34 +108,48 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
     }
 
     private void callArriveWithLocation(Context context, String shiftId, PendingResult pendingResult) {
+        // 서버 arrive debounce(3회 연속 확인)에 맞춰 6초 간격 3샘플 생성
+        new Thread(() -> {
+            try {
+                boolean departRegistered = false;
+                for (int i = 0; i < 3; i++) {
+                    if (i > 0) {
+                        try { Thread.sleep(6000); } catch (InterruptedException ignored) { break; }
+                    }
+                    Location loc = fetchLocationBlocking(context);
+                    if (loc == null) {
+                        Log.w(TAG, "arrive 샘플 " + (i + 1) + "/3 GPS 획득 실패");
+                        continue;
+                    }
+                    String body = "{\"shiftId\":\"" + shiftId + "\",\"lat\":" + loc.getLatitude() + ",\"lng\":" + loc.getLongitude() + "}";
+                    int code = callAPISyncReturnCode(context, "/api/native/attendance/arrive", body);
+                    Log.i(TAG, "arrive 샘플 " + (i + 1) + "/3 → " + code);
+                    if (!departRegistered && code == 200) {
+                        registerDepartGeofence(context, shiftId, loc.getLatitude(), loc.getLongitude());
+                        departRegistered = true;
+                    }
+                }
+            } finally {
+                pendingResult.finish();
+            }
+        }).start();
+    }
+
+    /** FusedLocation getCurrentLocation 동기 헬퍼 (10초 타임아웃) */
+    private Location fetchLocationBlocking(Context context) {
         try {
             FusedLocationProviderClient locClient = LocationServices.getFusedLocationProviderClient(context);
             CancellationTokenSource cts = new CancellationTokenSource();
-
-            locClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.getToken())
-                .addOnSuccessListener(location -> {
-                    new Thread(() -> {
-                        try {
-                            if (location != null) {
-                                callAPISync(context, "/api/native/attendance/arrive",
-                                    "{\"shiftId\":\"" + shiftId + "\",\"lat\":" + location.getLatitude() + ",\"lng\":" + location.getLongitude() + "}");
-                                registerDepartGeofence(context, shiftId, location.getLatitude(), location.getLongitude());
-                            } else {
-                                callAPISync(context, "/api/native/attendance/arrive",
-                                    "{\"shiftId\":\"" + shiftId + "\"}");
-                            }
-                        } finally {
-                            pendingResult.finish();
-                        }
-                    }).start();
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "arrive GPS 에러: " + e.getMessage());
-                    pendingResult.finish();
-                });
+            return Tasks.await(
+                locClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.getToken()),
+                10, TimeUnit.SECONDS
+            );
         } catch (SecurityException e) {
-            Log.e(TAG, "arrive 위치 권한 없음: " + e.getMessage());
-            pendingResult.finish();
+            Log.e(TAG, "fetchLocationBlocking 권한 없음: " + e.getMessage());
+            return null;
+        } catch (Exception e) {
+            Log.e(TAG, "fetchLocationBlocking 실패: " + e.getMessage());
+            return null;
         }
     }
 
@@ -166,11 +191,16 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
     }
 
     private void callAPISync(Context context, String path, String body) {
+        callAPISyncReturnCode(context, path, body);
+    }
+
+    /** 동기 API 호출 후 HTTP 응답 코드 반환. 실패 시 -1. */
+    private int callAPISyncReturnCode(Context context, String path, String body) {
         SharedPreferences prefs = context.getApplicationContext()
             .getSharedPreferences("NativeGeofence", Context.MODE_PRIVATE);
         String apiKey = prefs.getString("member_api_key", null);
         String token = prefs.getString("supabase_access_token", null);
-        if (apiKey == null && token == null) { Log.w(TAG, "API 실패: 인증 없음"); return; }
+        if (apiKey == null && token == null) { Log.w(TAG, "API 실패: 인증 없음"); return -1; }
 
         try {
             URL url = new URL("https://humendhr.com" + path);
@@ -187,8 +217,10 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
             int code = conn.getResponseCode();
             Log.i(TAG, path + " 응답: " + code);
             conn.disconnect();
+            return code;
         } catch (Exception e) {
             Log.e(TAG, path + " 에러: " + e.getMessage());
+            return -1;
         }
     }
 

@@ -212,16 +212,41 @@ export async function checkAndStartGeofence(overrideToken?: string) {
       callApi("/api/native/attendance/nearby", { shiftId: shift.id }).catch(console.error);
     },
     onArrived: (lat, lng) => {
-      callApi("/api/native/attendance/arrive", { shiftId: shift.id, lat, lng })
-        .then((result) => {
-          if (result?.success) {
-            setArrivedState();
-            console.log("[Attendance] 출근 확인 성공 → 이탈 감지 모드 전환");
-          } else {
-            console.log("[Attendance] 출근 확인 실패 (거리 초과) → 재시도 대기");
+      // 서버 arrive debounce(3회 연속 확인) 충족 — 6초 간격 최대 3회 호출
+      const sampleAndCall = async (curLat: number, curLng: number, remaining: number): Promise<void> => {
+        const result = await callApi("/api/native/attendance/arrive", {
+          shiftId: shift.id,
+          lat: curLat,
+          lng: curLng,
+        });
+        if (result?.status === "arrived" || result?.status === "already_arrived") {
+          setArrivedState();
+          console.log("[Attendance] 출근 확인 성공 → 이탈 감지 모드 전환");
+          return;
+        }
+        if (!result?.success) {
+          console.log("[Attendance] 출근 확인 실패 (거리 초과/debounce) → watcher 재발화 대기");
+          return;
+        }
+        if (remaining <= 0) {
+          console.log("[Attendance] 재시도 종료, 다음 GPS 업데이트 대기");
+          return;
+        }
+        setTimeout(async () => {
+          try {
+            const { Geolocation } = await import("@capacitor/geolocation");
+            const pos = await Geolocation.getCurrentPosition({
+              enableHighAccuracy: true,
+              timeout: 8000,
+            });
+            await sampleAndCall(pos.coords.latitude, pos.coords.longitude, remaining - 1);
+          } catch (err) {
+            console.error("[Attendance] 재시도 GPS 실패:", err);
+            await sampleAndCall(curLat, curLng, remaining - 1);
           }
-        })
-        .catch(console.error);
+        }, 6000);
+      };
+      sampleAndCall(lat, lng, 2).catch(console.error);
     },
     onDeparted: (lat, lng) => {
       callApi("/api/native/attendance/depart", { shiftId: shift.id, lat, lng }).catch(console.error);

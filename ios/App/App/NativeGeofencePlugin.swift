@@ -61,6 +61,11 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin {
         region.notifyOnExit = isDepart
 
         manager.startMonitoring(for: region)
+        // 이미 내부에 있는 경우 ENTER 이벤트가 안 발화하므로 requestState로 수동 트리거
+        // (depart는 EXIT용이라 제외 — 이미 안이면 대기가 정상)
+        if !isDepart {
+            manager.requestState(for: region)
+        }
         print("[NativeGeofence] 등록: \(identifier) (\(lat),\(lng) r=\(radius)m)")
         call.resolve(["success": true])
     }
