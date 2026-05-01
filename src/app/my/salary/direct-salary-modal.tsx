@@ -76,7 +76,7 @@ function TableRow({ label, value, label2, value2 }: { label: string; value: stri
   );
 }
 
-export function DirectSalaryModal({ clients, worker, hasProfile }: { clients: Client[]; worker: WorkerInfo; hasProfile: boolean }) {
+export function DirectSalaryModal({ clients, worker, hasProfile, onSuccess }: { clients: Client[]; worker: WorkerInfo; hasProfile: boolean; onSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
   const [profileAlertOpen, setProfileAlertOpen] = useState(false);
   const [step, setStep] = useState<"form" | "contract" | "sign">("form");
@@ -124,7 +124,11 @@ export function DirectSalaryModal({ clients, worker, hasProfile }: { clients: Cl
     toast.success("별도 근무 급여신청이 완료되었습니다");
     setOpen(false);
     resetForm();
-    setTimeout(() => window.location.reload(), 800);
+    if (onSuccess) {
+      setTimeout(() => onSuccess(), 300);
+    } else {
+      setTimeout(() => window.location.reload(), 800);
+    }
   }
 
   function resetForm() {

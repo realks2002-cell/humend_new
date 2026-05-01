@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,9 +39,8 @@ function SalaryContent() {
     searchParams.get("month") ??
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLoading(true);
+  const reload = useCallback((showLoading = false) => {
+    if (showLoading) setLoading(true);
     Promise.all([
       getMyWorkRecords(currentMonth),
       getMyProfile(),
@@ -50,9 +49,13 @@ function SalaryContent() {
       setAllRecords(recordsData);
       setProfile(profileData);
       setClients(clientsData);
-      setLoading(false);
+      if (showLoading) setLoading(false);
     });
   }, [currentMonth]);
+
+  useEffect(() => {
+    reload(true);
+  }, [reload]);
 
   if (loading) {
     return (
@@ -152,6 +155,7 @@ function SalaryContent() {
         clients={clients}
         worker={worker}
         hasProfile={hasProfile}
+        onSuccess={() => reload()}
       />
 
       {/* Records (급여신청하기) */}
@@ -217,6 +221,7 @@ function SalaryContent() {
                           record={r}
                           worker={worker}
                           hasProfile={hasProfile}
+                          onSuccess={() => reload()}
                         />
                       )}
                     </div>

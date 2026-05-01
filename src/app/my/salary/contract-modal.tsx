@@ -86,7 +86,7 @@ function TableRow({ label, value, label2, value2 }: { label: string; value: stri
   );
 }
 
-export function ContractModal({ record, worker, hasProfile }: { record: WorkRecord; worker: WorkerInfo; hasProfile: boolean }) {
+export function ContractModal({ record, worker, hasProfile, onSuccess }: { record: WorkRecord; worker: WorkerInfo; hasProfile: boolean; onSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
   const [profileAlertOpen, setProfileAlertOpen] = useState(false);
   const [step, setStep] = useState<"confirm" | "contract" | "sign">("confirm");
@@ -128,7 +128,11 @@ export function ContractModal({ record, worker, hasProfile }: { record: WorkReco
     }
     toast.success("일일계약서가 체결되었습니다");
     setOpen(false);
-    setTimeout(() => window.location.reload(), 800);
+    if (onSuccess) {
+      setTimeout(() => onSuccess(), 300);
+    } else {
+      setTimeout(() => window.location.reload(), 800);
+    }
   }
 
   function handleOpenChange(v: boolean) {
