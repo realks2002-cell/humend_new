@@ -158,7 +158,7 @@ export async function triggerCron() {
 
   if (!shifts || shifts.length === 0) return { checked: 0, notified: 0 };
 
-  const { notifyAttendanceCheck } = await import("@/lib/push/attendance-notify");
+  const { notifyAttendanceCheck, notifyAttendanceRepeat } = await import("@/lib/push/attendance-notify");
 
   let notified = 0;
   for (const shift of shifts) {
@@ -184,7 +184,7 @@ export async function triggerCron() {
       const minutesSinceLast = lastNotif ? (now.getTime() - lastNotif.getTime()) / 60000 : Infinity;
 
       if (minutesSinceLast >= shift.alert_interval_minutes - 1 && shift.notification_sent_count < shift.alert_max_count) {
-        await notifyAttendanceCheck(shift.member_id, shift.id, companyName, timeStr, customRepeat || customNotify || undefined);
+        await notifyAttendanceRepeat(shift.member_id, shift.id, customRepeat || customNotify || undefined);
         await supabase
           .from("daily_shifts")
           .update({ notification_sent_count: shift.notification_sent_count + 1, last_notification_at: now.toISOString() })

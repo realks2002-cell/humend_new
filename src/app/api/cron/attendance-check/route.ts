@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import {
   notifyAttendanceCheck,
+  notifyAttendanceRepeat,
   notifyNoshowToMember,
   notifyNoshowToAdmin,
   sendLocationCheckPush,
@@ -110,11 +111,9 @@ export async function GET(req: NextRequest) {
         minutesSinceLast >= shift.alert_interval_minutes - 1 &&
         shift.notification_sent_count < shift.alert_max_count
       ) {
-        await notifyAttendanceCheck(
+        await notifyAttendanceRepeat(
           shift.member_id,
           shift.id,
-          companyName,
-          timeStr,
           customRepeat || customNotify || undefined
         );
 
