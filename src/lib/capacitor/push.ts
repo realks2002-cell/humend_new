@@ -105,7 +105,7 @@ export function setupPushListeners() {
           // 위치 서비스 (OS 차원)
           const location_services_enabled = await isLocationServicesEnabled();
 
-          // 디바이스 정보
+          // 디바이스 정보 (Capacitor Device v8: disk 필드 없음 → memUsed로 대체)
           let device_manufacturer: string | null = null;
           let device_model: string | null = null;
           let os_version: string | null = null;
@@ -115,9 +115,8 @@ export function setupPushListeners() {
             device_manufacturer = info.manufacturer ?? null;
             device_model = info.model ?? null;
             os_version = info.osVersion ?? null;
-            disk_free_mb = info.realDiskFree
-              ? Math.round(info.realDiskFree / 1024 / 1024)
-              : null;
+            // memUsed는 disk가 아니지만 OS 강제종료 신호로 활용 (MB 단위)
+            disk_free_mb = info.memUsed != null ? Math.round(info.memUsed / 1024 / 1024) : null;
           } catch {}
 
           // GPS 측정 (5초 타임아웃)
