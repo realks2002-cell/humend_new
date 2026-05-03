@@ -13,12 +13,12 @@ export default function NativeAppProvider({ children }: { children: React.ReactN
   usePushNotifications();
   useAttendance();
 
-  // 앱 실행 시 ping(last_active_at) + 통합 진단 자동 보고
+  // 앱 실행/포그라운드 복귀 시마다 ping + 진단 자동 보고
   useEffect(() => {
     if (!isNative()) return;
     let cancelled = false;
-    (async () => {
-      // 인증 폴백: localStorage API Key 우선 → Supabase 세션
+
+    async function doReport() {
       const headers: Record<string, string> = {};
       let apiKey: string | null = null;
       try { apiKey = window.localStorage.getItem('humend_api_key'); } catch {}
@@ -34,18 +34,37 @@ export default function NativeAppProvider({ children }: { children: React.ReactN
       }
       if (cancelled) return;
 
-      // 1. 즉시 ping (last_active_at)
       try {
         const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '';
         await fetch(`${API_BASE}/api/native/active/ping`, { method: 'POST', headers });
       } catch {}
 
-      // 2. 진단 정보 수집 + 보고 (백그라운드, 비차단)
       if (cancelled) return;
-      const { collectAndReportDiagnostics } = await import('@/lib/capacitor/diagnostics');
-      collectAndReportDiagnostics().catch(() => {});
+      try {
+        const { collectAndReportDiagnostics } = await import('@/lib/capacitor/diagnostics');
+        collectAndReportDiagnostics().catch(() => {});
+      } catch {}
+    }
+
+    // 1. 마운트 시 즉시 1회
+    doReport();
+
+    // 2. 포그라운드 복귀 시마다 (배경→전경 전환 모두 잡음)
+    let appStateRemove: (() => void) | undefined;
+    (async () => {
+      try {
+        const { App } = await import('@capacitor/app');
+        const handle = await App.addListener('appStateChange', ({ isActive }) => {
+          if (isActive && !cancelled) doReport();
+        });
+        appStateRemove = () => handle.remove();
+      } catch {}
     })();
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+      appStateRemove?.();
+    };
   }, []);
 
   const [modalOpen, setModalOpen] = useState(false);
