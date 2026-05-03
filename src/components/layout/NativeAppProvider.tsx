@@ -13,12 +13,12 @@ export default function NativeAppProvider({ children }: { children: React.ReactN
   usePushNotifications();
   useAttendance();
 
-  // 앱 실행 시 last_active_at 갱신 (활성 회원 추적)
+  // 앱 실행 시 ping(last_active_at) + 통합 진단 자동 보고
   useEffect(() => {
     if (!isNative()) return;
     let cancelled = false;
     (async () => {
-      // 인증 폴백: localStorage API Key 우선 → Supabase 세션 (push.ts와 동일)
+      // 인증 폴백: localStorage API Key 우선 → Supabase 세션
       const headers: Record<string, string> = {};
       let apiKey: string | null = null;
       try { apiKey = window.localStorage.getItem('humend_api_key'); } catch {}
@@ -33,10 +33,17 @@ export default function NativeAppProvider({ children }: { children: React.ReactN
         } catch { return; }
       }
       if (cancelled) return;
+
+      // 1. 즉시 ping (last_active_at)
       try {
         const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '';
         await fetch(`${API_BASE}/api/native/active/ping`, { method: 'POST', headers });
       } catch {}
+
+      // 2. 진단 정보 수집 + 보고 (백그라운드, 비차단)
+      if (cancelled) return;
+      const { collectAndReportDiagnostics } = await import('@/lib/capacitor/diagnostics');
+      collectAndReportDiagnostics().catch(() => {});
     })();
     return () => { cancelled = true; };
   }, []);

@@ -78,97 +78,11 @@ export function setupPushListeners() {
         }
       }
 
-      // 통합 진단 Silent Push — 권한 + 배터리 + 위치서비스 + GPS + 디바이스 정보 보고
+      // 통합 진단 Silent Push — 헬퍼로 위임
       if (data?.type === "permission_check") {
-        try {
-          const { Capacitor } = await import("@capacitor/core");
-          const { Device } = await import("@capacitor/device");
-          const { Geolocation } = await import("@capacitor/geolocation");
-          const {
-            isBatteryOptimizationIgnored,
-            getIosAuthorizationStatus,
-            getAndroidLocationStatus,
-            isLocationServicesEnabled,
-          } = await import("@/lib/capacitor/native-geofence");
-
-          const platform = Capacitor.getPlatform();
-          let location_permission = "unknown";
-          let battery_optimized: boolean | null = null;
-
-          if (platform === "ios") {
-            location_permission = (await getIosAuthorizationStatus()) || "unknown";
-          } else if (platform === "android") {
-            location_permission = (await getAndroidLocationStatus()) || "unknown";
-            battery_optimized = await isBatteryOptimizationIgnored();
-          }
-
-          // 위치 서비스 (OS 차원)
-          const location_services_enabled = await isLocationServicesEnabled();
-
-          // 디바이스 정보 (Capacitor Device v8: disk 필드 없음 → memUsed로 대체)
-          let device_manufacturer: string | null = null;
-          let device_model: string | null = null;
-          let os_version: string | null = null;
-          let disk_free_mb: number | null = null;
-          try {
-            const info = await Device.getInfo();
-            device_manufacturer = info.manufacturer ?? null;
-            device_model = info.model ?? null;
-            os_version = info.osVersion ?? null;
-            // memUsed는 disk가 아니지만 OS 강제종료 신호로 활용 (MB 단위)
-            disk_free_mb = info.memUsed != null ? Math.round(info.memUsed / 1024 / 1024) : null;
-          } catch {}
-
-          // GPS 측정 (5초 타임아웃)
-          let last_gps_accuracy: number | null = null;
-          let last_gps_success = false;
-          try {
-            const pos = await Geolocation.getCurrentPosition({
-              timeout: 5000,
-              enableHighAccuracy: true,
-              maximumAge: 0,
-            });
-            last_gps_accuracy = pos.coords.accuracy;
-            last_gps_success = true;
-          } catch {
-            last_gps_success = false;
-          }
-
-          // 인증: localStorage API Key 우선
-          const headers: Record<string, string> = { "Content-Type": "application/json" };
-          let apiKey: string | null = null;
-          try { apiKey = window.localStorage.getItem("humend_api_key"); } catch {}
-          if (apiKey) {
-            headers["x-api-key"] = apiKey;
-          } else {
-            const { createClient } = await import("@/lib/supabase/client");
-            const { data: { session } } = await createClient().auth.getSession();
-            if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
-          }
-
-          if (headers["x-api-key"] || headers.Authorization) {
-            const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
-            await fetch(`${API_BASE}/api/native/permissions/report`, {
-              method: "POST",
-              headers,
-              body: JSON.stringify({
-                location_permission,
-                battery_optimized,
-                platform,
-                location_services_enabled,
-                last_gps_accuracy,
-                last_gps_success,
-                device_manufacturer,
-                device_model,
-                os_version,
-                disk_free_mb,
-              }),
-            });
-            console.log("[Push] 통합 진단 보고 완료");
-          }
-        } catch (e) {
-          console.error("[Push] 진단 실패:", e);
-        }
+        const { collectAndReportDiagnostics } = await import("@/lib/capacitor/diagnostics");
+        const ok = await collectAndReportDiagnostics();
+        console.log("[Push] 통합 진단 보고:", ok ? "성공" : "실패");
       }
     }
   );
