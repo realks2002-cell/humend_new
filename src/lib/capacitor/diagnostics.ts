@@ -57,7 +57,7 @@ export async function collectAndReportDiagnostics(): Promise<boolean> {
       last_gps_success = false;
     }
 
-    // 인증 (없으면 서버에서 쿠키로 폴백 — credentials: 'include')
+    // 인증: x-api-key → Bearer (번들 모드는 cross-origin 이라 쿠키 못 보냄)
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     let apiKey: string | null = null;
     try { apiKey = window.localStorage.getItem("humend_api_key"); } catch {}
@@ -74,7 +74,6 @@ export async function collectAndReportDiagnostics(): Promise<boolean> {
     const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
     const res = await fetch(`${API_BASE}/api/native/permissions/report`, {
       method: "POST",
-      credentials: "include",
       headers,
       body: JSON.stringify({
         location_permission,

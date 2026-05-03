@@ -35,7 +35,7 @@ export default function NativeAppProvider({ children }: { children: React.ReactN
 
       try {
         const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '';
-        await fetch(`${API_BASE}/api/native/active/ping`, { method: 'POST', headers, credentials: 'include' });
+        await fetch(`${API_BASE}/api/native/active/ping`, { method: 'POST', headers });
       } catch {}
 
       if (cancelled) return;

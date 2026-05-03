@@ -171,7 +171,6 @@ export async function sendTokenToServer(
     const res = await fetch(url, {
       method: "POST",
       headers,
-      credentials: "include",
       body: JSON.stringify({ token, platform, diag }),
     });
     if (res.ok) return true;
