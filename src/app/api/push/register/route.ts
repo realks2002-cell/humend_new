@@ -30,6 +30,14 @@ export async function POST(req: NextRequest) {
     };
   };
 
+  console.log("[push/register]", JSON.stringify({
+    user: user.id,
+    has_token: !!token,
+    platform,
+    has_diag: !!diag,
+    diag_keys: diag ? Object.keys(diag) : null,
+  }));
+
   if (!token) {
     return NextResponse.json({ error: "token is required" }, { status: 400 });
   }
