@@ -33,6 +33,10 @@ export function usePushNotifications() {
       sendTokenToServer(token, platform, accessToken).then((result) => {
         if (result === true) {
           console.log("[Push] 토큰 등록 완료");
+          // 토큰 등록 성공 = 인증 OK → 진단 정보도 같이 보고
+          import("@/lib/capacitor/diagnostics").then(({ collectAndReportDiagnostics }) => {
+            collectAndReportDiagnostics().catch(() => {});
+          });
         } else {
           console.warn("[Push] 토큰 등록 실패:", result);
         }
