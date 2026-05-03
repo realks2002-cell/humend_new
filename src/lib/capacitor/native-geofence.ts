@@ -18,6 +18,8 @@ interface NativeGeofencePlugin {
   stopPeriodicLocationBackup(): Promise<{ success: boolean }>;
   requestAlwaysAuthorization?(): Promise<{ success: boolean }>;
   getAuthorizationStatus?(): Promise<{ status: string }>;
+  getLocationAuthorizationStatus?(): Promise<{ status: string }>;
+  isLocationServicesEnabled?(): Promise<{ enabled: boolean }>;
   addListener(
     eventName: "geofenceEnter",
     callback: (data: { identifier: string }) => void
@@ -217,6 +219,37 @@ export async function getIosAuthorizationStatus(): Promise<string | null> {
     if (typeof p.getAuthorizationStatus !== "function") return null;
     const result = await p.getAuthorizationStatus();
     return result.status;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Android 위치 권한 상태 조회 (백그라운드 권한까지 구분)
+ * 반환값: denied | whenInUse | always
+ */
+export async function getAndroidLocationStatus(): Promise<string | null> {
+  if (!isNative()) return null;
+  try {
+    const p = getPlugin();
+    if (typeof p.getLocationAuthorizationStatus !== "function") return null;
+    const result = await p.getLocationAuthorizationStatus();
+    return result.status;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 폰 자체 위치 서비스 활성화 여부 (OS 설정 차원)
+ */
+export async function isLocationServicesEnabled(): Promise<boolean | null> {
+  if (!isNative()) return null;
+  try {
+    const p = getPlugin();
+    if (typeof p.isLocationServicesEnabled !== "function") return null;
+    const result = await p.isLocationServicesEnabled();
+    return result.enabled;
   } catch {
     return null;
   }

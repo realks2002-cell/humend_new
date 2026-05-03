@@ -18,6 +18,7 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "stopPeriodicLocationBackup", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "requestAlwaysAuthorization", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getAuthorizationStatus", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "isLocationServicesEnabled", returnType: CAPPluginReturnPromise),
     ]
 
     private var geofenceObserver: NSObjectProtocol?
@@ -167,5 +168,16 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin {
         @unknown default: statusStr = "unknown"
         }
         call.resolve(["status": statusStr])
+    }
+
+    /// 폰 자체 위치 서비스 활성화 여부
+    @objc func isLocationServicesEnabled(_ call: CAPPluginCall) {
+        // CLLocationManager.locationServicesEnabled() 는 메인 스레드 차단 가능 → 백그라운드 실행
+        DispatchQueue.global(qos: .userInitiated).async {
+            let enabled = CLLocationManager.locationServicesEnabled()
+            DispatchQueue.main.async {
+                call.resolve(["enabled": enabled])
+            }
+        }
     }
 }

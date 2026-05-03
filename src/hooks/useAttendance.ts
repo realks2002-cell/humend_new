@@ -66,6 +66,8 @@ export async function checkAndStartGeofence(overrideToken?: string) {
     try {
       const { setNativeApiKey } = await import("@/lib/capacitor/native-geofence");
       await setNativeApiKey(apiKey);
+      // JS-side(localStorage)에도 저장 → Silent Push 백그라운드 처리에서 활용
+      try { window.localStorage.setItem("humend_api_key", apiKey); } catch {}
     } catch {}
   }
 

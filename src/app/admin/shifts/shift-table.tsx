@@ -88,6 +88,10 @@ export interface ShiftWithDetails {
   members: {
     name: string | null;
     phone: string;
+    location_permission?: string | null;
+    battery_optimized?: boolean | null;
+    last_permission_check?: string | null;
+    platform?: string | null;
   };
 }
 
@@ -835,6 +839,19 @@ export function ShiftTable({
                             <div className="flex items-center gap-2">
                               <span className="font-medium truncate">{shift.members.name ?? "이름없음"}</span>
                               <span className="text-muted-foreground text-xs shrink-0">{shift.members.phone}</span>
+                              {(() => {
+                                const perm = shift.members.location_permission;
+                                const checked = shift.members.last_permission_check;
+                                const battery = shift.members.battery_optimized;
+                                const detail = checked
+                                  ? `${perm} / 배터리:${battery === null ? "-" : battery ? "OK" : "ON"} / ${fmtTime(checked)}`
+                                  : "권한 보고 없음";
+                                if (!checked) return <Badge variant="outline" className="shrink-0 text-[10px] px-1 border-gray-300 text-gray-500" title={detail}>미확인</Badge>;
+                                if (perm === "always") return <Badge variant="outline" className="shrink-0 text-[10px] px-1 border-green-400 text-green-700 bg-green-50" title={detail}>항상허용</Badge>;
+                                if (perm === "whenInUse") return <Badge variant="outline" className="shrink-0 text-[10px] px-1 border-yellow-400 text-yellow-700 bg-yellow-50" title={detail}>사용중만</Badge>;
+                                if (perm === "denied") return <Badge variant="destructive" className="shrink-0 text-[10px] px-1 bg-red-500" title={detail}>거부</Badge>;
+                                return <Badge variant="outline" className="shrink-0 text-[10px] px-1 border-gray-300 text-gray-500" title={detail}>{perm}</Badge>;
+                              })()}
                             </div>
                           </div>
                           {isNoshow ? (

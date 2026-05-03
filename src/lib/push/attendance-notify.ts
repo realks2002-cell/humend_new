@@ -127,6 +127,31 @@ export async function notifyAttendanceRepeat(
   });
 }
 
+/** data-only Silent Push로 통합 진단 요청. invalid 토큰은 자동 삭제 */
+export async function sendPermissionCheckPush(memberId: string): Promise<number> {
+  const supabase = createAdminClient();
+
+  const { data: tokens } = await supabase
+    .from("device_tokens")
+    .select("fcm_token")
+    .eq("member_id", memberId);
+
+  if (!tokens || tokens.length === 0) return 0;
+
+  let sent = 0;
+  for (const t of tokens) {
+    const result = await sendDataOnlyPush(t.fcm_token, {
+      type: "permission_check",
+    });
+    if (result.success) sent++;
+    else if (result.unregistered) {
+      // FCM이 INVALID 응답 → 앱 삭제/재설치 추정 → 토큰 정리
+      await supabase.from("device_tokens").delete().eq("fcm_token", t.fcm_token);
+    }
+  }
+  return sent;
+}
+
 /** data-only Silent Push로 위치 체크 요청 (2층: 백그라운드 위치 확인) */
 export async function sendLocationCheckPush(
   memberId: string,

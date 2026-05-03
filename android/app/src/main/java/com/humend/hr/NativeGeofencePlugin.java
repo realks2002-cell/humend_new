@@ -159,6 +159,37 @@ public class NativeGeofencePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void isLocationServicesEnabled(PluginCall call) {
+        android.location.LocationManager lm = (android.location.LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
+        boolean enabled;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            enabled = lm != null && lm.isLocationEnabled();
+        } else {
+            enabled = lm != null && (lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) || lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER));
+        }
+        JSObject ret = new JSObject();
+        ret.put("enabled", enabled);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void getLocationAuthorizationStatus(PluginCall call) {
+        JSObject ret = new JSObject();
+        boolean fine = ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        boolean coarse = ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        boolean background = true;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            background = ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        }
+        String status;
+        if (!fine && !coarse) status = "denied";
+        else if (background) status = "always";
+        else status = "whenInUse";
+        ret.put("status", status);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
     public void requestBatteryOptimizationExemption(PluginCall call) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
