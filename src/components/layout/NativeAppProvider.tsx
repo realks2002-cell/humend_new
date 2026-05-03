@@ -28,15 +28,14 @@ export default function NativeAppProvider({ children }: { children: React.ReactN
         try {
           const { createClient } = await import('@/lib/supabase/client');
           const { data: { session } } = await createClient().auth.getSession();
-          if (cancelled || !session?.access_token) return;
-          headers.Authorization = `Bearer ${session.access_token}`;
-        } catch { return; }
+          if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+        } catch {}
       }
       if (cancelled) return;
 
       try {
         const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '';
-        await fetch(`${API_BASE}/api/native/active/ping`, { method: 'POST', headers });
+        await fetch(`${API_BASE}/api/native/active/ping`, { method: 'POST', headers, credentials: 'include' });
       } catch {}
 
       if (cancelled) return;

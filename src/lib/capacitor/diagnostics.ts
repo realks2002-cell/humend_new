@@ -57,23 +57,24 @@ export async function collectAndReportDiagnostics(): Promise<boolean> {
       last_gps_success = false;
     }
 
-    // 인증
+    // 인증 (없으면 서버에서 쿠키로 폴백 — credentials: 'include')
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     let apiKey: string | null = null;
     try { apiKey = window.localStorage.getItem("humend_api_key"); } catch {}
     if (apiKey) {
       headers["x-api-key"] = apiKey;
     } else {
-      const { createClient } = await import("@/lib/supabase/client");
-      const { data: { session } } = await createClient().auth.getSession();
-      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+      try {
+        const { createClient } = await import("@/lib/supabase/client");
+        const { data: { session } } = await createClient().auth.getSession();
+        if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+      } catch {}
     }
-
-    if (!headers["x-api-key"] && !headers.Authorization) return false;
 
     const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
     const res = await fetch(`${API_BASE}/api/native/permissions/report`, {
       method: "POST",
+      credentials: "include",
       headers,
       body: JSON.stringify({
         location_permission,
