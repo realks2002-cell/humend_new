@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function AccountDeletionPage() {
   return (
-    <main className="mx-auto max-w-3xl px-4 py-12">
+    <main className="mx-auto max-w-3xl px-4 pt-44 pb-12">
       <h1 className="text-2xl font-bold">휴멘드 HR 계정 삭제 안내</h1>
       <p className="mt-2 text-sm text-muted-foreground">앱: 휴멘드 HR (com.humend.hr) · 개발자: Humend</p>
 
