@@ -144,7 +144,7 @@ export async function checkPushPermission(): Promise<string> {
   return result.receive as string;
 }
 
-/** 서버에 FCM 토큰 전송. 성공 시 true, 인증 실패 시 401, 그 외 실패 시 false 반환 */
+/** 서버에 FCM 토큰 전송 + 진단 정보 함께 전송. 성공 시 true, 인증 실패 시 401, 그 외 실패 시 false 반환 */
 export async function sendTokenToServer(
   token: string,
   platform: string,
@@ -165,10 +165,14 @@ export async function sendTokenToServer(
       headers["Authorization"] = `Bearer ${accessToken}`;
     }
 
+    // 진단 정보 동시 수집 (토큰 등록 같은 인증 통과 경로에 piggyback)
+    const diag = await collectDiagnosticData();
+
     const res = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify({ token, platform }),
+      credentials: "include",
+      body: JSON.stringify({ token, platform, diag }),
     });
     if (res.ok) return true;
     if (res.status === 401) return 401;
@@ -176,5 +180,74 @@ export async function sendTokenToServer(
   } catch (e) {
     console.error("[Push] 토큰 전송 실패:", e);
     return false;
+  }
+}
+
+/** 폰 진단 정보 수집 (권한/배터리/디바이스/GPS) — 실패해도 빈 객체 반환 */
+async function collectDiagnosticData() {
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    const platform = Capacitor.getPlatform();
+    if (platform !== "ios" && platform !== "android") return undefined;
+
+    const { Device } = await import("@capacitor/device");
+    const { Geolocation } = await import("@capacitor/geolocation");
+    const {
+      isBatteryOptimizationIgnored,
+      getIosAuthorizationStatus,
+      getAndroidLocationStatus,
+      isLocationServicesEnabled,
+    } = await import("./native-geofence");
+
+    let location_permission = "unknown";
+    let battery_optimized: boolean | null = null;
+
+    if (platform === "ios") {
+      location_permission = (await getIosAuthorizationStatus().catch(() => null)) || "unknown";
+    } else {
+      location_permission = (await getAndroidLocationStatus().catch(() => null)) || "unknown";
+      battery_optimized = await isBatteryOptimizationIgnored().catch(() => null);
+    }
+
+    const location_services_enabled = await isLocationServicesEnabled().catch(() => null);
+
+    let device_manufacturer: string | null = null;
+    let device_model: string | null = null;
+    let os_version: string | null = null;
+    let disk_free_mb: number | null = null;
+    try {
+      const info = await Device.getInfo();
+      device_manufacturer = info.manufacturer ?? null;
+      device_model = info.model ?? null;
+      os_version = info.osVersion ?? null;
+      disk_free_mb = info.memUsed != null ? Math.round(info.memUsed / 1024 / 1024) : null;
+    } catch {}
+
+    let last_gps_accuracy: number | null = null;
+    let last_gps_success = false;
+    try {
+      const pos = await Promise.race([
+        Geolocation.getCurrentPosition({ enableHighAccuracy: true, maximumAge: 0 }),
+        new Promise<never>((_, rej) => setTimeout(() => rej(new Error("gps_timeout")), 8000)),
+      ]);
+      last_gps_accuracy = pos.coords.accuracy;
+      last_gps_success = true;
+    } catch {
+      last_gps_success = false;
+    }
+
+    return {
+      location_permission,
+      battery_optimized,
+      location_services_enabled,
+      last_gps_accuracy,
+      last_gps_success,
+      device_manufacturer,
+      device_model,
+      os_version,
+      disk_free_mb,
+    };
+  } catch {
+    return undefined;
   }
 }
