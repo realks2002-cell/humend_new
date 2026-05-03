@@ -46,11 +46,11 @@ export async function collectAndReportDiagnostics(): Promise<boolean> {
     let last_gps_accuracy: number | null = null;
     let last_gps_success = false;
     try {
-      const pos = await Geolocation.getCurrentPosition({
-        timeout: 5000,
-        enableHighAccuracy: true,
-        maximumAge: 0,
-      });
+      // Capacitor Geolocation timeout 옵션이 iOS에서 무시되는 경우 있음 → Promise.race로 강제
+      const pos = await Promise.race([
+        Geolocation.getCurrentPosition({ enableHighAccuracy: true, maximumAge: 0 }),
+        new Promise<never>((_, rej) => setTimeout(() => rej(new Error("gps_timeout")), 8000)),
+      ]);
       last_gps_accuracy = pos.coords.accuracy;
       last_gps_success = true;
     } catch {
