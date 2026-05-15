@@ -22,6 +22,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getClientsWithJobs } from "@/lib/native-api/queries";
 import type { ClientWithJobs } from "@/lib/native-api/queries";
 import { formatDate, formatTime, formatClientWage } from "@/lib/utils/format";
+import AppDownloadButtons from "./AppDownloadButtons";
 
 export default function MobileHome() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function MobileHome() {
     <div className="bg-hd-background text-hd-on-surface">
       <main className="pt-18 pb-8">
         {/* Hero Section */}
-        <section className="relative px-6 pt-4 pb-16 overflow-hidden bg-hd-background">
+        <section className="relative px-6 pt-4 pb-3.5 overflow-hidden bg-hd-background">
           <div className="relative z-10">
             <span className="inline-block bg-hd-primary-container/10 text-hd-primary px-3 py-1 rounded-full text-xs font-bold mb-4 tracking-wider uppercase">
               Quick Staffing
@@ -116,6 +117,9 @@ export default function MobileHome() {
             </div>
           </div>
         </section>
+
+        {/* App Download Buttons */}
+        <AppDownloadButtons />
 
         {/* Job List Section */}
         <section className="mb-16">
