@@ -237,12 +237,26 @@ export async function createGoogleMember(formData: FormData) {
   if (phoneExists) {
     const oldId = phoneExists.id;
     const newId = user.id;
-    const { id: _, created_at: __, updated_at: ___, ...rest } = phoneExists;
+    // UNIQUE 컬럼(api_key, google_uid, apple_uid)과 status는 명시적으로 새 값을 줘서 oldMember row와의 충돌 방지
+    const {
+      id: _id,
+      created_at: _created_at,
+      updated_at: _updated_at,
+      api_key: _api_key,
+      google_uid: _google_uid,
+      apple_uid: _apple_uid,
+      status: _status,
+      ...rest
+    } = phoneExists;
 
-    // 1. 기존 회원 phone 임시 변경 (UNIQUE 충돌 방지)
+    // 1. 기존 회원의 UNIQUE 컬럼(phone/google_uid/apple_uid) 비우기 — 새 INSERT와 충돌 방지
     const { error: tempError } = await admin
       .from("members")
-      .update({ phone: `_mig_${oldId.slice(0, 8)}` })
+      .update({
+        phone: `_mig_${oldId.slice(0, 8)}`,
+        google_uid: null,
+        apple_uid: null,
+      })
       .eq("id", oldId);
 
     if (tempError) {
@@ -250,12 +264,15 @@ export async function createGoogleMember(formData: FormData) {
       return { error: "계정 전환에 실패했습니다. 다시 시도해주세요." };
     }
 
-    // 2. 새 member 생성
+    // 2. 새 member 생성 (탈퇴 회원 재가입 시 status='active'로 복원, google_uid를 새 user.id로 매칭)
     const { error: insertError } = await admin.from("members").insert({
       ...rest,
       id: newId,
       phone: cleanedPhone,
       name: name || phoneExists.name,
+      status: "active",
+      google_uid: user.id,
+      apple_uid: null,
     });
 
     if (insertError) {

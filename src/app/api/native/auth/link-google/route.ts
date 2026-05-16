@@ -40,10 +40,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "이미 다른 구글 계정이 연결되어 있습니다." }, { status: 409 });
   }
 
-  // google_uid 저장
+  // google_uid 저장 (탈퇴 회원이 재로그인하는 경우 status='active'로 복원)
   const { error: updateError } = await admin
     .from("members")
-    .update({ google_uid: user.id })
+    .update({ google_uid: user.id, status: "active" })
     .eq("id", member.id);
 
   if (updateError) {
