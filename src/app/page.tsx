@@ -104,7 +104,7 @@ export default async function Home() {
             </Card>
           ) : (
             <div className="grid gap-6 grid-cols-2 md:grid-cols-4">
-              {dailyClients.map((client) => (
+              {dailyClients.slice(0, 8).map((client) => (
                 <Link key={client.id} href={`/jobs/${client.id}`}>
                   <Card className="group overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg py-0 rounded-[10px]">
                     <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/5 to-primary/15">

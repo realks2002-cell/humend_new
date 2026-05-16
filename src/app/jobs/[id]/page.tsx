@@ -33,7 +33,7 @@ export default async function JobDetailPage({
   const displayImages = allImages.slice(0, 3);
 
   return (
-    <div className="mx-auto max-w-[57.6rem] px-4 py-8">
+    <div className="mx-auto max-w-[57.6rem] px-4 pt-[130px] pb-8">
       {/* 이미지 갤러리 */}
       {displayImages.length > 0 ? (
         <div className={`grid gap-2 ${displayImages.length === 1 ? "" : displayImages.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>

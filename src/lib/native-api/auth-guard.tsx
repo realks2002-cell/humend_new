@@ -24,22 +24,36 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       // 고아 유저 체크: auth에 있지만 members에 없으면 추가정보 입력으로
       const { data: memberById } = await supabase
         .from("members")
-        .select("id")
+        .select("id, status")
         .eq("id", user.id)
         .maybeSingle();
 
-      if (!memberById) {
-        // google_uid 또는 apple_uid로 매칭 시도
-        const { data: memberByUid } = await supabase
-          .from("members")
-          .select("id")
-          .or(`google_uid.eq.${user.id},apple_uid.eq.${user.id}`)
-          .maybeSingle();
-
-        if (!memberByUid) {
-          router.replace("/signup/complete");
+      if (memberById) {
+        if (memberById.status !== "active") {
+          await supabase.auth.signOut();
+          router.replace("/login?error=deleted");
           return;
         }
+        setChecked(true);
+        return;
+      }
+
+      // google_uid 또는 apple_uid로 매칭 시도
+      const { data: memberByUid } = await supabase
+        .from("members")
+        .select("id, status")
+        .or(`google_uid.eq.${user.id},apple_uid.eq.${user.id}`)
+        .maybeSingle();
+
+      if (!memberByUid) {
+        router.replace("/signup/complete");
+        return;
+      }
+
+      if (memberByUid.status !== "active") {
+        await supabase.auth.signOut();
+        router.replace("/login?error=deleted");
+        return;
       }
 
       setChecked(true);

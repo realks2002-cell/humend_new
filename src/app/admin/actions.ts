@@ -24,7 +24,7 @@ export async function getDashboardStats(currentMonth: string) {
     { count: rejectedAppCount },
     { data: paymentsData },
   ] = await Promise.all([
-    admin.from("members").select("*", { count: "exact", head: true }),
+    admin.from("members").select("*", { count: "exact", head: true }).eq("status", "active"),
     admin.from("clients").select("*", { count: "exact", head: true }).eq("status", "active"),
     admin.from("applications").select("*", { count: "exact", head: true }).eq("status", "대기"),
     admin.from("applications").select("*", { count: "exact", head: true }).eq("status", "승인"),

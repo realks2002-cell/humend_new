@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,13 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/my";
+  const errorParam = searchParams.get("error");
+
+  useEffect(() => {
+    if (errorParam === "deleted") {
+      toast.error("삭제된 계정입니다", { description: "관리자에게 문의해주세요." });
+    }
+  }, [errorParam]);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -75,9 +82,16 @@ function LoginContent() {
         if (user && session) {
           const { data: member } = await supabase
             .from("members")
-            .select("id")
+            .select("id, status")
             .eq("id", user.id)
             .maybeSingle();
+
+          if (member && member.status !== "active") {
+            await supabase.auth.signOut();
+            toast.error("삭제된 계정입니다", { description: "관리자에게 문의해주세요." });
+            setGoogleLoading(false);
+            return;
+          }
 
           const targetPath = member ? redirectPath : "/signup/complete";
 

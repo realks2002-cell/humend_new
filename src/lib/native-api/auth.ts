@@ -19,12 +19,26 @@ export async function memberLogin(phone: string, password: string) {
   const email = phoneToEmail(phone);
 
   // 1차: phone 이메일로 직접 로그인
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: signInData, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
-  if (!error) return { success: true };
+  if (!error) {
+    // 본인 status 조회 (RLS members_select_own로 가능)
+    if (signInData?.user) {
+      const { data: member } = await supabase
+        .from("members")
+        .select("status")
+        .eq("id", signInData.user.id)
+        .maybeSingle();
+      if (member && member.status !== "active") {
+        await supabase.auth.signOut();
+        return { error: "삭제된 계정입니다. 관리자에게 문의해주세요." };
+      }
+    }
+    return { success: true };
+  }
 
   // 2차: 서버 API 폴백 (실제 auth 이메일로 재시도)
   const apiUrl = `${API_BASE}/api/native/auth/login`;

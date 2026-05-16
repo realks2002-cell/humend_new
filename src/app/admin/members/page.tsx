@@ -11,12 +11,18 @@ const PAGE_SIZE = 50;
 export default async function AdminMembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; search?: string }>;
+  searchParams: Promise<{ page?: string; search?: string; deleted?: string }>;
 }) {
   const params = await searchParams;
   const page = Math.max(1, Number(params.page) || 1);
   const search = params.search ?? "";
-  const { data: members, total } = await getMembersPaginated({ page, pageSize: PAGE_SIZE, search });
+  const showDeleted = params.deleted === "1";
+  const { data: members, total } = await getMembersPaginated({
+    page,
+    pageSize: PAGE_SIZE,
+    search,
+    includeDeleted: showDeleted,
+  });
 
   return (
     <div className="p-6 space-y-6">
@@ -41,6 +47,7 @@ export default async function AdminMembersPage({
             pageSize={PAGE_SIZE}
             total={total}
             search={search}
+            showDeleted={showDeleted}
           />
         </CardContent>
       </Card>

@@ -71,11 +71,17 @@ export default function LoginClient() {
         if (user) {
           const { data: memberById } = await supabase
             .from("members")
-            .select("id")
+            .select("id, status")
             .eq("id", user.id)
             .maybeSingle();
 
           if (memberById) {
+            if (memberById.status !== "active") {
+              await supabase.auth.signOut();
+              toast.error("삭제된 계정입니다", { description: "관리자에게 문의해주세요." });
+              setGoogleLoading(false);
+              return;
+            }
             import("@/lib/capacitor/register-push-token").then(m => m.onLoginComplete());
             router.push(redirectPath);
             return;
@@ -84,11 +90,17 @@ export default function LoginClient() {
           // google_uid로 매칭 (이미 연결된 계정)
           const { data: memberByGuid } = await supabase
             .from("members")
-            .select("id")
+            .select("id, status")
             .eq("google_uid", user.id)
             .maybeSingle();
 
           if (memberByGuid) {
+            if (memberByGuid.status !== "active") {
+              await supabase.auth.signOut();
+              toast.error("삭제된 계정입니다", { description: "관리자에게 문의해주세요." });
+              setGoogleLoading(false);
+              return;
+            }
             import("@/lib/capacitor/register-push-token").then(m => m.onLoginComplete());
             router.push(redirectPath);
             return;
@@ -142,15 +154,27 @@ export default function LoginClient() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setAppleLoading(false); return; }
 
-      const { data: memberById } = await supabase.from("members").select("id").eq("id", user.id).maybeSingle();
+      const { data: memberById } = await supabase.from("members").select("id, status").eq("id", user.id).maybeSingle();
       if (memberById) {
+        if (memberById.status !== "active") {
+          await supabase.auth.signOut();
+          toast.error("삭제된 계정입니다", { description: "관리자에게 문의해주세요." });
+          setAppleLoading(false);
+          return;
+        }
         import("@/lib/capacitor/register-push-token").then(m => m.onLoginComplete());
         router.push(redirectPath);
         return;
       }
 
-      const { data: memberByApple } = await supabase.from("members").select("id").eq("apple_uid", user.id).maybeSingle();
+      const { data: memberByApple } = await supabase.from("members").select("id, status").eq("apple_uid", user.id).maybeSingle();
       if (memberByApple) {
+        if (memberByApple.status !== "active") {
+          await supabase.auth.signOut();
+          toast.error("삭제된 계정입니다", { description: "관리자에게 문의해주세요." });
+          setAppleLoading(false);
+          return;
+        }
         import("@/lib/capacitor/register-push-token").then(m => m.onLoginComplete());
         router.push(redirectPath);
         return;

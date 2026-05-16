@@ -134,7 +134,7 @@ export async function memberLogin(formData: FormData) {
   const supabase = await createClient();
   const email = phoneToEmail(phone);
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: signInData, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -147,12 +147,16 @@ export async function memberLogin(formData: FormData) {
     const cleaned = phone.replace(/[^0-9]/g, "");
     const { data: member } = await admin
       .from("members")
-      .select("id")
+      .select("id, status")
       .eq("phone", cleaned)
       .maybeSingle();
 
     if (!member) {
       return { error: "가입되지 않은 전화번호입니다. 회원가입을 진행해주세요." };
+    }
+
+    if (member.status !== "active") {
+      return { error: "삭제된 계정입니다. 관리자에게 문의해주세요." };
     }
 
     const { data: authUser } = await admin.auth.admin.getUserById(member.id);
@@ -167,6 +171,22 @@ export async function memberLogin(formData: FormData) {
     }
 
     return { error: "비밀번호가 올바르지 않습니다." };
+  }
+
+  // 로그인 성공 — 삭제된 회원이면 즉시 로그아웃
+  if (signInData?.user) {
+    const { createAdminClient } = await import("@/lib/supabase/server");
+    const admin = createAdminClient();
+    const { data: member } = await admin
+      .from("members")
+      .select("status")
+      .eq("id", signInData.user.id)
+      .maybeSingle();
+
+    if (member && member.status !== "active") {
+      await supabase.auth.signOut();
+      return { error: "삭제된 계정입니다. 관리자에게 문의해주세요." };
+    }
   }
 
   return { success: true };

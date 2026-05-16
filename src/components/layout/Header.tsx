@@ -23,7 +23,7 @@ export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // 라우트 변경 시마다 인증 상태 재확인
+  // 라우트 변경 시마다 인증 상태 재확인 (비활성 차단은 middleware가 담당)
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {

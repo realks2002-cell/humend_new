@@ -50,9 +50,15 @@ export async function GET(request: NextRequest) {
   // members 테이블에서 존재 확인
   const { data: member } = await supabase
     .from("members")
-    .select("id")
+    .select("id, status")
     .eq("id", user.id)
     .maybeSingle();
+
+  // 삭제(비활성)된 회원 차단
+  if (member && member.status !== "active") {
+    await supabase.auth.signOut();
+    return NextResponse.redirect(`${origin}/login?error=deleted`);
+  }
 
   // 웹 브라우저: 일반 리다이렉트
   if (member) {

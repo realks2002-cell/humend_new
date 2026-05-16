@@ -75,9 +75,18 @@ export async function middleware(request: NextRequest) {
       // 고아 유저 체크: auth에 있지만 members에 없으면 추가정보 입력으로
       const { data: member } = await supabase
         .from("members")
-        .select("id")
+        .select("id, status")
         .eq("id", user.id)
         .maybeSingle();
+
+      // 삭제(비활성)된 회원은 강제 로그아웃 + 로그인 페이지로
+      if (member && member.status !== "active") {
+        await supabase.auth.signOut();
+        const url = request.nextUrl.clone();
+        url.pathname = "/login";
+        url.search = "?error=deleted";
+        return NextResponse.redirect(url);
+      }
 
       if (!member) {
         const url = request.nextUrl.clone();

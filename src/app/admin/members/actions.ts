@@ -7,16 +7,29 @@ import { getWorkRecordsByMemberId } from "@/lib/supabase/queries";
 export async function deleteMemberAction(memberId: string) {
   const admin = createAdminClient();
 
-  const { error } = await admin.from("members").delete().eq("id", memberId);
+  const { error } = await admin
+    .from("members")
+    .update({ status: "inactive" })
+    .eq("id", memberId);
 
   if (error) {
     return { error: `회원 삭제에 실패했습니다: ${error.message}` };
   }
 
-  // auth.users에서도 삭제
-  const { error: authError } = await admin.auth.admin.deleteUser(memberId);
-  if (authError) {
-    console.error("[deleteMemberAction] auth delete error:", authError.message);
+  revalidatePath("/admin/members");
+  return { success: true };
+}
+
+export async function restoreMemberAction(memberId: string) {
+  const admin = createAdminClient();
+
+  const { error } = await admin
+    .from("members")
+    .update({ status: "active" })
+    .eq("id", memberId);
+
+  if (error) {
+    return { error: `회원 복구에 실패했습니다: ${error.message}` };
   }
 
   revalidatePath("/admin/members");

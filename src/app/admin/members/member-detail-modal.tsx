@@ -94,7 +94,10 @@ export function MemberDetailModal({ member, profileImageUrl, workRecords, open, 
           )}
           <div className="text-center">
             <p className="text-lg font-semibold">{member.name ?? "-"}</p>
-            <Badge variant={member.status === "active" ? "default" : "secondary"} className="mt-1">
+            <Badge
+              variant={member.status === "active" ? "default" : "destructive"}
+              className="mt-1"
+            >
               {member.status === "active" ? "활성" : "비활성"}
             </Badge>
           </div>

@@ -9,9 +9,9 @@ import type { MemberWithStats } from "@/lib/supabase/queries";
 import { formatPhone } from "@/lib/utils/format";
 import { MemberDetailModal } from "./member-detail-modal";
 import { HealthCertModal } from "./health-cert-modal";
-import { deleteMemberAction, getMemberWorkRecords } from "./actions";
+import { deleteMemberAction, getMemberWorkRecords, restoreMemberAction } from "./actions";
 import { getMemberDetail } from "../payments/actions";
-import { Search, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Trash2, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 
 interface MembersTableProps {
   members: MemberWithStats[];
@@ -19,9 +19,10 @@ interface MembersTableProps {
   pageSize: number;
   total: number;
   search: string;
+  showDeleted: boolean;
 }
 
-export function MembersTable({ members, page, pageSize, total, search }: MembersTableProps) {
+export function MembersTable({ members, page, pageSize, total, search, showDeleted }: MembersTableProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<MemberWithStats | null>(null);
   const [selectedProfileUrl, setSelectedProfileUrl] = useState<string | null>(null);
@@ -45,6 +46,7 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
     debounceRef.current = setTimeout(() => {
       const params = new URLSearchParams();
       if (value.trim()) params.set("search", value.trim());
+      if (showDeleted) params.set("deleted", "1");
       params.set("page", "1");
       router.push(`/admin/members?${params.toString()}`);
     }, 400);
@@ -53,8 +55,19 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
   function goToPage(p: number) {
     const params = new URLSearchParams();
     if (search) params.set("search", search);
+    if (showDeleted) params.set("deleted", "1");
     params.set("page", String(p));
     router.push(`/admin/members?${params.toString()}`);
+  }
+
+  function toggleShowDeleted(next: boolean) {
+    if (next === showDeleted) return;
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (next) params.set("deleted", "1");
+    params.set("page", "1");
+    router.push(`/admin/members?${params.toString()}`);
+    router.refresh();
   }
 
   function handleMemberClick(member: MemberWithStats) {
@@ -72,7 +85,7 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
   }
 
   function handleDelete(memberId: string, memberName: string | null) {
-    if (!confirm(`"${memberName ?? "이름 없음"}" 회원을 삭제하시겠습니까?`)) return;
+    if (!confirm(`"${memberName ?? "이름 없음"}" 회원을 삭제하시겠습니까?\n\n과거 근무·급여 자료는 보존되며, 로그인이 차단됩니다.`)) return;
     setDeletingId(memberId);
     startTransition(async () => {
       const result = await deleteMemberAction(memberId);
@@ -83,10 +96,22 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
     });
   }
 
+  function handleRestore(memberId: string, memberName: string | null) {
+    if (!confirm(`"${memberName ?? "이름 없음"}" 회원을 복구하시겠습니까?\n\n다시 로그인할 수 있게 됩니다.`)) return;
+    setDeletingId(memberId);
+    startTransition(async () => {
+      const result = await restoreMemberAction(memberId);
+      if (result.error) {
+        alert(result.error);
+      }
+      setDeletingId(null);
+    });
+  }
+
   return (
     <>
-      <div className="p-4 border-b">
-        <div className="relative max-w-sm">
+      <div className="p-4 border-b flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
           <Input
             placeholder="이름, 전화번호, 주민번호 검색"
@@ -94,6 +119,24 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
           />
+        </div>
+        <div className="flex gap-1 rounded-xl border p-1">
+          <Button
+            variant={showDeleted ? "ghost" : "default"}
+            size="sm"
+            onClick={() => toggleShowDeleted(false)}
+            className="h-8"
+          >
+            활성 회원
+          </Button>
+          <Button
+            variant={showDeleted ? "default" : "ghost"}
+            size="sm"
+            onClick={() => toggleShowDeleted(true)}
+            className="h-8"
+          >
+            삭제된 회원
+          </Button>
         </div>
       </div>
 
@@ -110,7 +153,7 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
               <th className="hidden px-2 py-3 font-medium md:table-cell">보건증</th>
               <th className="hidden px-2 py-3 font-medium md:table-cell">메모</th>
               <th className="px-2 py-3 font-medium">상태</th>
-              <th className="px-2 py-3 font-medium w-[60px]">삭제</th>
+              <th className="px-2 py-3 font-medium w-[60px]">{showDeleted ? "복구" : "삭제"}</th>
             </tr>
           </thead>
           <tbody>
@@ -164,20 +207,32 @@ export function MembersTable({ members, page, pageSize, total, search }: Members
                     </span>
                   </td>
                   <td className="px-2 py-3 text-center">
-                    <Badge variant={m.status === "active" ? "default" : "secondary"}>
+                    <Badge variant={m.status === "active" ? "default" : "destructive"}>
                       {m.status === "active" ? "활성" : "비활성"}
                     </Badge>
                   </td>
                   <td className="px-2 py-3 text-center">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                      disabled={isPending && deletingId === m.id}
-                      onClick={() => handleDelete(m.id, m.name)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {showDeleted ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                        disabled={isPending && deletingId === m.id}
+                        onClick={() => handleRestore(m.id, m.name)}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        disabled={isPending && deletingId === m.id}
+                        onClick={() => handleDelete(m.id, m.name)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))

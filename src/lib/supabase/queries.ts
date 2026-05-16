@@ -290,13 +290,21 @@ export async function getMembersPaginated({
   page,
   pageSize,
   search,
+  includeDeleted = false,
 }: {
   page: number;
   pageSize: number;
   search: string;
+  includeDeleted?: boolean;
 }): Promise<{ data: MemberWithStats[]; total: number }> {
   const admin = createAdminClient();
   let query = admin.from("members").select("*", { count: "exact" });
+
+  if (includeDeleted) {
+    query = query.neq("status", "active");
+  } else {
+    query = query.eq("status", "active");
+  }
 
   if (search) {
     query = query.or(
