@@ -49,6 +49,7 @@ yarn-error.log*
 *.jks
 *.keystore
 release-signing.properties
+keystore.properties
 
 # ios (capacitor)
 /ios/build/
@@ -70,3 +71,12 @@ next-env.d.ts
 # APK는 git 제외 (수동 배포)
 public/humend-hr.apk
 *.p8
+
+# Capacitor 빌드 산출물 (build:capacitor가 sync 시마다 갱신)
+/android/app/src/main/assets/
+
+# 개발용 스크린샷
+/screenshots/
+
+# Claude Code 세션 락
+.claude/scheduled_tasks.lock

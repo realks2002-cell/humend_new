@@ -17,9 +17,11 @@ interface NativeGeofencePlugin {
   startPeriodicLocationBackup(): Promise<{ success: boolean }>;
   stopPeriodicLocationBackup(): Promise<{ success: boolean }>;
   requestAlwaysAuthorization?(): Promise<{ success: boolean }>;
+  requestBackgroundLocation?(): Promise<{ granted: boolean; requested?: boolean; settingsOpened?: boolean }>;
   getAuthorizationStatus?(): Promise<{ status: string }>;
   getLocationAuthorizationStatus?(): Promise<{ status: string }>;
   isLocationServicesEnabled?(): Promise<{ enabled: boolean }>;
+  openAppSettings?(): Promise<{ success: boolean }>;
   addListener(
     eventName: "geofenceEnter",
     callback: (data: { identifier: string }) => void
@@ -209,6 +211,24 @@ export async function requestAlwaysAuthorization(): Promise<boolean> {
 }
 
 /**
+ * Android 백그라운드 위치 권한 요청
+ * - Android 9 이하: granted=true 즉시 반환
+ * - Android 10: 시스템 권한 다이얼로그 표시
+ * - Android 11+: 시스템 설정 화면으로 이동 (사용자가 "항상 허용" 직접 선택)
+ */
+export async function requestBackgroundLocation(): Promise<{ granted: boolean; settingsOpened?: boolean }> {
+  if (!isNative()) return { granted: false };
+  try {
+    const p = getPlugin();
+    if (typeof p.requestBackgroundLocation !== "function") return { granted: false };
+    const result = await p.requestBackgroundLocation();
+    return { granted: result.granted, settingsOpened: result.settingsOpened };
+  } catch {
+    return { granted: false };
+  }
+}
+
+/**
  * iOS 위치 권한 상태 조회
  * 반환값: notDetermined | restricted | denied | whenInUse | always | unknown
  */
@@ -237,6 +257,24 @@ export async function getAndroidLocationStatus(): Promise<string | null> {
     return result.status;
   } catch {
     return null;
+  }
+}
+
+/**
+ * 시스템 설정의 앱 권한 페이지 열기 (위치/알림 등 권한 변경 유도용)
+ * iOS: UIApplication.openSettingsURLString
+ * Android: Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+ */
+export async function openAppSettings(): Promise<boolean> {
+  if (!isNative()) return false;
+  try {
+    const p = getPlugin();
+    if (typeof p.openAppSettings !== "function") return false;
+    const result = await p.openAppSettings();
+    return result.success;
+  } catch (e) {
+    console.error("[NativeGeofence] openAppSettings 실패:", e);
+    return false;
   }
 }
 

@@ -190,6 +190,58 @@ public class NativeGeofencePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void requestBackgroundLocation(PluginCall call) {
+        boolean fine = ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        boolean coarse = ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+
+        if (!fine && !coarse) {
+            call.reject("포그라운드 위치 권한이 먼저 필요합니다");
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            JSObject ret = new JSObject();
+            ret.put("granted", true);
+            call.resolve(ret);
+            return;
+        }
+
+        boolean background = ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        if (background) {
+            JSObject ret = new JSObject();
+            ret.put("granted", true);
+            call.resolve(ret);
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+            ActivityCompat.requestPermissions(
+                getActivity(),
+                new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION},
+                9001
+            );
+            JSObject ret = new JSObject();
+            ret.put("granted", false);
+            ret.put("requested", true);
+            call.resolve(ret);
+            return;
+        }
+
+        try {
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.parse("package:" + getContext().getPackageName()));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            JSObject ret = new JSObject();
+            ret.put("granted", false);
+            ret.put("settingsOpened", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("설정 화면 열기 실패: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
     public void requestBatteryOptimizationExemption(PluginCall call) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
@@ -262,5 +314,25 @@ public class NativeGeofencePlugin extends Plugin {
             flags |= PendingIntent.FLAG_MUTABLE;
         }
         return PendingIntent.getBroadcast(getContext(), 0, intent, flags);
+    }
+
+    /** 안드로이드 시스템 설정의 앱 권한 페이지 열기 */
+    @PluginMethod
+    public void openAppSettings(PluginCall call) {
+        try {
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            Uri uri = Uri.fromParts("package", getContext().getPackageName(), null);
+            intent.setData(uri);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            Log.e(TAG, "openAppSettings 실패: " + e.getMessage());
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            call.resolve(ret);
+        }
     }
 }

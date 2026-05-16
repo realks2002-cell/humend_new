@@ -1,0 +1,28 @@
+# Mobile native projects (Capacitor)
+ios/
+android/
+
+# Build artifacts
+.next/
+out/
+node_modules/
+
+# Resources (mobile-only assets)
+resources/
+
+# Screenshots
+screenshots/
+
+# Mobile build outputs
+*.apk
+*.aab
+*.ipa
+
+# Docs and scripts not needed at build time
+docs/
+.claude/
+.github/
+
+# OS / editor
+.DS_Store
+*.log

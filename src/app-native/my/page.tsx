@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { ChangePasswordButton } from "./change-password-button";
 import { DeleteAccountButton } from "./delete-account-button";
+import LocationPermissionBanner from "@/components/layout/LocationPermissionBanner";
 import { getMyProfile, getMyApplications, getMyParentalConsent } from "@/lib/native-api/queries";
 import type { Member, Application, ParentalConsent } from "@/lib/native-api/queries";
 import { formatDate } from "@/lib/utils/format";
@@ -106,6 +107,7 @@ function MyPageContent() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 pb-32 space-y-8">
+      <LocationPermissionBanner />
       {/* Profile Hero Section */}
       <div className="relative overflow-hidden rounded-[13px] border border-slate-300 bg-slate-50 p-6">
         <div className="flex items-start gap-5">

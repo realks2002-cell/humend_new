@@ -1,6 +1,7 @@
 import Foundation
 import Capacitor
 import CoreLocation
+import UIKit
 
 @objc(NativeGeofencePlugin)
 public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin {
@@ -19,6 +20,7 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "requestAlwaysAuthorization", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getAuthorizationStatus", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "isLocationServicesEnabled", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "openAppSettings", returnType: CAPPluginReturnPromise),
     ]
 
     private var geofenceObserver: NSObjectProtocol?
@@ -177,6 +179,23 @@ public class NativeGeofencePlugin: CAPPlugin, CAPBridgedPlugin {
             let enabled = CLLocationManager.locationServicesEnabled()
             DispatchQueue.main.async {
                 call.resolve(["enabled": enabled])
+            }
+        }
+    }
+
+    /// iOS 설정 앱의 휴멘드 페이지 열기 (위치/알림 권한 변경 유도용)
+    @objc func openAppSettings(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            guard let url = URL(string: UIApplication.openSettingsURLString) else {
+                call.resolve(["success": false])
+                return
+            }
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url, options: [:]) { ok in
+                    call.resolve(["success": ok])
+                }
+            } else {
+                call.resolve(["success": false])
             }
         }
     }

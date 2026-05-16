@@ -4,6 +4,7 @@ import NativeAppProvider from "@/components/layout/NativeAppProvider";
 import BottomNav from "@/components/layout/BottomNav";
 import KakaoFloatingButton from "@/components/home/KakaoFloatingButton";
 import TermsAgreement from "@/components/layout/TermsAgreement";
+import BackgroundLocationDisclosure from "@/components/layout/BackgroundLocationDisclosure";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -56,11 +57,13 @@ export default function RootLayout({
         `}} />
         <TooltipProvider>
           <TermsAgreement>
-            <NativeAppProvider>
-              <main className="min-h-screen pb-16 w-full max-w-full overflow-x-hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>{children}</main>
-              <KakaoFloatingButton />
-              <BottomNav />
-            </NativeAppProvider>
+            <BackgroundLocationDisclosure>
+              <NativeAppProvider>
+                <main className="min-h-screen pb-16 w-full max-w-full overflow-x-hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>{children}</main>
+                <KakaoFloatingButton />
+                <BottomNav />
+              </NativeAppProvider>
+            </BackgroundLocationDisclosure>
           </TermsAgreement>
           <Toaster position="top-center" richColors />
         </TooltipProvider>

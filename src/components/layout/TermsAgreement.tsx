@@ -9,7 +9,8 @@ const STORAGE_KEY = "terms_agreed_v1";
 const terms = [
   { id: "service", label: "[필수] 이용약관 동의", href: "/terms", required: true },
   { id: "privacy", label: "[필수] 개인정보 처리방침 동의", href: "/privacy", required: true },
-  { id: "location", label: "[필수] 위치정보 수집·이용 동의", href: "/my/location-consent", required: true, desc: "출근 확인을 위해 배정된 근무일에 근무지 도착 여부를 확인합니다. 15일 후 자동 삭제됩니다." },
+  { id: "location", label: "[필수] 위치정보 수집·이용 동의", href: "/my/location-consent", required: true, desc: "출근 확인을 위해 배정된 근무일에 근무지 도착 여부를 확인합니다. 90일 후 자동 삭제됩니다." },
+  { id: "background_location", label: "[필수] 백그라운드 위치 사용 동의", required: true, desc: "앱이 백그라운드 상태이거나 종료된 경우에도 근무지 진입 시 위치를 확인해 자동으로 출근 처리합니다. 다음 화면에서 \"항상 허용\"을 선택해주세요." },
   { id: "push", label: "[필수] 알림 수신 동의", required: true, desc: "근무 배정, 출근 안내, 급여 확정 등 주요 알림을 푸시로 받습니다." },
 ];
 
