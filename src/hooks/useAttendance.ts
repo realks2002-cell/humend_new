@@ -40,7 +40,20 @@ async function callApi(
   return res.json();
 }
 
+let isCheckingGeofence = false;
+
 export async function checkAndStartGeofence(overrideToken?: string) {
+  // 재진입 가드 — appStateChange가 await 도중 재발화해도 중첩 실행 방지
+  if (isCheckingGeofence) return;
+  isCheckingGeofence = true;
+  try {
+    await runCheckAndStartGeofence(overrideToken);
+  } finally {
+    isCheckingGeofence = false;
+  }
+}
+
+async function runCheckAndStartGeofence(overrideToken?: string) {
   console.log("[Attendance] 체크 시작");
 
   // 포그라운드 복귀 시 기존 watcher 중단 후 재시작
@@ -126,21 +139,14 @@ export async function checkAndStartGeofence(overrideToken?: string) {
         return;
       }
     } else {
-      // Android: 기존 Capacitor Geolocation 플로우
+      // Android: 권한 없으면 watcher를 시작하지 않고 조용히 종료한다.
+      // 자동 경로(appStateChange/푸시)에서 requestPermissions를 호출하면 권한
+      // 다이얼로그의 표시→소멸이 appStateChange를 재발화시켜 무한 루프(권한요청
+      // 폭주 → ANR → 강제종료)가 된다. 권한 요청은 사용자 명시 액션
+      // (BackgroundLocationDisclosure/signup), 거부 안내는 LocationPermissionBanner가 담당.
       if (perm.location !== "granted" && perm.coarseLocation !== "granted") {
-        const req = await Geolocation.requestPermissions({ permissions: ["location"] });
-        if (req.location !== "granted" && req.coarseLocation !== "granted") {
-          console.log("[Attendance] 위치 권한 거부 → 설정 유도");
-          const { Browser } = await import("@capacitor/browser");
-          const confirmed = window.confirm(
-            "출근 확인을 위해 위치 권한이 필요합니다.\n\n" +
-            "설정 → 앱 → 휴멘드 → 권한 → 위치 → '항상 허용'으로 변경해주세요."
-          );
-          if (confirmed) {
-            await Browser.open({ url: "app-settings:" });
-          }
-          return;
-        }
+        console.log("[Attendance] 위치 권한 없음 → watcher 시작 안 함");
+        return;
       }
     }
   } catch (e) {
