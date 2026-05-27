@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { deleteAnnouncement, type AdminAnnouncement } from "./actions";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function AnnouncementList({ items }: { items: AdminAnnouncement[] }) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<AdminAnnouncement | null>(null);
 
   async function handleDelete(id: string) {
     if (!confirm("이 공지를 삭제하시겠습니까?")) return;
@@ -42,7 +44,11 @@ export default function AnnouncementList({ items }: { items: AdminAnnouncement[]
             </thead>
             <tbody className="divide-y divide-[#D7D7D7]">
               {items.map((a) => (
-                <tr key={a.id} className="hover:bg-[#F5F5F5]">
+                <tr
+                  key={a.id}
+                  onClick={() => setDetail(a)}
+                  className="cursor-pointer hover:bg-[#F5F5F5]"
+                >
                   <td className="max-w-[280px] truncate px-3 py-2 font-medium text-[#091413]">
                     {a.title}
                   </td>
@@ -66,7 +72,10 @@ export default function AnnouncementList({ items }: { items: AdminAnnouncement[]
                   <td className="px-3 py-2 text-center">
                     <button
                       type="button"
-                      onClick={() => handleDelete(a.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(a.id);
+                      }}
                       disabled={deletingId === a.id}
                       className="inline-flex items-center gap-1 text-red-600 hover:text-red-500 disabled:opacity-50"
                     >
@@ -80,6 +89,43 @@ export default function AnnouncementList({ items }: { items: AdminAnnouncement[]
           </table>
         </div>
       )}
+
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="pr-6 text-left">{detail?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#6B7280]">
+            <span>대상: {detail?.target_type === "all" ? "전체" : "개별 선택"}</span>
+            <span>읽음 {detail?.read_count}명</span>
+            <span>
+              작성:{" "}
+              {detail &&
+                new Date(detail.created_at).toLocaleDateString("ko-KR", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
+            </span>
+            <span>
+              만료:{" "}
+              {detail?.expires_at
+                ? new Date(detail.expires_at).toLocaleDateString("ko-KR", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })
+                : "무기한"}
+            </span>
+          </div>
+          <p
+            className="mt-1 max-h-[55vh] overflow-y-auto whitespace-pre-wrap break-words text-[#091413]"
+            style={{ fontSize: `${detail?.font_size ?? 16}px` }}
+          >
+            {detail?.body}
+          </p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

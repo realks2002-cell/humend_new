@@ -370,7 +370,7 @@ export default function AnnouncementForm({ members }: { members: Member[] }) {
           <div>
             <label className="mb-1.5 block text-sm font-medium text-[#091413]">미리보기</label>
             <div className="w-full max-w-sm overflow-hidden rounded-[8px] border border-[#D7D7D7] bg-white shadow-sm">
-              <div className="flex items-center gap-2 bg-[#273F4F] px-4 py-3 text-white">
+              <div className="flex items-center gap-2 bg-[#991B1B] px-4 py-3 text-white">
                 <Megaphone className="h-4 w-4" />
                 <span className="text-sm font-semibold">공지사항</span>
               </div>
@@ -384,7 +384,7 @@ export default function AnnouncementForm({ members }: { members: Member[] }) {
                 </p>
                 <button
                   type="button"
-                  className="mt-1 w-full rounded-[5px] bg-[#273F4F] py-2 text-sm font-medium text-white"
+                  className="mx-auto mt-1 block w-2/5 rounded-[5px] bg-[#273F4F] py-2 text-sm font-medium text-white"
                 >
                   확인
                 </button>

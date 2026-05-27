@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Megaphone } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { isNative } from "@/lib/capacitor/native";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 type Announcement = {
@@ -20,6 +21,7 @@ export default function AnnouncementPopup() {
   const current = queue[0] ?? null;
 
   const load = useCallback(async () => {
+    if (!isNative()) return; // 인앱 알림 — 네이티브 앱(Capacitor)에서만 표시, 웹 브라우저 제외
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -71,9 +73,9 @@ export default function AnnouncementPopup() {
         showCloseButton={false}
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
-        className="max-w-sm gap-0 overflow-hidden p-0"
+        className="w-[calc(100%-3rem)] max-w-sm gap-0 overflow-hidden p-0"
       >
-        <div className="flex items-center gap-2 bg-[#273F4F] px-4 py-3 text-white">
+        <div className="flex items-center gap-2 bg-[#991B1B] px-4 py-3 text-white">
           <Megaphone className="h-4 w-4" />
           <DialogTitle className="text-sm font-semibold text-white">공지사항</DialogTitle>
           {total > 1 && (
@@ -93,7 +95,7 @@ export default function AnnouncementPopup() {
           <button
             type="button"
             onClick={handleConfirm}
-            className="mt-1 w-full rounded-[5px] bg-[#273F4F] py-2.5 text-sm font-medium text-white hover:bg-[#1e2f3a]"
+            className="mx-auto mt-1 block w-2/5 rounded-[5px] bg-[#273F4F] py-2.5 text-sm font-medium text-white hover:bg-[#1e2f3a]"
           >
             확인
           </button>
