@@ -5,6 +5,7 @@ import BottomNav from "@/components/layout/BottomNav";
 import KakaoFloatingButton from "@/components/home/KakaoFloatingButton";
 import TermsAgreement from "@/components/layout/TermsAgreement";
 import BackgroundLocationDisclosure from "@/components/layout/BackgroundLocationDisclosure";
+import AnnouncementPopup from "@/components/announcement/AnnouncementPopup";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -60,6 +61,7 @@ export default function RootLayout({
             <BackgroundLocationDisclosure>
               <NativeAppProvider>
                 <main className="min-h-screen pb-16 w-full max-w-full overflow-x-hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>{children}</main>
+                <AnnouncementPopup />
                 <KakaoFloatingButton />
                 <BottomNav />
               </NativeAppProvider>
