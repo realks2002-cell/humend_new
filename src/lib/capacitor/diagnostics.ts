@@ -45,16 +45,21 @@ export async function collectAndReportDiagnostics(): Promise<boolean> {
 
     let last_gps_accuracy: number | null = null;
     let last_gps_success = false;
-    try {
-      // Capacitor Geolocation timeout 옵션이 iOS에서 무시되는 경우 있음 → Promise.race로 강제
-      const pos = await Promise.race([
-        Geolocation.getCurrentPosition({ enableHighAccuracy: true, maximumAge: 0 }),
-        new Promise<never>((_, rej) => setTimeout(() => rej(new Error("gps_timeout")), 8000)),
-      ]);
-      last_gps_accuracy = pos.coords.accuracy;
-      last_gps_success = true;
-    } catch {
-      last_gps_success = false;
+    // 위치 권한이 있을 때만 GPS 수집. 권한이 없으면 getCurrentPosition이 권한 다이얼로그를
+    // 자동으로 띄우고(@capacitor/geolocation 동작), 그 표시→소멸이 appStateChange를
+    // 재발화시켜 무한 루프(권한요청 폭주 → ANR → 강제종료)가 되므로 권한 없으면 건너뛴다.
+    if (location_permission === "whenInUse" || location_permission === "always") {
+      try {
+        // Capacitor Geolocation timeout 옵션이 iOS에서 무시되는 경우 있음 → Promise.race로 강제
+        const pos = await Promise.race([
+          Geolocation.getCurrentPosition({ enableHighAccuracy: true, maximumAge: 0 }),
+          new Promise<never>((_, rej) => setTimeout(() => rej(new Error("gps_timeout")), 8000)),
+        ]);
+        last_gps_accuracy = pos.coords.accuracy;
+        last_gps_success = true;
+      } catch {
+        last_gps_success = false;
+      }
     }
 
     // 인증: x-api-key → Bearer (번들 모드는 cross-origin 이라 쿠키 못 보냄)

@@ -224,15 +224,19 @@ async function collectDiagnosticData() {
 
     let last_gps_accuracy: number | null = null;
     let last_gps_success = false;
-    try {
-      const pos = await Promise.race([
-        Geolocation.getCurrentPosition({ enableHighAccuracy: true, maximumAge: 0 }),
-        new Promise<never>((_, rej) => setTimeout(() => rej(new Error("gps_timeout")), 8000)),
-      ]);
-      last_gps_accuracy = pos.coords.accuracy;
-      last_gps_success = true;
-    } catch {
-      last_gps_success = false;
+    // 위치 권한 있을 때만 GPS 수집. 권한 없으면 getCurrentPosition이 권한 다이얼로그를
+    // 자동으로 띄워 appStateChange 재발화 → 무한 루프(권한요청 폭주 → ANR)가 된다.
+    if (location_permission === "whenInUse" || location_permission === "always") {
+      try {
+        const pos = await Promise.race([
+          Geolocation.getCurrentPosition({ enableHighAccuracy: true, maximumAge: 0 }),
+          new Promise<never>((_, rej) => setTimeout(() => rej(new Error("gps_timeout")), 8000)),
+        ]);
+        last_gps_accuracy = pos.coords.accuracy;
+        last_gps_success = true;
+      } catch {
+        last_gps_success = false;
+      }
     }
 
     return {
