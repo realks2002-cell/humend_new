@@ -107,8 +107,17 @@ export async function saveResume(formData: {
     privacy_agreed: formData.privacyAgreed,
     email: formData.email || null,
   };
-  if (formData.name) updateData.name = formData.name;
   if (formData.phone) updateData.phone = formData.phone;
+
+  // 본인인증 완료 회원은 이름 변경 불가 (실명 고정, 가명 전환 방지)
+  const { data: cur } = await supabase
+    .from("members")
+    .select("identity_verified")
+    .eq("id", user.id)
+    .single();
+  if (formData.name && !cur?.identity_verified) {
+    updateData.name = formData.name;
+  }
 
   const { data: updated, error } = await supabase
     .from("members")
@@ -116,7 +125,12 @@ export async function saveResume(formData: {
     .eq("id", user.id)
     .select();
 
-  if (error) return { error: `저장 실패: ${error.message}` };
+  if (error) {
+    if (error.code === "23505" && error.message.includes("members_rrn_unique")) {
+      return { error: "이미 가입된 주민등록번호입니다." };
+    }
+    return { error: `저장 실패: ${error.message}` };
+  }
 
   if (!updated || updated.length === 0) {
     const { error: insertError } = await supabase.from("members").insert({
@@ -130,7 +144,12 @@ export async function saveResume(formData: {
         formData.name || (user.user_metadata?.name as string) || "",
       ...updateData,
     });
-    if (insertError) return { error: `저장 실패: ${insertError.message}` };
+    if (insertError) {
+      if (insertError.code === "23505" && insertError.message.includes("members_rrn_unique")) {
+        return { error: "이미 가입된 주민등록번호입니다." };
+      }
+      return { error: `저장 실패: ${insertError.message}` };
+    }
   }
 
   return { success: true };

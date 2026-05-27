@@ -332,7 +332,7 @@ export async function POST(req: NextRequest) {
     const admin = createAdminClient();
     const { error: dbError } = await admin
       .from("members")
-      .update({ identity_verified: true })
+      .update({ identity_verified: true, name: name.trim() })
       .eq("id", userId);
 
     if (dbError) {
