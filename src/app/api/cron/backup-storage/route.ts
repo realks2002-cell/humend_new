@@ -17,6 +17,12 @@ function createBackupClient() {
   );
 }
 
+const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp", "gif"]);
+
+function isImage(path: string) {
+  return IMAGE_EXTS.has(path.split(".").pop()?.toLowerCase() ?? "");
+}
+
 function contentTypeFor(path: string) {
   const ext = path.split(".").pop()?.toLowerCase();
   if (ext === "png") return "image/png";
@@ -123,6 +129,7 @@ export async function GET(req: NextRequest) {
     const res = await list({ cursor, limit: 1000 });
     for (const blob of res.blobs) {
       if (capped) break;
+      if (!isImage(blob.pathname)) continue; // 이미지만 백업 (APK 등 제외)
       await copy(`vercel-blob/${blob.pathname}`, async () => {
         const r = await fetch(blob.url);
         if (!r.ok) throw new Error(`fetch ${r.status}`);
