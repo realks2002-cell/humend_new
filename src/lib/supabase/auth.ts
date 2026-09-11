@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { consumePhoneVerification, isPhoneVerified } from "@/lib/phone-verification";
 
 // 전화번호 → Supabase Auth용 이메일 변환
 function phoneToEmail(phone: string): string {
@@ -43,7 +44,12 @@ export async function memberSignup(formData: FormData) {
     .maybeSingle();
 
   if (existingMember) {
-    return { error: "이미 가입된 전화번호입니다." };
+    return { error: "이미 가입된 전화번호입니다.", code: "already_registered" as const };
+  }
+
+  const verificationId = String(formData.get("verificationId") ?? "");
+  if (!(await isPhoneVerified(verificationId, cleanedPhone))) {
+    return { error: "전화번호 인증이 필요합니다. 인증을 다시 진행해 주세요.", code: "verification_required" as const };
   }
 
   // Supabase Auth 회원가입 (트리거가 members 테이블 자동 생성)
@@ -67,7 +73,7 @@ export async function memberSignup(formData: FormData) {
 
       if (signInError) {
         // 비밀번호 불일치 = 진짜 기존 회원
-        return { error: "이미 가입된 전화번호입니다." };
+        return { error: "이미 가입된 전화번호입니다.", code: "auth_conflict" as const };
       }
 
       const { createAdminClient } = await import("@/lib/supabase/server");
@@ -82,7 +88,7 @@ export async function memberSignup(formData: FormData) {
       if (existingMember) {
         // members에도 있음 = 진짜 중복 가입
         await supabase.auth.signOut();
-        return { error: "이미 가입된 전화번호입니다." };
+        return { error: "이미 가입된 전화번호입니다.", code: "already_registered" as const };
       }
 
       // members에 없음 = 고아 계정 → 복구
@@ -99,6 +105,7 @@ export async function memberSignup(formData: FormData) {
         return { error: "회원가입에 실패했습니다. 다시 시도해주세요." };
       }
 
+      await consumePhoneVerification(verificationId);
       return { success: true };
     }
     return { error: "회원가입에 실패했습니다. 다시 시도해주세요." };
@@ -120,6 +127,7 @@ export async function memberSignup(formData: FormData) {
     console.error("[memberSignup] members insert error:", memberError.message);
   }
 
+  await consumePhoneVerification(verificationId);
   return { success: true };
 }
 
