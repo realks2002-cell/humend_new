@@ -66,6 +66,14 @@
 				<string>com.googleusercontent.apps.153271647846-8kvvkvqnvr1frrts9lqau817cifrtiu3</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.humend.hr.deeplink</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.humend.hr</string>
+			</array>
+		</dict>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>

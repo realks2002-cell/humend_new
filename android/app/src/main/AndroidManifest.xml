@@ -31,6 +31,16 @@
                     android:host="auth"
                     android:pathPrefix="/callback" />
             </intent-filter>
+
+            <!-- 알림톡 딥링크: com.humend.hr://go/salary (DeepLinkHandler가 화면 이동) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="com.humend.hr"
+                    android:host="go" />
+            </intent-filter>
         </activity>
 
         <provider

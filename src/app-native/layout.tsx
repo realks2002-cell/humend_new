@@ -7,6 +7,7 @@ import TermsAgreement from "@/components/layout/TermsAgreement";
 import BackgroundLocationDisclosure from "@/components/layout/BackgroundLocationDisclosure";
 import AnnouncementPopup from "@/components/announcement/AnnouncementPopup";
 import OtaReady from "@/components/layout/OtaReady";
+import DeepLinkHandler from "@/components/layout/DeepLinkHandler";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -58,6 +59,7 @@ export default function RootLayout({
           })();
         `}} />
         <OtaReady />
+        <DeepLinkHandler />
         <TooltipProvider>
           <TermsAgreement>
             <BackgroundLocationDisclosure>
