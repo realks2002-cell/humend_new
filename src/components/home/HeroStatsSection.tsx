@@ -99,9 +99,12 @@ export default function HeroStatsSection() {
   return (
     <>
     <section
-      className="relative w-full overflow-hidden pt-32 pb-28"
+      className="relative w-full overflow-hidden pt-40 pb-48"
       style={{ backgroundColor: COLORS.background }}
     >
+      <svg aria-hidden viewBox="0 0 1440 64" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 h-10 w-full md:h-20">
+        <path d="M0 64V54Q720-26 1440 54V64Z" fill="#FFFFFF" />
+      </svg>
       <div className="mx-auto max-w-[1200px] px-6 md:px-8">
         <div className="flex flex-col gap-12 lg:flex-row lg:items-start lg:justify-between lg:gap-16">
           {/* Left: Headline + CTA */}

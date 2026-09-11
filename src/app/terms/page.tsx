@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <main className="mx-auto max-w-3xl px-4 py-12">
+    <main className="mx-auto max-w-3xl px-4 pt-24 pb-12 [body[data-native]_&]:pt-12">
       <h1 className="text-2xl font-bold">이용약관</h1>
       <p className="mt-2 text-sm text-muted-foreground">시행일: 2025년 1월 1일</p>
 

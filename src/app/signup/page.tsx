@@ -392,7 +392,7 @@ export default function SignupPage() {
 
   if (done) {
     return (
-      <div className="flex min-h-[70vh] items-end justify-center pb-8 pt-24 px-4">
+      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 py-20">
         <Card className="w-full max-w-sm text-center shadow-lg">
           <CardContent className="pt-8">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
@@ -421,7 +421,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-[70vh] items-end justify-center pb-8 pt-24 px-4">
+    <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 py-20">
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">

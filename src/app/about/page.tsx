@@ -103,15 +103,32 @@ export default function AboutPage() {
   return (
     <div className="animate-in fade-in duration-500">
       {/* Vision */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10 px-4 py-20 text-center md:py-28">
+      <section
+        className={`relative overflow-hidden px-4 text-center ${isNative ? "py-20 md:py-28 bg-gradient-to-br from-primary/5 via-background to-primary/10" : "pt-36 pb-40 md:pt-48 md:pb-56 bg-[#001946] text-white"}`}
+      >
+        {!isNative && (
+          <>
+            <img src="/images/about-hero.jpg" alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-[#001946]/92" />
+          </>
+        )}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(0,0,0,0.02)_0%,transparent_50%)]" />
+        {!isNative && (
+          <svg aria-hidden viewBox="0 0 1440 64" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 h-10 w-full md:h-20">
+            <path d="M0 64V54Q720-26 1440 54V64Z" className="fill-background" />
+          </svg>
+        )}
         <div className="relative" style={{ marginTop: "30px" }}>
           <h1 className="text-3xl font-bold md:text-5xl">
             사람과 현장을 연결하는
             <br />
-            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">파트너</span>
+            {isNative ? (
+              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">파트너</span>
+            ) : (
+              <span className="text-indigo-300">파트너</span>
+            )}
           </h1>
-          <p className={`mx-auto mt-6 max-w-lg text-lg text-muted-foreground ${isNative ? "hidden" : ""}`}>
+          <p className={`mx-auto mt-6 max-w-lg text-lg ${isNative ? "hidden" : "text-[rgb(162,170,190)]"}`}>
             Humend HR은 웨딩홀, 케이터링, 컨벤션 등 행사 현장에
             <br />
             필요한 인력을 빠르고 정확하게 매칭하는 플랫폼입니다.

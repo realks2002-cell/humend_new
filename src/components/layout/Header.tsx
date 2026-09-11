@@ -22,7 +22,7 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const onDarkHero = pathname === "/mockup/hero";
+  const dark = !pathname.startsWith("/admin");
 
   // 라우트 변경 시마다 인증 상태 재확인 (비활성 차단은 middleware가 담당)
   useEffect(() => {
@@ -59,15 +59,18 @@ export default function Header() {
   return (
     <header
       className={cn(
-        "absolute top-0 left-0 right-0 z-50 bg-transparent",
+        "absolute top-0 left-0 right-0 z-50",
+        dark ? "bg-[#001946]" : "bg-transparent",
         scrolled && "shadow-sm"
       )}
       style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <Link href="/" className="flex items-center">
-          {onDarkHero ? (
-            <span className="text-xl font-bold tracking-wide text-white">HUMEND</span>
+          {dark ? (
+            <span className="text-xl font-semibold tracking-wide text-white">
+              <span className="text-[#97AED4]">HUM</span>AN:D
+            </span>
           ) : (
             <Image src="/logo.png" alt="HUMAN:D" width={120} height={32} className="h-[16px] w-auto" priority />
           )}
@@ -81,7 +84,7 @@ export default function Header() {
               href={link.href}
               className={cn(
                 "text-base font-normal transition-colors",
-                onDarkHero ? "text-white hover:text-white/80" : "text-black hover:text-black"
+                dark ? "text-white hover:text-white/80" : "text-black hover:text-black"
               )}
             >
               {link.label}
@@ -90,12 +93,12 @@ export default function Header() {
           {user ? (
             <div className="flex items-center gap-2">
               <Link href="/my">
-                <Button variant="ghost" size="sm" className={cn(onDarkHero && "text-white hover:bg-white/10 hover:text-white")}>
+                <Button variant="ghost" size="sm" className={cn(dark && "text-white hover:bg-white/10 hover:text-white")}>
                   <User className="mr-1 h-4 w-4" />
                   마이페이지
                 </Button>
               </Link>
-              <Button variant="ghost" size="sm" onClick={handleSignOut} className={cn(onDarkHero && "text-white hover:bg-white/10 hover:text-white")}>
+              <Button variant="ghost" size="sm" onClick={handleSignOut} className={cn(dark && "text-white hover:bg-white/10 hover:text-white")}>
                 <LogOut className="mr-1 h-4 w-4" />
                 로그아웃
               </Button>
@@ -115,7 +118,7 @@ export default function Header() {
         {/* Mobile Hamburger */}
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild className="md:hidden">
-            <Button variant="ghost" size="icon" className="!size-9 [&_svg]:!size-6">
+            <Button variant="ghost" size="icon" className={cn("!size-9 [&_svg]:!size-6", dark && "text-white hover:bg-white/10 hover:text-white")}>
               <Menu />
               <span className="sr-only">메뉴 열기</span>
             </Button>

@@ -9,7 +9,7 @@ import { getClientsWithJobs } from "@/lib/supabase/queries";
 import { formatDate, formatDateRange, formatWorkDays, formatTime, formatClientWage } from "@/lib/utils/format";
 import { Users, Building2, Handshake, ArrowRight, Zap, MapPin, Shield, Briefcase, Search, Calendar, Clock } from "lucide-react";
 import { CountUp } from "@/components/ui/count-up";
-import HeroSection from "@/components/home/HeroSection";
+import HeroStatsSection from "@/components/home/HeroStatsSection";
 import KakaoFloatingButton from "@/components/home/KakaoFloatingButton";
 
 const MobileHome = dynamic_import(() => import("@/components/home/MobileHome"));
@@ -73,7 +73,7 @@ export default async function Home() {
     <div className="hidden md:block animate-in fade-in duration-500">
 
       {/* Hero */}
-      <HeroSection />
+      <HeroStatsSection />
 
       {/* 알바공고 (일별) */}
       <section className="bg-muted/20 px-4 py-20">
@@ -104,7 +104,7 @@ export default async function Home() {
             </Card>
           ) : (
             <div className="grid gap-6 grid-cols-2 md:grid-cols-4">
-              {dailyClients.slice(0, 8).map((client) => (
+              {dailyClients.map((client) => (
                 <Link key={client.id} href={`/jobs/${client.id}`}>
                   <Card className="group overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg py-0 rounded-[10px]">
                     <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/5 to-primary/15">
