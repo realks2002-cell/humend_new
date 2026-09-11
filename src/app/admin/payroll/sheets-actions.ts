@@ -5,6 +5,19 @@ import { exportToSheets, importFromSheets, protectColumns, formatColumns } from 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/require-admin";
 
+const ID_HEADER = "ID(수정금지)";
+const WAGE_TYPES = ["시급", "일급"];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// "2026-09-01" / "2026. 9. 1" / "2026/9/1" → "2026-09-01", 잘못된 날짜는 null
+function normalizeDate(value: string): string | null {
+  const m = value.trim().match(/^(\d{4})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})\.?$/);
+  if (!m) return null;
+  const iso = `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  const d = new Date(`${iso}T00:00:00Z`);
+  return !isNaN(d.getTime()) && d.toISOString().startsWith(iso) ? iso : null;
+}
+
 function toSheetName(month: string) {
   const [y, m] = month.split("-");
   return `${y}년${Number(m)}월`;
@@ -98,7 +111,7 @@ export async function exportPayrollToSheets(month: string, recordIds?: string[])
       "원본_국민연금", "원본_건강보험", "원본_장기요양", "원본_고용보험", "원본_소득세", "원본_공제합계",
       "원본_실수령액",
       "원본_시작시간", "원본_종료시간", "원본_휴게시간",
-      "확정여부", "메모", "급여유형"
+      "확정여부", "메모", "급여유형", ID_HEADER
     ];
 
     const rows = recs.map((r, i) => {
@@ -170,13 +183,14 @@ export async function exportPayrollToSheets(month: string, recordIds?: string[])
         "N", // AP: 확정여부 (항상 미확정으로 시작)
         (r.admin_memo ?? "") as string, // AQ: 메모
         r.wage_type ?? "시급", // AR: 급여유형
+        r.id as string, // AS: ID (가져오기 매칭 키)
       ];
     });
 
     const result = await exportToSheets(sheetName, headers, rows as (string | number)[][]);
 
-    // 이름(B=1), 전화번호(C=2), 주민번호(D=3), 예금주(Y=24), 원본 컬럼(25~40) 편집 보호
-    await protectColumns(result.sheetId, [1, 2, 3, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40], rows.length);
+    // 이름(B=1), 전화번호(C=2), 주민번호(D=3), 예금주(Y=24), 원본 컬럼(25~40), ID(AS=44) 편집 보호
+    await protectColumns(result.sheetId, [1, 2, 3, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 44], rows.length);
 
     // 숫자 콤마 포맷 + 텍스트 포맷을 단일 batchUpdate로 적용
     const numberColumns = [
@@ -219,7 +233,7 @@ export async function importPayrollFromSheets(month: string) {
 
     const { data: workRecords } = await supabase
       .from("work_records")
-      .select("id, client_name, work_date, members(name, phone)")
+      .select("id, client_name, work_date, wage_type, members(name, phone)")
       .gte("signed_at", startTs)
       .lt("signed_at", endTs)
       .not("signature_url", "is", null)
@@ -229,6 +243,18 @@ export async function importPayrollFromSheets(month: string) {
     const dbRecords = (workRecords ?? []) as Array<Record<string, unknown>>;
     console.log("🗄️ DB work_records:", dbRecords.length, "건");
 
+    // ID 열이 있는 행은 ID로 매칭 (근무일·고객사를 고쳐도 같은 건으로 인식)
+    const sheetIds = [...new Set(rows.map((r) => r[ID_HEADER]?.trim()).filter((id) => id && UUID_RE.test(id)))];
+    const idRecords = new Map<string, Record<string, unknown>>();
+    for (let i = 0; i < sheetIds.length; i += 200) {
+      const { data: byId, error: idError } = await supabase
+        .from("work_records")
+        .select("id, client_name, work_date, wage_type, members(name)")
+        .in("id", sheetIds.slice(i, i + 200));
+      if (idError) throw new Error(`근무기록 조회 실패: ${idError.message}`);
+      for (const wr of byId ?? []) idRecords.set(wr.id as string, wr);
+    }
+
     let updated = 0;
     let created = 0;
     const errors: Array<{ name: string; error: string }> = [];
@@ -237,11 +263,13 @@ export async function importPayrollFromSheets(month: string) {
 
     for (const row of rows) {
       const sheetName2 = row["이름"]?.trim();
-      const sheetDate = row["근무일"]?.trim();
+      const rawDate = row["근무일"]?.trim();
       const sheetClient = row["고객사"]?.trim();
       const sheetPhone = row["전화번호"]?.replace(/\D/g, ""); // 숫자만
+      const sheetId = row[ID_HEADER]?.trim();
+      const sheetWageType = row["급여유형"]?.trim();
 
-      if (!sheetName2 || !sheetDate) {
+      if (!sheetName2 || !rawDate) {
         console.log("⚠️ 이름/근무일 없는 행 스킵");
         continue;
       }
@@ -253,8 +281,34 @@ export async function importPayrollFromSheets(month: string) {
         continue;
       }
 
-      // 2. DB에서 매칭되는 work_record 찾기
-      const matched = dbRecords.find((wr) => {
+      const sheetDate = normalizeDate(rawDate);
+      if (!sheetDate) {
+        errors.push({ name: sheetName2, error: `근무일 형식 오류(${rawDate}) — 예: 2026-09-01` });
+        continue;
+      }
+      if (sheetWageType && !WAGE_TYPES.includes(sheetWageType)) {
+        errors.push({ name: sheetName2, error: `급여유형은 시급/일급만 가능(${sheetWageType})` });
+        continue;
+      }
+      if (sheetId && !idRecords.has(sheetId)) {
+        errors.push({ name: sheetName2, error: "ID에 해당하는 근무기록이 없습니다 (ID 열 수정 금지)" });
+        continue;
+      }
+      if (sheetId && usedIds.has(sheetId)) {
+        errors.push({ name: sheetName2, error: "같은 ID 행이 중복되었습니다" });
+        continue;
+      }
+      if (sheetId) {
+        const rawMember = idRecords.get(sheetId)!.members as { name?: string } | Array<{ name?: string }> | null;
+        const dbName = (Array.isArray(rawMember) ? rawMember[0]?.name : rawMember?.name)?.trim();
+        if (dbName !== sheetName2) {
+          errors.push({ name: sheetName2, error: `이름은 시트에서 수정할 수 없습니다 — 원래 이름(${dbName ?? "-"})으로 되돌려 주세요. 이름 변경은 회원관리에서` });
+          continue;
+        }
+      }
+
+      // 2. DB에서 매칭되는 work_record 찾기 (ID 우선, 없으면 이름·근무일·고객사·전화번호)
+      const matched = sheetId ? idRecords.get(sheetId) : dbRecords.find((wr) => {
         if (usedIds.has(wr.id as string)) return false; // 이미 매칭된 ID 제외
         const rawMembers = wr.members as Record<string, unknown> | Array<Record<string, unknown>> | null;
         const m: Record<string, unknown> | null = Array.isArray(rawMembers)
@@ -341,7 +395,7 @@ export async function importPayrollFromSheets(month: string) {
           net_pay: paymentData.net_pay,
           status: "대기",
           admin_memo: "구글시트 수동 등록",
-          wage_type: row["급여유형"] || "시급",
+          wage_type: sheetWageType || "시급",
           posting_id: null,
           application_id: null,
           signature_url: null,
@@ -380,6 +434,20 @@ export async function importPayrollFromSheets(month: string) {
       // income_tax: Number(row["소득세"]) || 0,
 
       console.log("💾 저장:", { 이름: sheetName2, workRecordId });
+
+      // 계약서에 표시되는 근무장소·근무일·급여유형을 시트 값으로 갱신 (서명된 계약서 포함)
+      const wrUpdate: Record<string, string> = {};
+      if (sheetClient && sheetClient !== matched.client_name) wrUpdate.client_name = sheetClient;
+      if (sheetDate !== matched.work_date) wrUpdate.work_date = sheetDate;
+      if (sheetWageType && sheetWageType !== matched.wage_type) wrUpdate.wage_type = sheetWageType;
+      if (Object.keys(wrUpdate).length > 0) {
+        const { error: wrError } = await supabase.from("work_records").update(wrUpdate).eq("id", workRecordId);
+        if (wrError) {
+          console.error("❌ 근무기록 갱신 에러:", { 이름: sheetName2, error: wrError.message });
+          errors.push({ name: sheetName2, error: wrError.message });
+          continue;
+        }
+      }
 
       // 3. UPSERT
       const { error } = await supabase
