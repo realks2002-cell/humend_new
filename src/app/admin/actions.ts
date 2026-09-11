@@ -3,6 +3,23 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/supabase/require-admin";
 
+// Supabase는 한 번에 최대 1,000행만 반환하므로 끝까지 나눠서 조회
+async function fetchPaymentsInRange(admin: ReturnType<typeof createAdminClient>, rangeStart: string, end: string) {
+  const rows: unknown[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await admin.from("payments")
+      .select("net_pay, work_records!inner(work_date)")
+      .gte("work_records.work_date", rangeStart)
+      .lte("work_records.work_date", end)
+      .order("id")
+      .range(from, from + 999);
+    if (error) throw new Error(`급여 조회 실패: ${error.message}`);
+    rows.push(...data);
+    if (data.length < 1000) break;
+  }
+  return rows;
+}
+
 export async function getDashboardStats(currentMonth: string) {
   await requireAdmin();
   const admin = createAdminClient();
@@ -24,17 +41,14 @@ export async function getDashboardStats(currentMonth: string) {
     { count: pendingAppCount },
     { count: approvedAppCount },
     { count: rejectedAppCount },
-    { data: paymentsData },
+    paymentsData,
   ] = await Promise.all([
     admin.from("members").select("*", { count: "exact", head: true }).eq("status", "active"),
     admin.from("clients").select("*", { count: "exact", head: true }).eq("status", "active"),
     admin.from("applications").select("*", { count: "exact", head: true }).eq("status", "대기"),
     admin.from("applications").select("*", { count: "exact", head: true }).eq("status", "승인"),
     admin.from("applications").select("*", { count: "exact", head: true }).eq("status", "거절"),
-    admin.from("payments")
-      .select("net_pay, work_records!inner(work_date)")
-      .gte("work_records.work_date", rangeStart)
-      .lte("work_records.work_date", end),
+    fetchPaymentsInRange(admin, rangeStart, end),
   ]);
 
   // 월별 급여 합산 (payments 테이블 기준)
