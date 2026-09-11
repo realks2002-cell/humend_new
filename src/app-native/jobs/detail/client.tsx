@@ -19,6 +19,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { ApplyButton } from "@/components/jobs/ApplyButton";
+import { UrgentBadge } from "@/components/jobs/UrgentBadge";
 import { JobDetailMap } from "@/app/jobs/[id]/job-detail-map";
 import { GuideIframe } from "@/app/jobs/[id]/guide-iframe";
 
@@ -141,6 +142,7 @@ export default function JobDetailClient() {
             {data.job_postings.map((job) => (
               <Card key={job.id}>
                 <CardContent className="flex flex-col items-center gap-2 py-4 text-center">
+                  <UrgentBadge job={job} />
                   <span className="text-sm font-semibold text-foreground">{formatDate(job.work_date)}</span>
                   <span className="flex items-center gap-1 text-sm text-foreground">
                     <Clock className="h-3.5 w-3.5" />
@@ -149,6 +151,7 @@ export default function JobDetailClient() {
                   <span className="text-sm text-foreground">모집인원 {job.headcount}명</span>
                   <ApplyButton
                     postingId={job.id}
+                    closed={job.status !== "open"}
                     clientName={data.company_name}
                     workDate={formatDate(job.work_date)}
                     startTime={job.start_time}

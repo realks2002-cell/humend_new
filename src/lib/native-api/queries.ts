@@ -19,7 +19,8 @@ export type { ClientWithJobs, Application, Member, WorkRecord, ParentalConsent, 
 
 // ========== 퍼블릭 쿼리 ==========
 
-export async function getClientsWithJobs(): Promise<ClientWithJobs[]> {
+// includeClosed: 공고 목록에서 아직 지나지 않은 마감 공고도 표시(지원은 불가). 홈은 기본값(모집중만)
+export async function getClientsWithJobs({ includeClosed = false }: { includeClosed?: boolean } = {}): Promise<ClientWithJobs[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("clients")
@@ -34,11 +35,15 @@ export async function getClientsWithJobs(): Promise<ClientWithJobs[]> {
     return [];
   }
 
+  const todayKst = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
   return ((data ?? []) as ClientWithJobs[])
     .map((client) => ({
       ...client,
       job_postings: (client.job_postings ?? []).filter(
-        (j: JobPosting) => j.status === "open"
+        (j: JobPosting) =>
+          j.status === "open" ||
+          (includeClosed && j.status === "closed" &&
+            (j.posting_type === "fixed_term" ? (j.end_date ?? j.work_date) : j.work_date) >= todayKst)
       ),
     }))
     .filter((client) => client.job_postings.length > 0);

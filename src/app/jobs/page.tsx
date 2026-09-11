@@ -9,6 +9,7 @@ import { MapPin, Clock, Briefcase, Search, Calendar } from "lucide-react";
 import { getClientsWithJobs } from "@/lib/supabase/queries";
 import { formatDate, formatClientWage, formatTime, formatDateRange, formatWorkDays } from "@/lib/utils/format";
 import { ApplyButton } from "@/components/jobs/ApplyButton";
+import { UrgentBadge } from "@/components/jobs/UrgentBadge";
 import { JobFilters } from "./filters";
 import { JobTabs } from "./tabs";
 
@@ -139,6 +140,7 @@ export default async function JobsPage({ searchParams }: Props) {
                   <div className="mt-4 grid grid-cols-3 gap-1.5">
                     {client.job_postings.map((job) => (
                       <div key={job.id} className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center ${job.status !== "open" ? "opacity-60" : ""}`}>
+                        <UrgentBadge job={job} />
                         <span className="text-[11px] font-medium">{formatDate(job.work_date)}</span>
                         <span className="text-[11px] font-semibold text-foreground">
                           {formatTime(job.start_time)}~{formatTime(job.end_time)}
@@ -189,6 +191,7 @@ export default async function JobsPage({ searchParams }: Props) {
                           <Badge className="bg-violet-500/15 text-violet-700 border-0 text-[10px] font-semibold">
                             기간제
                           </Badge>
+                          <UrgentBadge job={job} />
                           {job.title && (
                             <span className="text-xs font-medium text-violet-700 truncate">
                               {job.title}

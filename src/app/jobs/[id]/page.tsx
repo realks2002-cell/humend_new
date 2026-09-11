@@ -9,6 +9,7 @@ import { getClientDetail } from "@/lib/supabase/queries";
 import { formatDate, formatClientWage, formatDateRange, formatWorkDays, formatTime } from "@/lib/utils/format";
 import { MapPin, Clock, Shirt, BookOpen, Phone, User, Briefcase, UserCheck, Send, ClipboardList, Calendar } from "lucide-react";
 import { ApplyButton } from "@/components/jobs/ApplyButton";
+import { UrgentBadge } from "@/components/jobs/UrgentBadge";
 import { JobDetailMap } from "./job-detail-map";
 import { GuideIframe } from "./guide-iframe";
 
@@ -118,6 +119,7 @@ export default async function JobDetailPage({
                   .map((job) => (
                     <Card key={job.id}>
                       <CardContent className="flex flex-col items-center gap-2 py-4 text-center">
+                        <UrgentBadge job={job} />
                         <span className="text-sm font-semibold text-foreground">{formatDate(job.work_date)}</span>
                         <span className="flex items-center gap-1 text-sm text-foreground">
                           <Clock className="h-3.5 w-3.5" />
@@ -150,6 +152,7 @@ export default async function JobDetailPage({
                           <Badge className="bg-violet-500/15 text-violet-700 border-0 text-xs font-semibold">
                             기간제
                           </Badge>
+                          <UrgentBadge job={job} />
                           {job.title && (
                             <span className="text-sm font-medium text-violet-700">{job.title}</span>
                           )}

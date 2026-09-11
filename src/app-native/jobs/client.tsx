@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MapPin, Briefcase, Search, Loader2, Clock, Calendar, X } from "lucide-react";
 import { formatDate, formatTime, formatDateRange, formatWorkDays, formatClientWage } from "@/lib/utils/format";
 import { ApplyButton } from "@/components/jobs/ApplyButton";
+import { UrgentBadge } from "@/components/jobs/UrgentBadge";
 import { getClientsWithJobs } from "@/lib/native-api/queries";
 import type { ClientWithJobs } from "@/lib/native-api/queries";
 
@@ -23,7 +24,7 @@ export default function JobsClient() {
   const [filterClient, setFilterClient] = useState("");
 
   useEffect(() => {
-    getClientsWithJobs()
+    getClientsWithJobs({ includeClosed: true })
       .then(setAllClients)
       .finally(() => setLoading(false));
   }, []);
@@ -185,7 +186,9 @@ export default function JobsClient() {
                         {formatClientWage(client)}
                       </span>
                       <Badge variant="secondary">
-                        {client.job_postings.length}건 모집중
+                        {client.job_postings.some((j) => j.status === "open")
+                          ? `${client.job_postings.filter((j) => j.status === "open").length}건 모집중`
+                          : "마감"}
                       </Badge>
                     </div>
 
@@ -193,8 +196,9 @@ export default function JobsClient() {
                       {client.job_postings.map((job) => (
                         <div
                           key={job.id}
-                          className="flex flex-col items-center gap-1 rounded-lg border p-2 text-center"
+                          className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center ${job.status !== "open" ? "opacity-60" : ""}`}
                         >
+                          <UrgentBadge job={job} />
                           <span className="text-[11px] font-medium">
                             {formatDate(job.work_date)}
                           </span>
@@ -204,6 +208,7 @@ export default function JobsClient() {
                           <span className="text-[11px] text-muted-foreground">모집 {job.headcount}명</span>
                           <ApplyButton
                             postingId={job.id}
+                            closed={job.status !== "open"}
                             clientName={client.company_name}
                             workDate={formatDate(job.work_date)}
                             startTime={job.start_time}
@@ -234,6 +239,7 @@ export default function JobsClient() {
                       <Badge className="bg-[#134E8E]/15 text-[#134E8E] border-0 text-[10px] font-semibold">
                         기간제
                       </Badge>
+                      <UrgentBadge job={job} />
                       <span className="font-semibold text-sm">{client.company_name}</span>
                       {job.title && (
                         <span className="text-xs font-medium text-[#134E8E] truncate">
@@ -269,6 +275,7 @@ export default function JobsClient() {
                     <div className="mt-2">
                       <ApplyButton
                         postingId={job.id}
+                        closed={job.status !== "open"}
                         clientName={client.company_name}
                         workDate={
                           job.start_date && job.end_date
