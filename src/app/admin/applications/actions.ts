@@ -456,22 +456,24 @@ export async function updateApplicationWork(
 
   let updatedRecords = 0;
   if (app.status === "승인") {
-    const { data: records, error: wrError } = await supabase
+    // 급여가 이미 확정·지급된 근무(기간제의 지난 날짜 등)는 그대로 두고, 미지급 건만 갱신 (서명된 계약서 포함)
+    const { data: linked, error: linkedError } = await supabase
       .from("work_records")
-      .update(buildWorkTermsAndPay(client.company_name, input.startTime, input.endTime, client.hourly_wage))
-      .eq("application_id", applicationId)
-      .select("id");
-    if (wrError) return { error: `계약서 갱신 실패: ${wrError.message}` };
-    updatedRecords = records?.length ?? 0;
+      .select("id, payments(id)")
+      .eq("application_id", applicationId);
+    if (linkedError) return { error: `계약서 조회 실패: ${linkedError.message}` };
+    const unpaidIds = (linked ?? [])
+      .filter((r) => !(Array.isArray(r.payments) ? r.payments.length : r.payments))
+      .map((r) => r.id as string);
 
-    // 급여가 이미 확정된 건은 계약서가 급여 쪽 시간을 우선 표시 → 시간만 맞춤 (금액은 확정값 유지)
-    if (updatedRecords > 0) {
-      const { error: payError } = await supabase
-        .from("payments")
-        .update({ start_time: input.startTime, end_time: input.endTime })
-        .in("work_record_id", records!.map((r) => r.id));
-      if (payError) return { error: `급여 시간 갱신 실패: ${payError.message}` };
+    if (unpaidIds.length > 0) {
+      const { error: wrError } = await supabase
+        .from("work_records")
+        .update(buildWorkTermsAndPay(client.company_name, input.startTime, input.endTime, client.hourly_wage))
+        .in("id", unpaidIds);
+      if (wrError) return { error: `계약서 갱신 실패: ${wrError.message}` };
     }
+    updatedRecords = unpaidIds.length;
   }
 
   revalidatePath("/admin/applications");

@@ -40,7 +40,7 @@ export async function purgeMember(memberId: string): Promise<{ fileErrors: strin
 
   const { data: member, error: memberError } = await admin
     .from("members")
-    .select("id, status, phone")
+    .select("id, status")
     .eq("id", memberId)
     .maybeSingle();
   if (memberError) throw new Error(`회원 조회 실패: ${memberError.message}`);
@@ -67,10 +67,6 @@ export async function purgeMember(memberId: string): Promise<{ fileErrors: strin
     }
   };
 
-  if (member.phone) await attempt(async () => {
-    const { error } = await admin.from("phone_verifications").delete().eq("phone", member.phone);
-    if (error) throw new Error(`phone_verifications: ${error.message}`);
-  });
   for (const bucket of STORAGE_BUCKETS) await attempt(() => removeStorageFolder(admin, bucket, memberId));
   for (const prefix of BLOB_PREFIXES) await attempt(() => removeBlobFolder(`${prefix}/${memberId}/`));
 

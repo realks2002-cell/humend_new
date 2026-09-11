@@ -230,7 +230,7 @@ export async function importFromSheets(sheetName?: string) {
 
   const { data } = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${sheetName}!A1:AZ1000`,
+    range: `${sheetName}!A1:AZ10000`,
   });
 
   const rows = data.values ?? [];

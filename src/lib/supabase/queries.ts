@@ -201,11 +201,15 @@ export async function getClientsWithJobs({ includeClosed = false }: { includeClo
     return [];
   }
 
-  // 클라이언트에서 open 상태 job_postings만 필터 (includeClosed면 마감도 포함)
+  // 클라이언트에서 open 상태 job_postings만 필터 (includeClosed면 아직 지나지 않은 마감 공고도 포함)
+  const todayKst = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const result = (data ?? []).map((client) => ({
     ...client,
     job_postings: (client.job_postings ?? []).filter(
-      (j: JobPosting) => j.status === "open" || (includeClosed && j.status === "closed")
+      (j: JobPosting) =>
+        j.status === "open" ||
+        (includeClosed && j.status === "closed" &&
+          (j.posting_type === "fixed_term" ? (j.end_date ?? j.work_date) : j.work_date) >= todayKst)
     ),
   })).filter((client) => client.job_postings.length > 0);
 

@@ -335,7 +335,7 @@ export async function importPayrollFromSheets() {
 
       // 2. DB에서 매칭되는 work_record 찾기 (ID 우선, 없으면 이름·근무일·고객사·전화번호)
       let matched = sheetId ? idRecords.get(sheetId) : dbRecords.find((wr) => {
-        if (usedIds.has(wr.id as string)) return false; // 이미 매칭된 ID 제외
+        if (usedIds.has(wr.id as string) || idRecords.has(wr.id as string)) return false; // 이미 매칭됐거나 시트에 ID 행이 따로 있는 건 제외
         const rawMembers = wr.members as Record<string, unknown> | Array<Record<string, unknown>> | null;
         const m: Record<string, unknown> | null = Array.isArray(rawMembers)
           ? (rawMembers[0] ?? null)
@@ -399,7 +399,8 @@ export async function importPayrollFromSheets() {
         }
 
         // 이전 가져오기에서 이미 수동 등록된 건이면 재사용 (가져올 때마다 중복 생성 방지)
-        const { data: prevManual } = await supabase
+        // 같은 회원·날짜·고객사 행이 여러 개(분할 근무)면 아직 안 쓴 건을 순서대로 하나씩 사용
+        const { data: prevManuals } = await supabase
           .from("work_records")
           .select("id, client_name, work_date, wage_type")
           .eq("member_id", member.id)
@@ -407,9 +408,10 @@ export async function importPayrollFromSheets() {
           .eq("client_name", sheetClient || "")
           .eq("admin_memo", "구글시트 수동 등록")
           .is("signature_url", null)
-          .limit(1)
-          .maybeSingle();
-        if (prevManual && !usedIds.has(prevManual.id)) matched = prevManual;
+          .order("created_at")
+          .order("id");
+        const prevManual = (prevManuals ?? []).find((w) => !usedIds.has(w.id) && !idRecords.has(w.id));
+        if (prevManual) matched = prevManual;
         else newMemberId = member.id as string;
       }
 
@@ -466,6 +468,7 @@ export async function importPayrollFromSheets() {
         } else {
           console.log("✅ 신규 생성:", { 이름: sheetName2, workRecordId: newWr.id });
           created++;
+          usedIds.add(newWr.id);
           paidWorkRecordIds.push(newWr.id);
         }
         continue;

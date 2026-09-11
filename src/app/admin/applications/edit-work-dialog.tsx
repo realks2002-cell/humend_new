@@ -86,7 +86,7 @@ export function EditWorkDialog({ applicationId, approved, overridden, clientId, 
           </div>
           <p className="text-xs text-muted-foreground">
             {approved
-              ? "저장하면 회원 지원내역과 계약서(서명된 계약서 포함)가 바뀌고, 시급은 새 근무지 기준으로 다시 계산됩니다. 출근 위치 확인은 근무표 배정을 따르니 근무표도 함께 수정하세요."
+              ? "저장하면 회원 지원내역과 계약서(서명된 계약서 포함, 급여 지급 완료된 근무는 제외)가 바뀌고, 시급은 새 근무지 기준으로 다시 계산됩니다. 출근 위치 확인은 근무표 배정을 따르니 근무표도 함께 수정하세요."
               : "저장하면 회원 지원내역에 바로 반영되고, 승인할 때 이 근무지·시간으로 계약서가 만들어집니다."}
           </p>
         </div>
