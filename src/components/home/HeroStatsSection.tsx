@@ -99,7 +99,7 @@ export default function HeroStatsSection() {
   return (
     <>
     <section
-      className="relative w-full overflow-hidden pt-24 pb-12"
+      className="relative w-full overflow-hidden pt-32 pb-28"
       style={{ backgroundColor: COLORS.background }}
     >
       <div className="mx-auto max-w-[1200px] px-6 md:px-8">
