@@ -138,6 +138,7 @@ export default function AboutPage() {
 
       {/* Process */}
       <section className={`mx-auto px-4 py-20 ${isNative ? "" : "max-w-4xl"}`}>
+        {!isNative && <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wider text-indigo-600">Process</p>}
         <h2 className="mb-2 text-center text-2xl font-bold md:text-3xl">서비스 프로세스</h2>
         <p className="mb-12 text-center text-muted-foreground">4단계로 간편하게 진행됩니다</p>
         {isNative ? (
@@ -183,8 +184,9 @@ export default function AboutPage() {
       </section>
 
       {/* Values */}
-      <section className="bg-muted/20 px-4 py-20">
+      <section className={`px-4 py-20 ${isNative ? "bg-muted/20" : "bg-[color-mix(in_oklch,#001946_4%,white)]"}`}>
         <div className="mx-auto max-w-4xl">
+          {!isNative && <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wider text-indigo-600">Values</p>}
           <h2 className="mb-2 text-center text-2xl font-bold md:text-3xl">핵심 가치</h2>
           <p className="mb-12 text-center text-muted-foreground">Humend HR이 추구하는 가치</p>
           <div className="grid grid-cols-3 gap-4">
@@ -206,6 +208,7 @@ export default function AboutPage() {
       {/* Partner Inquiry Form */}
       <section className={`px-4 py-20 ${isNative ? "hidden" : ""}`}>
         <div className="mx-auto max-w-lg">
+          <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wider text-indigo-600">Contact</p>
           <h2 className="text-center text-2xl font-bold md:text-3xl">파트너 제휴문의</h2>
           <p className="mt-3 text-center text-muted-foreground">
             인력파견 서비스가 필요하신가요? 기업 맞춤형 인력 솔루션을 제안드립니다.
@@ -227,7 +230,7 @@ export default function AboutPage() {
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5 rounded-lg border bg-white p-6 shadow-md md:p-8">
               <div className="space-y-2">
                 <Label htmlFor="company_name">
                   회사명 <span className="text-red-500">*</span>
