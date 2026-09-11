@@ -236,8 +236,9 @@ export default async function Home() {
       )}
 
       {/* Services */}
-      <section className="px-4 py-20" style={{ backgroundColor: "#FFFFFF" }}>
+      <section className="bg-[color-mix(in_oklch,#001946_4%,white)] px-4 pt-20 pb-4">
         <div className="mx-auto max-w-5xl">
+        <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wider text-indigo-600">Service</p>
         <h2 className="mb-2 text-center text-2xl font-bold md:text-3xl">서비스 소개</h2>
         <p className="mb-12 text-center text-muted-foreground">Humend가 제공하는 핵심 서비스</p>
         <div className="grid gap-6 md:grid-cols-3">
@@ -255,9 +256,13 @@ export default async function Home() {
             </Card>
           ))}
         </div>
+        </div>
+      </section>
 
-        {/* Stats */}
-        <div className="mx-auto mt-16 grid max-w-3xl grid-cols-3 gap-4">
+      {/* Stats */}
+      <section className="footer-bleed bg-[color-mix(in_oklch,#001946_4%,white)] px-4 pt-16 pb-28">
+        <p className="mb-10 text-center text-xs font-semibold uppercase tracking-wider text-indigo-600">Numbers</p>
+        <div className="mx-auto grid max-w-3xl grid-cols-3 gap-4">
           {stats.map((stat) => (
             <div key={stat.label} className="text-center">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-background shadow-sm">
@@ -271,7 +276,6 @@ export default async function Home() {
               </p>
             </div>
           ))}
-        </div>
         </div>
       </section>
     </div>

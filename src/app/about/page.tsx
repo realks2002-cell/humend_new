@@ -104,12 +104,12 @@ export default function AboutPage() {
     <div className="animate-in fade-in duration-500">
       {/* Vision */}
       <section
-        className={`relative overflow-hidden px-4 text-center ${isNative ? "py-20 md:py-28 bg-gradient-to-br from-primary/5 via-background to-primary/10" : "pt-36 pb-40 md:pt-48 md:pb-56 bg-[#001946] text-white"}`}
+        className={`relative overflow-hidden px-4 text-center ${isNative ? "py-20 md:py-28 bg-gradient-to-br from-primary/5 via-background to-primary/10" : "pt-36 pb-40 md:pt-48 md:pb-56 bg-black text-white"}`}
       >
         {!isNative && (
           <>
             <img src="/images/about-hero.jpg" alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-[#001946]/92" />
+            <div className="absolute inset-0 bg-black/82" />
           </>
         )}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(0,0,0,0.02)_0%,transparent_50%)]" />

@@ -3,10 +3,10 @@ import Link from "next/link";
 export default function Footer() {
   return (
     <footer className="text-white">
-      <svg aria-hidden viewBox="0 0 1440 64" preserveAspectRatio="none" className="block h-10 w-full md:h-20">
-        <path d="M0 64V54Q720-26 1440 54V64Z" fill="#213C51" />
+      <svg aria-hidden viewBox="0 0 1440 64" preserveAspectRatio="none" className="relative block h-10 w-full md:h-20 md:[body:has(.footer-bleed)_&]:-mt-20">
+        <path d="M0 64V54Q720-26 1440 54V64Z" fill="#262626" />
       </svg>
-      <div style={{ backgroundColor: "#213C51", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <div style={{ backgroundColor: "#262626", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="flex flex-col gap-6 md:flex-row md:justify-between">
           <div>
