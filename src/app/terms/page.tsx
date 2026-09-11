@@ -13,7 +13,7 @@ export default function TermsPage() {
       <div className="mt-8 space-y-8 text-sm leading-relaxed text-muted-foreground">
         <section>
           <h2 className="mb-2 text-base font-semibold text-foreground">제1조 (목적)</h2>
-          <p>이 약관은 휴멘드 에이치알(이하 &ldquo;회사&rdquo;)이 운영하는 인력파견 플랫폼 서비스(이하 &ldquo;서비스&rdquo;)의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.</p>
+          <p>이 약관은 (주)휴멘드에이치알(이하 &ldquo;회사&rdquo;)이 운영하는 인력파견 플랫폼 서비스(이하 &ldquo;서비스&rdquo;)의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.</p>
         </section>
 
         <section>

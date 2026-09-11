@@ -91,7 +91,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="mb-2 text-base font-semibold text-foreground">8. 개인정보 보호책임자</h2>
           <ul className="space-y-1">
-            <li><strong>회사명:</strong> 휴멘드 에이치알</li>
+            <li><strong>회사명:</strong> (주)휴멘드에이치알</li>
             <li><strong>주소:</strong> 서울특별시 구로구 디지털로34번길 55</li>
             <li><strong>연락처:</strong> 02-875-8332</li>
           </ul>
