@@ -6,6 +6,7 @@ import KakaoFloatingButton from "@/components/home/KakaoFloatingButton";
 import TermsAgreement from "@/components/layout/TermsAgreement";
 import BackgroundLocationDisclosure from "@/components/layout/BackgroundLocationDisclosure";
 import AnnouncementPopup from "@/components/announcement/AnnouncementPopup";
+import OtaReady from "@/components/layout/OtaReady";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -56,6 +57,7 @@ export default function RootLayout({
             else window.addEventListener('load',hide);
           })();
         `}} />
+        <OtaReady />
         <TooltipProvider>
           <TermsAgreement>
             <BackgroundLocationDisclosure>

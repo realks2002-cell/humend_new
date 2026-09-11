@@ -42,6 +42,12 @@ const config: CapacitorConfig = {
       smallIcon: 'ic_stat_icon_config_sample',
       iconColor: '#3B82F6',
     },
+    CapacitorUpdater: {
+      autoUpdate: true,
+      updateUrl: 'https://humendhr.com/api/app-update',
+      statsUrl: '',
+      channelUrl: '',
+    },
   },
 };
 
