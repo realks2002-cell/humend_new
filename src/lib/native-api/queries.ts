@@ -135,9 +135,15 @@ export async function getMyContracts(): Promise<WorkRecord[]> {
 
 export async function getMyParentalConsent(): Promise<ParentalConsent | null> {
   const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
   const { data, error } = await supabase
     .from("parental_consents")
     .select("*")
+    .eq("member_id", user.id)
     .eq("status", "active")
     .maybeSingle();
 

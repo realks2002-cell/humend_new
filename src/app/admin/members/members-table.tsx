@@ -5,16 +5,19 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import type { MemberWithStats } from "@/lib/supabase/queries";
+import type { MemberWithStats, ParentalConsent } from "@/lib/supabase/queries";
 import { formatPhone } from "@/lib/utils/format";
 import { MemberDetailModal } from "./member-detail-modal";
 import { HealthCertModal } from "./health-cert-modal";
+import { ParentalConsentDialog } from "./parental-consent-dialog";
+import { FamilyCertModal } from "./family-cert-modal";
 import { deleteMemberAction, getMemberWorkRecords, restoreMemberAction } from "./actions";
 import { getMemberDetail } from "../payments/actions";
 import { Search, Trash2, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 
 interface MembersTableProps {
   members: MemberWithStats[];
+  consentsMap: Record<string, ParentalConsent>;
   page: number;
   pageSize: number;
   total: number;
@@ -22,7 +25,7 @@ interface MembersTableProps {
   showDeleted: boolean;
 }
 
-export function MembersTable({ members, page, pageSize, total, search, showDeleted }: MembersTableProps) {
+export function MembersTable({ members, consentsMap, page, pageSize, total, search, showDeleted }: MembersTableProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<MemberWithStats | null>(null);
   const [selectedProfileUrl, setSelectedProfileUrl] = useState<string | null>(null);
@@ -31,6 +34,8 @@ export function MembersTable({ members, page, pageSize, total, search, showDelet
   const [isPending, startTransition] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [healthCertMember, setHealthCertMember] = useState<MemberWithStats | null>(null);
+  const [consentData, setConsentData] = useState<{ consent: ParentalConsent; member: MemberWithStats } | null>(null);
+  const [familyCertMember, setFamilyCertMember] = useState<MemberWithStats | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const totalPages = Math.ceil(total / pageSize);
@@ -154,12 +159,14 @@ export function MembersTable({ members, page, pageSize, total, search, showDelet
               <th className="hidden px-2 py-3 font-medium md:table-cell">메모</th>
               <th className="px-2 py-3 font-medium">상태</th>
               <th className="px-2 py-3 font-medium w-[60px]">{showDeleted ? "복구" : "삭제"}</th>
+              <th className="hidden px-2 py-3 font-medium md:table-cell">동의서</th>
+              <th className="hidden px-2 py-3 font-medium md:table-cell">가족관계</th>
             </tr>
           </thead>
           <tbody>
             {members.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-2 py-8 text-center">
+                <td colSpan={12} className="px-2 py-8 text-center">
                   {search ? "검색 결과가 없습니다." : "등록된 회원이 없습니다."}
                 </td>
               </tr>
@@ -234,6 +241,33 @@ export function MembersTable({ members, page, pageSize, total, search, showDelet
                       </Button>
                     )}
                   </td>
+                  <td className="hidden px-2 py-3 text-center md:table-cell">
+                    {consentsMap[m.id] ? (
+                      <button
+                        type="button"
+                        className="text-blue-600 hover:underline font-medium"
+                        onClick={() => setConsentData({ consent: consentsMap[m.id], member: m })}
+                      >
+                        보기
+                      </button>
+                    ) : (
+                      <span className="text-muted-foreground">없음</span>
+                    )}
+                  </td>
+                  <td className="hidden px-2 py-3 text-center md:table-cell">
+                    {m.family_cert_path ? (
+                      <button
+                        type="button"
+                        className="text-blue-600 hover:underline font-medium"
+                        title={m.family_cert_uploaded_at ? `업로드일 ${new Date(m.family_cert_uploaded_at).toLocaleDateString("ko-KR")}` : undefined}
+                        onClick={() => setFamilyCertMember(m)}
+                      >
+                        보기
+                      </button>
+                    ) : (
+                      <span className="text-muted-foreground">없음</span>
+                    )}
+                  </td>
                 </tr>
               ))
             )}
@@ -300,6 +334,19 @@ export function MembersTable({ members, page, pageSize, total, search, showDelet
         open={!!healthCertMember}
         onOpenChange={(open) => { if (!open) setHealthCertMember(null); }}
       />
+
+      <ParentalConsentDialog
+        data={consentData}
+        onOpenChange={(open) => { if (!open) setConsentData(null); }}
+      />
+
+      {familyCertMember && (
+        <FamilyCertModal
+          key={familyCertMember.id}
+          member={familyCertMember}
+          onOpenChange={(open) => { if (!open) setFamilyCertMember(null); }}
+        />
+      )}
     </>
   );
 }

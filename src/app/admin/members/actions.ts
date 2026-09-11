@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { getWorkRecordsByMemberId } from "@/lib/supabase/queries";
 import { requireAdmin } from "@/lib/supabase/require-admin";
+import { getFamilyCertSignedUrl } from "@/lib/family-cert";
 
 export async function deleteMemberAction(memberId: string) {
   await requireAdmin();
@@ -42,6 +43,11 @@ export async function restoreMemberAction(memberId: string) {
 export async function getMemberWorkRecords(memberId: string) {
   await requireAdmin();
   return getWorkRecordsByMemberId(memberId);
+}
+
+export async function getMemberFamilyCert(memberId: string) {
+  await requireAdmin();
+  return getFamilyCertSignedUrl(memberId);
 }
 
 export async function updateMemberMemo(memberId: string, memo: string) {

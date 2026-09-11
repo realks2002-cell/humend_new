@@ -12,6 +12,7 @@ import { toast } from "sonner";
 
 interface ConsentFormProps {
   profile: Member;
+  onSubmitted?: () => void;
 }
 
 function formatPhone(phone: string) {
@@ -27,7 +28,7 @@ function formatBirthDate(date: string | null) {
   return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
-export function ConsentForm({ profile }: ConsentFormProps) {
+export function ConsentForm({ profile, onSubmitted }: ConsentFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -58,20 +59,26 @@ export function ConsentForm({ profile }: ConsentFormProps) {
     }
 
     setLoading(true);
-    const result = await submitConsent({
-      guardianName: form.guardianName,
-      guardianPhone: form.guardianPhone,
-      guardianRelationship: form.guardianRelationship,
-      signatureDataUrl,
-    });
-    setLoading(false);
+    try {
+      const result = await submitConsent({
+        guardianName: form.guardianName,
+        guardianPhone: form.guardianPhone,
+        guardianRelationship: form.guardianRelationship,
+        signatureDataUrl,
+      });
 
-    if (result.error) {
-      toast.error("제출 실패", { description: result.error });
-      return;
+      if (result.error) {
+        toast.error("제출 실패", { description: result.error });
+        return;
+      }
+      toast.success("업로드가 완료되었습니다.", { duration: 1000 });
+      if (onSubmitted) onSubmitted();
+      else router.refresh();
+    } catch {
+      toast.error("제출 실패", { description: "잠시 후 다시 시도해 주세요." });
+    } finally {
+      setLoading(false);
     }
-    toast.success("친권자 동의서가 제출되었습니다.");
-    router.refresh();
   }
 
   return (
@@ -144,7 +151,7 @@ export function ConsentForm({ profile }: ConsentFormProps) {
       <div className="rounded-lg border bg-slate-50 p-5 text-center">
         <p className="text-sm leading-relaxed">
           본인은 위 연소근로자 <strong className="text-base">{profile.name ?? "___"}</strong>가
-          (주)휴멘드에서 제공하는 사업장에서 근로를 하는 것에 대하여 동의합니다.
+          (주)휴멘드에이치알에서 제공하는 사업장에서 근로를 하는 것에 대하여 동의합니다.
         </p>
         <p className="mt-4 text-sm text-muted-foreground">{dateStr}</p>
       </div>

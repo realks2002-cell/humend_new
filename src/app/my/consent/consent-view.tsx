@@ -12,6 +12,7 @@ import { toast } from "sonner";
 interface ConsentViewProps {
   consent: ParentalConsent;
   profile: Member;
+  onRevoked?: () => void;
 }
 
 function formatPhone(phone: string) {
@@ -32,21 +33,27 @@ function formatConsentDate(dateStr: string) {
   return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
-export function ConsentView({ consent, profile }: ConsentViewProps) {
+export function ConsentView({ consent, profile, onRevoked }: ConsentViewProps) {
   const router = useRouter();
   const [revoking, setRevoking] = useState(false);
 
   async function handleRevoke() {
     if (!confirm("동의서를 철회하고 다시 작성하시겠습니까?")) return;
     setRevoking(true);
-    const result = await revokeConsent();
-    setRevoking(false);
-    if (result.error) {
-      toast.error("철회 실패", { description: result.error });
-      return;
+    try {
+      const result = await revokeConsent();
+      if (result.error) {
+        toast.error("철회 실패", { description: result.error });
+        return;
+      }
+      toast.success("동의서가 철회되었습니다. 다시 작성해주세요.");
+      if (onRevoked) onRevoked();
+      else router.refresh();
+    } catch {
+      toast.error("철회 실패", { description: "잠시 후 다시 시도해 주세요." });
+    } finally {
+      setRevoking(false);
     }
-    toast.success("동의서가 철회되었습니다. 다시 작성해주세요.");
-    router.refresh();
   }
 
   return (
@@ -118,7 +125,7 @@ export function ConsentView({ consent, profile }: ConsentViewProps) {
         <div className="rounded-lg border bg-slate-50 p-5 text-center mt-4">
           <p className="text-sm leading-relaxed">
             본인은 위 연소근로자 <strong className="text-base">{profile.name ?? "___"}</strong>가
-            (주)휴멘드에서 제공하는 사업장에서 근로를 하는 것에 대하여 동의합니다.
+            (주)휴멘드에이치알에서 제공하는 사업장에서 근로를 하는 것에 대하여 동의합니다.
           </p>
           <p className="mt-4 text-sm text-muted-foreground">
             {formatConsentDate(consent.consented_at)}

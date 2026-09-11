@@ -243,28 +243,71 @@ export async function submitDirectSalary(input: {
   return res.json();
 }
 
+type ApiResult = {
+  error?: string;
+  success?: boolean;
+  url?: string | null;
+  uploadedAt?: string | null;
+};
+
+async function requestApi(
+  path: string,
+  init: { method: string; body?: BodyInit; json?: boolean },
+): Promise<ApiResult> {
+  try {
+    const supabase = createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) return { error: "로그인이 필요합니다." };
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${session.access_token}`,
+    };
+    if (init.json) headers["Content-Type"] = "application/json";
+
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: init.method,
+      headers,
+      body: init.body,
+    });
+    const data = (await res.json().catch(() => null)) as ApiResult | null;
+    if (res.status === 401) return { error: "로그인이 필요합니다." };
+    if (!res.ok || !data || data.error) {
+      return { error: data?.error || "잠시 후 다시 시도해 주세요." };
+    }
+    return data;
+  } catch {
+    return { error: "네트워크 연결을 확인하고 다시 시도해 주세요." };
+  }
+}
+
 export async function submitConsent(input: {
   guardianName: string;
   guardianPhone: string;
   guardianRelationship: string;
   signatureDataUrl: string;
 }) {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`${API_BASE}/api/native/my/submit-consent`, {
+  return requestApi("/api/native/my/submit-consent", {
     method: "POST",
-    headers,
     body: JSON.stringify(input),
+    json: true,
   });
-  return res.json();
 }
 
 export async function revokeConsent() {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`${API_BASE}/api/native/my/revoke-consent`, {
+  return requestApi("/api/native/my/revoke-consent", { method: "POST" });
+}
+
+export async function uploadFamilyCert(formData: FormData) {
+  return requestApi("/api/native/my/family-cert", {
     method: "POST",
-    headers,
+    body: formData,
   });
-  return res.json();
+}
+
+export async function getFamilyCert() {
+  return requestApi("/api/native/my/family-cert", { method: "GET" });
 }
 
 export async function uploadProfilePhoto(file: File) {

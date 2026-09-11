@@ -23,6 +23,7 @@ import {
 import { type PaymentRecord, getPaymentsForCsvExport, getMemberDetail, getConsentForMember, deletePayment } from "./actions";
 import { type Member, type Payment, type ParentalConsent } from "@/lib/supabase/queries";
 import { MemberDetailModal } from "../members/member-detail-modal";
+import { ParentalConsentDialog } from "../members/parental-consent-dialog";
 import { PayslipContent, type PayslipRecord } from "@/app/my/salary/payslip-modal";
 
 function toDateStr(d: Date) {
@@ -504,46 +505,10 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
       </Dialog>
 
       {/* 친권자 동의서 보기 */}
-      <Dialog open={!!consentData} onOpenChange={(open) => { if (!open) setConsentData(null); }}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>친권자 (후견인) 동의서</DialogTitle>
-          </DialogHeader>
-          {consentData && (
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-semibold mb-2">■ 친권자 인적사항</h4>
-                <div className="space-y-1 text-sm">
-                  <div className="flex gap-2"><span className="text-muted-foreground w-20 shrink-0">성명</span><span>{consentData.consent.guardian_name}</span></div>
-                  <div className="flex gap-2"><span className="text-muted-foreground w-20 shrink-0">연락처</span><span>{consentData.consent.guardian_phone}</span></div>
-                  <div className="flex gap-2"><span className="text-muted-foreground w-20 shrink-0">관계</span><span>{consentData.consent.guardian_relationship}</span></div>
-                </div>
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold mb-2">■ 연소근로자 인적사항</h4>
-                <div className="space-y-1 text-sm">
-                  <div className="flex gap-2"><span className="text-muted-foreground w-20 shrink-0">성명</span><span>{consentData.member.name ?? "-"}</span></div>
-                  <div className="flex gap-2"><span className="text-muted-foreground w-20 shrink-0">생년월일</span><span>{consentData.member.birth_date ?? "-"}</span></div>
-                  <div className="flex gap-2"><span className="text-muted-foreground w-20 shrink-0">연락처</span><span>{consentData.member.phone}</span></div>
-                </div>
-              </div>
-              <div className="rounded-lg border bg-slate-50 p-3 text-center text-sm">
-                본인은 위 연소근로자 <strong>{consentData.member.name ?? "___"}</strong>가
-                (주)휴멘드에서 제공하는 사업장에서 근로를 하는 것에 대하여 동의합니다.
-              </div>
-              <div className="text-center text-sm text-muted-foreground">
-                {new Date(consentData.consent.consented_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
-              </div>
-              <div>
-                <p className="text-sm font-semibold mb-1">친권자 서명</p>
-                <div className="rounded-lg border bg-white p-2">
-                  <img src={consentData.consent.signature_url} alt="서명" className="h-20 mx-auto object-contain" />
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ParentalConsentDialog
+        data={consentData}
+        onOpenChange={(open) => { if (!open) setConsentData(null); }}
+      />
     </div>
   );
 }

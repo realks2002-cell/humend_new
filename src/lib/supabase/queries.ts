@@ -105,6 +105,8 @@ export interface Member {
   password: string | null;
   health_cert_date: string | null;
   health_cert_image_url: string | null;
+  family_cert_path?: string | null;
+  family_cert_uploaded_at?: string | null;
   admin_memo: string | null;
   status: string;
   created_at: string;

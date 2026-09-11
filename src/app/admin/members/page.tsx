@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users } from "lucide-react";
-import { getMembersPaginated } from "@/lib/supabase/queries";
+import { getMembersPaginated, getParentalConsentsByMemberIds } from "@/lib/supabase/queries";
 import { MembersTable } from "./members-table";
 
 const PAGE_SIZE = 50;
@@ -23,6 +23,7 @@ export default async function AdminMembersPage({
     search,
     includeDeleted: showDeleted,
   });
+  const consentsMap = await getParentalConsentsByMemberIds(members.map((m) => m.id));
 
   return (
     <div className="p-6 space-y-6">
@@ -43,6 +44,7 @@ export default async function AdminMembersPage({
         <CardContent className="p-0">
           <MembersTable
             members={members}
+            consentsMap={consentsMap}
             page={page}
             pageSize={PAGE_SIZE}
             total={total}

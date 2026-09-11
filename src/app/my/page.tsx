@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   ClipboardList, Calendar, ArrowRight,
-  Clock, Wallet, User, FileSignature, ShieldCheck,
+  Clock, Wallet, User, FileSignature, ShieldCheck, Users,
 } from "lucide-react";
 import { ChangePasswordButton } from "./change-password-button";
 import { DeleteAccountButton } from "./delete-account-button";
@@ -72,6 +72,7 @@ export default async function MyPage() {
     { href: "/my/applications", icon: ClipboardList, label: "근무신청 조회", desc: "내 지원 현황 확인", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
     { href: "/my/history", icon: Clock, label: "근무내역", desc: "월별 근무내역 조회", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
     { href: "/my/consent", icon: FileSignature, label: "친권자 동의서", desc: consent ? "제출 완료" : "미성년자 동의서 작성", gradient: consent ? "from-emerald-500/5 to-green-500/5" : "from-amber-500/5 to-orange-500/5", iconBg: "", iconColor: consent ? "text-emerald-600" : "text-amber-600" },
+    { href: "/my/family-cert", icon: Users, label: "가족관계증명서", desc: profile?.family_cert_path ? "업로드 완료" : "가족관계증명서 업로드", gradient: profile?.family_cert_path ? "from-emerald-500/5 to-green-500/5" : "from-amber-500/5 to-orange-500/5", iconBg: "", iconColor: profile?.family_cert_path ? "text-emerald-600" : "text-amber-600" },
     { href: "/my/health-cert", icon: ShieldCheck, label: "보건증 제출", desc: profile?.health_cert_date ? "제출 완료" : "보건증 이미지 제출", gradient: profile?.health_cert_date ? "from-emerald-500/5 to-green-500/5" : "from-amber-500/5 to-orange-500/5", iconBg: "", iconColor: profile?.health_cert_date ? "text-emerald-600" : "text-amber-600" },
   ];
 

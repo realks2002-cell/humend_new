@@ -14,6 +14,7 @@ function ConsentContent() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Member | null>(null);
   const [consent, setConsent] = useState<ParentalConsent | null>(null);
+  const [key, setKey] = useState(0);
 
   useEffect(() => {
     async function fetchData() {
@@ -32,7 +33,12 @@ function ConsentContent() {
       setLoading(false);
     }
     fetchData();
-  }, [router]);
+  }, [router, key]);
+
+  function reload() {
+    setLoading(true);
+    setKey((k) => k + 1);
+  }
 
   if (loading) {
     return (
@@ -45,10 +51,10 @@ function ConsentContent() {
   if (!profile) return null;
 
   if (consent) {
-    return <ConsentView consent={consent} profile={profile} />;
+    return <ConsentView consent={consent} profile={profile} onRevoked={reload} />;
   }
 
-  return <ConsentForm profile={profile} />;
+  return <ConsentForm profile={profile} onSubmitted={reload} />;
 }
 
 export default function ConsentPage() {
