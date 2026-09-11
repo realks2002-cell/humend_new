@@ -127,7 +127,7 @@ export function ContractViewModal({ record, signatureUrl, trigger, open: control
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">4. 계약일</p>
-                  <p>계약일시: {record.signed_at ? record.signed_at.slice(0, 10) : record.work_date}</p>
+                  <p>계약일시: {record.work_date}</p>
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">5. 근로임금</p>
@@ -142,11 +142,12 @@ export function ContractViewModal({ record, signatureUrl, trigger, open: control
                     </div>
                     <div className="flex text-xs">
                       <div className="w-24 shrink-0 bg-gray-100 px-2 py-1.5 font-medium border-r">급여산정</div>
-                      <div className="px-2 py-1.5">{record.wage_type === "일급" ? "기본일급=1일임금" : "기본시급x(근무시간-공제시간)=1일임금"}</div>
+                      <div className="px-2 py-1.5">{record.wage_type === "일급" ? "기본일급=1일임금" : "기본시급x(상주시간-휴게시간)=1일임금"}</div>
                     </div>
                   </div>
                   <p className="mt-2 text-xs text-gray-500">※ {record.wage_type === "일급" ? "기본일급은 홈페이지에 공지된 일급이며" : "기본시급은 홈페이지에 공지된 시급이며"} 별도의 안내를 받으신분은 따로 기입후 지급됨</p>
                   <p className="text-xs text-gray-500">※ 임금은 근무 후 익 주 월~수요일 19시 지급이며 근무업장 사정에 따라 최대 7일, 최소 2시간 지연 입금 될 수 있다.</p>
+                  <p className="text-xs text-gray-500">※ 1일 임금은 주휴수당 및 휴일수당 포함된 임금</p>
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">6. 적용제외</p>

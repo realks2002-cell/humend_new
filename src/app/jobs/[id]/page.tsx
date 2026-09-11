@@ -126,6 +126,7 @@ export default async function JobDetailPage({
                         <span className="text-sm text-foreground">모집인원 {job.headcount}명</span>
                         <ApplyButton
                           postingId={job.id}
+                          closed={job.status !== "open"}
                           clientName={data.company_name}
                           workDate={formatDate(job.work_date)}
                           startTime={job.start_time}
@@ -172,6 +173,7 @@ export default async function JobDetailPage({
                         <div className="mt-1">
                           <ApplyButton
                             postingId={job.id}
+                            closed={job.status !== "open"}
                             clientName={data.company_name}
                             workDate={
                               job.start_date && job.end_date

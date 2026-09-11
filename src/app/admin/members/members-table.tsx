@@ -11,7 +11,7 @@ import { MemberDetailModal } from "./member-detail-modal";
 import { HealthCertModal } from "./health-cert-modal";
 import { ParentalConsentDialog } from "./parental-consent-dialog";
 import { FamilyCertModal } from "./family-cert-modal";
-import { deleteMemberAction, getMemberWorkRecords, restoreMemberAction } from "./actions";
+import { deleteMemberAction, getMemberWorkRecords, purgeMemberAction, restoreMemberAction } from "./actions";
 import { getMemberDetail } from "../payments/actions";
 import { Search, Trash2, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 
@@ -23,9 +23,10 @@ interface MembersTableProps {
   total: number;
   search: string;
   showDeleted: boolean;
+  healthCert?: "has" | "none";
 }
 
-export function MembersTable({ members, consentsMap, page, pageSize, total, search, showDeleted }: MembersTableProps) {
+export function MembersTable({ members, consentsMap, page, pageSize, total, search, showDeleted, healthCert }: MembersTableProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<MemberWithStats | null>(null);
   const [selectedProfileUrl, setSelectedProfileUrl] = useState<string | null>(null);
@@ -52,6 +53,7 @@ export function MembersTable({ members, consentsMap, page, pageSize, total, sear
       const params = new URLSearchParams();
       if (value.trim()) params.set("search", value.trim());
       if (showDeleted) params.set("deleted", "1");
+      if (healthCert) params.set("cert", healthCert);
       params.set("page", "1");
       router.push(`/admin/members?${params.toString()}`);
     }, 400);
@@ -61,6 +63,7 @@ export function MembersTable({ members, consentsMap, page, pageSize, total, sear
     const params = new URLSearchParams();
     if (search) params.set("search", search);
     if (showDeleted) params.set("deleted", "1");
+    if (healthCert) params.set("cert", healthCert);
     params.set("page", String(p));
     router.push(`/admin/members?${params.toString()}`);
   }
@@ -70,9 +73,20 @@ export function MembersTable({ members, consentsMap, page, pageSize, total, sear
     const params = new URLSearchParams();
     if (search) params.set("search", search);
     if (next) params.set("deleted", "1");
+    if (healthCert) params.set("cert", healthCert);
     params.set("page", "1");
     router.push(`/admin/members?${params.toString()}`);
     router.refresh();
+  }
+
+  function changeHealthCert(next?: "has" | "none") {
+    if (next === healthCert) return;
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (showDeleted) params.set("deleted", "1");
+    if (next) params.set("cert", next);
+    params.set("page", "1");
+    router.push(`/admin/members?${params.toString()}`);
   }
 
   function handleMemberClick(member: MemberWithStats) {
@@ -96,6 +110,21 @@ export function MembersTable({ members, consentsMap, page, pageSize, total, sear
       const result = await deleteMemberAction(memberId);
       if (result.error) {
         alert(result.error);
+      }
+      setDeletingId(null);
+    });
+  }
+
+  function handlePurge(memberId: string, memberName: string | null) {
+    const name = memberName ?? "이름 없음";
+    if (!confirm(`"${name}" 회원을 DB에서 완전히 삭제합니다.\n\n계정, 회원정보, 근무기록, 급여, 계약서, 지원내역, 채팅, 보건증·가족관계증명서 등 파일까지 모두 지워지며 되돌릴 수 없습니다.\n\n계속하시겠습니까?`)) return;
+    setDeletingId(memberId);
+    startTransition(async () => {
+      const result = await purgeMemberAction(memberId);
+      if (result.error) {
+        alert(result.error);
+      } else if (result.fileErrorCount) {
+        alert(`회원 데이터는 삭제했지만 파일 ${result.fileErrorCount}건 삭제에 실패했습니다.`);
       }
       setDeletingId(null);
     });
@@ -125,6 +154,20 @@ export function MembersTable({ members, consentsMap, page, pageSize, total, sear
             onChange={(e) => handleSearchChange(e.target.value)}
           />
         </div>
+        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-1 rounded-xl border p-1">
+          {([[undefined, "보건증 전체"], ["has", "보건증 있음"], ["none", "보건증 없음"]] as const).map(([value, label]) => (
+            <Button
+              key={label}
+              variant={healthCert === value ? "default" : "ghost"}
+              size="sm"
+              onClick={() => changeHealthCert(value)}
+              className="h-8"
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
         <div className="flex gap-1 rounded-xl border p-1">
           <Button
             variant={showDeleted ? "ghost" : "default"}
@@ -143,6 +186,7 @@ export function MembersTable({ members, consentsMap, page, pageSize, total, sear
             삭제된 회원
           </Button>
         </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -159,6 +203,7 @@ export function MembersTable({ members, consentsMap, page, pageSize, total, sear
               <th className="hidden px-2 py-3 font-medium md:table-cell">메모</th>
               <th className="px-2 py-3 font-medium">상태</th>
               <th className="px-2 py-3 font-medium w-[60px]">{showDeleted ? "복구" : "삭제"}</th>
+              {showDeleted && <th className="px-2 py-3 font-medium w-[72px]">완전삭제</th>}
               <th className="hidden px-2 py-3 font-medium md:table-cell">동의서</th>
               <th className="hidden px-2 py-3 font-medium md:table-cell">가족관계</th>
             </tr>
@@ -166,13 +211,13 @@ export function MembersTable({ members, consentsMap, page, pageSize, total, sear
           <tbody>
             {members.length === 0 ? (
               <tr>
-                <td colSpan={12} className="px-2 py-8 text-center">
+                <td colSpan={showDeleted ? 13 : 12} className="px-2 py-8 text-center">
                   {search ? "검색 결과가 없습니다." : "등록된 회원이 없습니다."}
                 </td>
               </tr>
             ) : (
               members.map((m) => (
-                <tr key={m.id} className="border-b last:border-0">
+                <tr key={m.id} className="border-b last:border-0 transition-colors hover:bg-muted/50">
                   <td className="px-2 py-3 text-center">
                     <button
                       type="button"
@@ -241,6 +286,21 @@ export function MembersTable({ members, consentsMap, page, pageSize, total, sear
                       </Button>
                     )}
                   </td>
+                  {showDeleted && (
+                    <td className="px-2 py-3 text-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        disabled={isPending && deletingId === m.id}
+                        onClick={() => handlePurge(m.id, m.name)}
+                        aria-label="완전삭제"
+                        title="DB에서 완전 삭제"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  )}
                   <td className="hidden px-2 py-3 text-center md:table-cell">
                     {consentsMap[m.id] ? (
                       <button

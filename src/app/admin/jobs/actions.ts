@@ -2,7 +2,8 @@
 
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { notifyNewJobPosting } from "@/lib/push/notify";
+import { after } from "next/server";
+import { notifyNewJobPosting, notifyUrgentJob } from "@/lib/push/notify";
 
 async function getAdminSupabase() {
   const supabase = await createClient();
@@ -134,12 +135,20 @@ export async function updateJobPosting(postingId: string, formData: FormData) {
   const startTime = formData.get("start_time") as string;
   const endTime = formData.get("end_time") as string;
   const headcount = Number(formData.get("headcount")) || 1;
-  const status = formData.get("status") as string;
+  // "급구"는 상태가 아니라 모집중 + is_urgent 표시로 저장 (앱·지원 검사는 open 기준)
+  const rawStatus = formData.get("status") as string;
+  const isUrgent = rawStatus === "urgent";
+  const status = isUrgent ? "open" : rawStatus;
   const postingType = (formData.get("posting_type") as string) || "daily";
 
   if (!startTime || !endTime) {
     return { error: "시간을 입력해주세요." };
   }
+  if (!["open", "closed", "completed"].includes(status)) {
+    return { error: "상태 값이 올바르지 않습니다." };
+  }
+
+  const { data: before } = await db.from("job_postings").select("is_urgent").eq("id", postingId).maybeSingle();
 
   if (postingType === "fixed_term") {
     const startDate = formData.get("start_date") as string;
@@ -160,6 +169,7 @@ export async function updateJobPosting(postingId: string, formData: FormData) {
         end_time: endTime,
         headcount,
         status,
+        is_urgent: isUrgent,
         start_date: startDate,
         end_date: endDate,
         work_date: startDate, // 하위 호환
@@ -180,7 +190,7 @@ export async function updateJobPosting(postingId: string, formData: FormData) {
 
     const { error } = await db
       .from("job_postings")
-      .update({ work_date: workDate, start_time: startTime, end_time: endTime, headcount, status })
+      .update({ work_date: workDate, start_time: startTime, end_time: endTime, headcount, status, is_urgent: isUrgent })
       .eq("id", postingId);
 
     if (error) {
@@ -189,9 +199,14 @@ export async function updateJobPosting(postingId: string, formData: FormData) {
     }
   }
 
+  // 급구로 바뀌는 순간에만 전 회원 푸시 (응답 후 백그라운드 발송, Vercel waitUntil로 끝까지 실행)
+  if (isUrgent && !before?.is_urgent) {
+    after(() => notifyUrgentJob(postingId).catch((e) => console.error("[notifyUrgentJob]", e)));
+  }
+
   revalidatePath("/admin/jobs");
   revalidatePath("/jobs");
-  return { success: true };
+  return { success: true, urgentNotified: isUrgent && !before?.is_urgent };
 }
 
 export async function updateJobStatus(postingId: string, status: string) {
@@ -200,7 +215,7 @@ export async function updateJobStatus(postingId: string, status: string) {
 
   const { error } = await db
     .from("job_postings")
-    .update({ status })
+    .update({ status, ...(status !== "open" ? { is_urgent: false } : {}) })
     .eq("id", postingId);
 
   if (error) return { error: "상태 변경에 실패했습니다." };

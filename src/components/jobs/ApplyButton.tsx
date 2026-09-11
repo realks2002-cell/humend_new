@@ -29,6 +29,7 @@ interface ApplyButtonProps {
   workDays?: number[];
   size?: "sm" | "default";
   className?: string;
+  closed?: boolean;
 }
 
 export function ApplyButton({
@@ -41,6 +42,7 @@ export function ApplyButton({
   workDays,
   size = "sm",
   className,
+  closed,
 }: ApplyButtonProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -66,6 +68,19 @@ export function ApplyButton({
       toast.error("지원 실패", { description: res.error });
     }
   };
+
+  if (closed) {
+    return (
+      <Button
+        size={size}
+        variant="outline"
+        className={`rounded-none border-gray-300 text-muted-foreground ${className ?? ""}`}
+        onClick={() => toast.info("마감되었습니다.")}
+      >
+        마감
+      </Button>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setResult(null); }}>

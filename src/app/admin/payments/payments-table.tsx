@@ -291,6 +291,7 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
             <col className="w-[80px] hidden md:table-column" />
             <col className="w-[70px] hidden md:table-column" />
             <col className="w-[80px] hidden md:table-column" />
+            <col className="w-[90px] hidden md:table-column" />
             <col className="w-[100px] hidden lg:table-column" />
             <col className="w-[100px] hidden sm:table-column" />
             <col className="w-[100px]" />
@@ -306,6 +307,7 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
               <th className="pb-2 px-2 hidden md:table-cell">종료시간</th>
               <th className="pb-2 px-2 hidden md:table-cell">시급/일급</th>
               <th className="pb-2 px-2 hidden md:table-cell">근무시간</th>
+              <th className="pb-2 px-2 hidden md:table-cell">시급</th>
               <th className="pb-2 px-2 hidden lg:table-cell">공제내역</th>
               <th className="pb-2 px-2 hidden sm:table-cell">총지급액</th>
               <th className="pb-2 px-2">실수령액</th>
@@ -316,7 +318,7 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={12} className="py-8 text-center text-muted-foreground">
+                <td colSpan={13} className="py-8 text-center text-muted-foreground">
                   급여지급 내역이 없습니다.
                 </td>
               </tr>
@@ -338,7 +340,7 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
                   p.income_tax > 0 ? `소득세 ${formatCurrency(p.income_tax)}` : null,
                 ].filter(Boolean);
                 return (
-                  <tr key={p.id} className="border-b hover:bg-muted/50">
+                  <tr key={p.id} className="border-b transition-colors hover:bg-muted/50">
                     <td className="py-2 px-2 text-center">
                       <div className="flex items-center justify-center gap-1 flex-wrap">
                         {member ? (
@@ -376,6 +378,7 @@ export function PaymentsTable({ payments, membersMap, consentsMap, profileImageU
                       {wr?.wage_type ?? "-"}
                     </td>
                     <td className="py-2 px-2 hidden md:table-cell text-center">{totalHours}h</td>
+                    <td className="py-2 px-2 hidden md:table-cell text-center">{p.hourly_wage ? formatCurrency(p.hourly_wage) : "-"}</td>
                     <td className="py-2 px-2 hidden lg:table-cell text-center">
                       {p.total_deduction > 0 ? (
                         <Popover>

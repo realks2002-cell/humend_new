@@ -34,7 +34,7 @@ export default async function NotificationsPage() {
               </thead>
               <tbody className="divide-y">
                 {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-muted/30">
+                  <tr key={log.id} className="transition-colors hover:bg-muted/50">
                     <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
                       {new Date(log.created_at).toLocaleString("ko-KR", {
                         month: "short",

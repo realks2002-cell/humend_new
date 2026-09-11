@@ -50,29 +50,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (app.status !== "대기" && app.status !== "승인") {
+  // 승인된 근무는 계약서·급여가 연결되므로 회원이 취소 불가 (관리자만 처리) — 구버전 앱의 취소 버튼도 여기서 차단
+  if (app.status === "승인") {
+    return NextResponse.json({ error: "관리자가 승인한 근무는 취소할 수 없습니다. 카카오톡 상담으로 문의해 주세요." }, { status: 400 });
+  }
+  if (app.status !== "대기") {
     return NextResponse.json(
-      { error: "대기 또는 승인 상태의 지원만 취소할 수 있습니다." },
+      { error: "대기 상태의 지원만 취소할 수 있습니다." },
       { status: 400 },
     );
-  }
-
-  // 승인 상태인 경우 연관된 work_records/payments 삭제
-  if (app.status === "승인") {
-    const { data: workRecords } = await admin
-      .from("work_records")
-      .select("id")
-      .eq("application_id", applicationId);
-
-    if (workRecords && workRecords.length > 0) {
-      const wrIds = workRecords.map((r: { id: string }) => r.id);
-      await admin.from("payments").delete().in("work_record_id", wrIds);
-    }
-
-    await admin
-      .from("work_records")
-      .delete()
-      .eq("application_id", applicationId);
   }
 
   // 상태를 취소로 변경

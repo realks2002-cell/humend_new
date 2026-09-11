@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendPush, sendPushToTokens } from "./fcm";
+import { formatDate, formatDateRange } from "@/lib/utils/format";
 
 interface NotifyOptions {
   memberId: string;
@@ -53,15 +54,23 @@ async function notifyAll(opts: {
 }) {
   const supabase = createAdminClient();
 
-  const { data: tokens } = await supabase
-    .from("device_tokens")
-    .select("fcm_token");
+  // Supabase는 한 번에 최대 1,000행 → 토큰이 1,000개를 넘으면 나눠서 전부 조회
+  const tokens: string[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data: page } = await supabase
+      .from("device_tokens")
+      .select("fcm_token")
+      .order("id")
+      .range(from, from + 999);
+    tokens.push(...(page ?? []).map((t) => t.fcm_token));
+    if (!page || page.length < 1000) break;
+  }
 
-  if (!tokens || tokens.length === 0) return 0;
+  if (tokens.length === 0) return 0;
 
   const data: Record<string, string> = opts.url ? { url: opts.url } : {};
   const result = await sendPushToTokens(
-    tokens.map((t) => t.fcm_token),
+    tokens,
     { title: opts.title, body: opts.body, data }
   );
 
@@ -165,6 +174,38 @@ export async function notifyPaymentConfirmed(
     title: "급여가 확정되었습니다",
     body: `실수령액 ${formatted}원이 확정되었습니다.`,
     url: "/my/salary",
+  });
+}
+
+/** 급여 지급 알림 (구글시트 가져오기로 지급 처리 시) */
+export async function notifyPaymentPaid(memberId: string) {
+  await notifyMember({
+    memberId,
+    title: "급여가 지급되었습니다.",
+    body: "",
+    url: "/my/salary",
+  });
+}
+
+/** 급구 공고 알림 (앱 설치 회원 전체) — 누르면 앱의 해당 고객사 공고(지원) 화면으로 이동 */
+export async function notifyUrgentJob(postingId: string) {
+  const supabase = createAdminClient();
+  const { data: job } = await supabase
+    .from("job_postings")
+    .select("client_id, work_date, start_time, end_time, headcount, posting_type, start_date, end_date, clients(company_name)")
+    .eq("id", postingId)
+    .maybeSingle();
+  if (!job) return 0;
+
+  const client = job.clients as unknown as { company_name: string } | null;
+  const date = job.posting_type === "fixed_term" && job.start_date && job.end_date
+    ? formatDateRange(job.start_date, job.end_date)
+    : formatDate(job.work_date);
+
+  return notifyAll({
+    title: `🔥 급구 | ${client?.company_name ?? "공고"}`,
+    body: `${date} ${job.start_time.slice(0, 5)}~${job.end_time.slice(0, 5)} · 모집 ${job.headcount}명 — 지금 바로 지원하세요!`,
+    url: `/jobs/detail?client=${job.client_id}`,
   });
 }
 

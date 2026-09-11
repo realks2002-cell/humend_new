@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   // 본인의 지원인지 + 취소 상태 확인
   const { data: app, error: fetchError } = await admin
     .from("applications")
-    .select("id, member_id, status")
+    .select("id, member_id, status, job_postings(status)")
     .eq("id", applicationId)
     .single();
 
@@ -55,6 +55,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const posting = app.job_postings as { status: string } | { status: string }[] | null;
+  if ((Array.isArray(posting) ? posting[0] : posting)?.status !== "open") {
+    return NextResponse.json({ error: "마감되었습니다." }, { status: 400 });
+  }
+
   const { data: updated, error: updateError } = await admin
     .from("applications")
     .update({
@@ -67,6 +72,9 @@ export async function POST(req: NextRequest) {
     .select("id")
     .single();
 
+  if (updateError?.code === "P0001") {
+    return NextResponse.json({ error: updateError.message }, { status: 400 });
+  }
   if (updateError || !updated) {
     return NextResponse.json(
       { error: "재지원 처리에 실패했습니다." },

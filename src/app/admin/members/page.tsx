@@ -11,17 +11,19 @@ const PAGE_SIZE = 50;
 export default async function AdminMembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; search?: string; deleted?: string }>;
+  searchParams: Promise<{ page?: string; search?: string; deleted?: string; cert?: string }>;
 }) {
   const params = await searchParams;
   const page = Math.max(1, Number(params.page) || 1);
   const search = params.search ?? "";
   const showDeleted = params.deleted === "1";
+  const healthCert = params.cert === "has" || params.cert === "none" ? params.cert : undefined;
   const { data: members, total } = await getMembersPaginated({
     page,
     pageSize: PAGE_SIZE,
     search,
     includeDeleted: showDeleted,
+    healthCert,
   });
   const consentsMap = await getParentalConsentsByMemberIds(members.map((m) => m.id));
 
@@ -50,6 +52,7 @@ export default async function AdminMembersPage({
             total={total}
             search={search}
             showDeleted={showDeleted}
+            healthCert={healthCert}
           />
         </CardContent>
       </Card>

@@ -43,6 +43,7 @@ export const applyToJob = (memberId: string) =>
           status: "대기",
         });
 
+      if (error?.code === "P0001") return { success: false, message: error.message };
       if (error) {
         return { success: false, message: "지원에 실패했습니다. 다시 시도해주세요." };
       }

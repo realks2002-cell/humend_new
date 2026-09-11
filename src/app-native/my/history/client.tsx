@@ -17,6 +17,7 @@ import { AuthGuard } from "@/lib/native-api/auth-guard";
 const statusStyle: Record<string, string> = {
   "대기": "bg-amber-500/10 text-amber-700",
   "확정": "bg-emerald-500/10 text-emerald-700",
+  "지급": "bg-blue-500/10 text-blue-700",
   "지급완료": "bg-blue-500/10 text-blue-700",
 };
 
@@ -96,10 +97,11 @@ function HistoryContent() {
       (profile as unknown as Record<string, unknown>)?.region as string ?? "",
   };
 
-  const totalGross = records.reduce((s, r) => s + r.gross_pay, 0);
-  const totalNet = records.reduce((s, r) => s + r.net_pay, 0);
+  // 합계는 실제 지급액(payments, 시트 확정값) 기준 — work_records는 승인 시점 예상값
+  const totalGross = records.reduce((s, r) => s + Number(r.payments!.gross_pay), 0);
+  const totalNet = records.reduce((s, r) => s + Number(r.payments!.net_pay), 0);
   const totalHours = records.reduce(
-    (s, r) => s + r.work_hours + r.overtime_hours,
+    (s, r) => s + Number(r.payments!.work_hours) + Number(r.payments!.overtime_hours),
     0
   );
 
@@ -209,8 +211,8 @@ function HistoryContent() {
                         {r.client_name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDate(r.work_date)} {r.start_time.slice(0, 5)}~
-                        {r.end_time.slice(0, 5)}
+                        {formatDate(r.work_date)} {(p?.start_time ?? r.start_time).slice(0, 5)}~
+                        {(p?.end_time ?? r.end_time).slice(0, 5)}
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5">
                         <Badge

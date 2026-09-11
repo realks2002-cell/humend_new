@@ -18,7 +18,7 @@ interface Props {
 
 export default async function JobsPage({ searchParams }: Props) {
   const params = await searchParams;
-  const allClients = await getClientsWithJobs();
+  const allClients = await getClientsWithJobs({ includeClosed: true });
 
   // 드롭박스용 고객사 목록 (필터 전 전체 목록)
   const clientNames = allClients.map((c) => ({ id: c.id, name: c.company_name }));
@@ -134,11 +134,11 @@ export default async function JobsPage({ searchParams }: Props) {
                   </div>
                   <div className="mt-3 flex items-center justify-between">
                     <span className="font-medium text-primary">{formatClientWage(client)}</span>
-                    <Badge variant="secondary">{client.job_postings.length}건 모집중</Badge>
+                    <Badge variant="secondary">{client.job_postings.some((j) => j.status === "open") ? `${client.job_postings.filter((j) => j.status === "open").length}건 모집중` : "마감"}</Badge>
                   </div>
                   <div className="mt-4 grid grid-cols-3 gap-1.5">
                     {client.job_postings.map((job) => (
-                      <div key={job.id} className="flex flex-col items-center gap-1 rounded-lg border p-2 text-center">
+                      <div key={job.id} className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center ${job.status !== "open" ? "opacity-60" : ""}`}>
                         <span className="text-[11px] font-medium">{formatDate(job.work_date)}</span>
                         <span className="text-[11px] font-semibold text-foreground">
                           {formatTime(job.start_time)}~{formatTime(job.end_time)}
@@ -146,6 +146,7 @@ export default async function JobsPage({ searchParams }: Props) {
                         <span className="text-[11px] text-muted-foreground">모집 {job.headcount}명</span>
                         <ApplyButton
                           postingId={job.id}
+                          closed={job.status !== "open"}
                           clientName={client.company_name}
                           workDate={formatDate(job.work_date)}
                           startTime={job.start_time}
@@ -225,6 +226,7 @@ export default async function JobsPage({ searchParams }: Props) {
                     <div className="mt-3">
                       <ApplyButton
                         postingId={job.id}
+                        closed={job.status !== "open"}
                         clientName={client.company_name}
                         workDate={
                           job.start_date && job.end_date

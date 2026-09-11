@@ -47,7 +47,7 @@ export default function AnnouncementList({ items }: { items: AdminAnnouncement[]
                 <tr
                   key={a.id}
                   onClick={() => setDetail(a)}
-                  className="cursor-pointer hover:bg-[#F5F5F5]"
+                  className="cursor-pointer transition-colors hover:bg-muted/50"
                 >
                   <td className="max-w-[280px] truncate px-3 py-2 font-medium text-[#091413]">
                     {a.title}

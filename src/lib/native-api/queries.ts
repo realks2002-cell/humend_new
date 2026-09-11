@@ -3,6 +3,7 @@
  * RLS 정책에 의존 (anon key + user JWT)
  */
 import { createClient } from "@/lib/supabase/client";
+import { OVERRIDE_CLIENT_SELECT, applyApplicationOverride } from "@/lib/application-override";
 import type {
   ClientWithJobs,
   JobPosting,
@@ -87,10 +88,10 @@ export async function getMyApplications(): Promise<Application[]> {
   const supabase = createClient();
   const { data } = await supabase
     .from("applications")
-    .select(`*, job_postings(*, clients(company_name, location, hourly_wage))`)
+    .select(`*, job_postings(*, clients(company_name, location, hourly_wage)), ${OVERRIDE_CLIENT_SELECT}`)
     .order("applied_at", { ascending: false });
 
-  return (data ?? []) as Application[];
+  return ((data ?? []) as Application[]).map(applyApplicationOverride);
 }
 
 export async function getMyWorkRecords(month?: string): Promise<WorkRecord[]> {

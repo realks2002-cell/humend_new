@@ -1,5 +1,6 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { escapeIlike, orValue } from "@/lib/supabase/filter-escape";
+import { OVERRIDE_CLIENT_SELECT, applyApplicationOverride } from "@/lib/application-override";
 
 // ========== 타입 ==========
 
@@ -48,6 +49,7 @@ export interface JobPosting {
   end_date: string | null;
   work_days: number[] | null;
   title: string | null;
+  is_urgent?: boolean;
 }
 
 export interface ClientWithJobs extends Client {
@@ -63,8 +65,12 @@ export interface Application {
   applied_at: string;
   reviewed_at: string | null;
   admin_memo: string | null;
+  override_client_id?: string | null;
+  override_start_time?: string | null;
+  override_end_time?: string | null;
   job_postings: {
     id: string;
+    client_id: string;
     work_date: string;
     start_time: string;
     end_time: string;
@@ -179,7 +185,8 @@ export interface Payment {
 
 // ========== 퍼블릭 쿼리 ==========
 
-export async function getClientsWithJobs() {
+// includeClosed: 알바공고 목록에서 마감 공고도 표시(지원은 불가)
+export async function getClientsWithJobs({ includeClosed = false }: { includeClosed?: boolean } = {}) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("clients")
@@ -194,11 +201,11 @@ export async function getClientsWithJobs() {
     return [];
   }
 
-  // 클라이언트에서 open 상태 job_postings만 필터
+  // 클라이언트에서 open 상태 job_postings만 필터 (includeClosed면 마감도 포함)
   const result = (data ?? []).map((client) => ({
     ...client,
     job_postings: (client.job_postings ?? []).filter(
-      (j: JobPosting) => j.status === "open"
+      (j: JobPosting) => j.status === "open" || (includeClosed && j.status === "closed")
     ),
   })).filter((client) => client.job_postings.length > 0);
 
@@ -265,11 +272,11 @@ export async function getMyApplications() {
 
   const { data } = await supabase
     .from("applications")
-    .select(`*, job_postings(*, clients(company_name, location, hourly_wage, wage_type, daily_wage, monthly_wage))`)
+    .select(`*, job_postings(*, clients(company_name, location, hourly_wage, wage_type, daily_wage, monthly_wage)), ${OVERRIDE_CLIENT_SELECT}`)
     .eq("member_id", user.id)
     .order("applied_at", { ascending: false });
 
-  return (data ?? []) as Application[];
+  return ((data ?? []) as Application[]).map(applyApplicationOverride);
 }
 
 export async function updateMyProfile(updates: Partial<Member>) {
@@ -293,11 +300,13 @@ export async function getMembersPaginated({
   pageSize,
   search,
   includeDeleted = false,
+  healthCert,
 }: {
   page: number;
   pageSize: number;
   search: string;
   includeDeleted?: boolean;
+  healthCert?: "has" | "none";
 }): Promise<{ data: MemberWithStats[]; total: number }> {
   const admin = createAdminClient();
   let query = admin.from("members").select("*", { count: "exact" });
@@ -308,9 +317,15 @@ export async function getMembersPaginated({
     query = query.eq("status", "active");
   }
 
-  if (search) {
+  if (healthCert === "has") query = query.not("health_cert_image_url", "is", null);
+  if (healthCert === "none") query = query.is("health_cert_image_url", null);
+
+  if (search.trim()) {
+    // DB 전화번호는 숫자만 저장 → 010-0000-0000 입력도 하이픈·공백 제거 후 매칭
+    const s = escapeIlike(search.trim());
+    const sPhone = escapeIlike(search.replace(/[-\s]/g, ""));
     query = query.or(
-      `name.ilike.%${search}%,phone.ilike.%${search}%,rrn_front.ilike.%${search}%`
+      `name.ilike.${orValue(`%${s}%`)},phone.ilike.${orValue(`%${sPhone}%`)},rrn_front.ilike.${orValue(`%${s}%`)}`
     );
   }
 
@@ -416,11 +431,11 @@ export async function getAllApplications() {
   const admin = createAdminClient();
   const { data } = await admin
     .from("applications")
-    .select(`*, job_postings(*, clients(company_name, location, hourly_wage, wage_type, daily_wage, monthly_wage)), members(name, phone)`)
+    .select(`*, job_postings(*, clients(company_name, location, hourly_wage, wage_type, daily_wage, monthly_wage)), members(name, phone), ${OVERRIDE_CLIENT_SELECT}`)
     .order("applied_at", { ascending: false })
     .limit(10000);
 
-  return (data ?? []) as (Application & { members: { name: string; phone: string } })[];
+  return ((data ?? []) as (Application & { members: { name: string; phone: string } })[]).map(applyApplicationOverride);
 }
 
 export async function getApplicationCounts() {
@@ -537,6 +552,11 @@ export async function getAllWorkRecords(filters?: { month?: string; status?: str
   // 급여요청(서명) 완료된 건만 조회
   if (filters?.signedOnly) {
     query = query.not("signature_url", "is", null);
+  }
+
+  // 미처리(payment 없음)는 SQL에서 거름 — 월 필터 없이 조회해도 1,000행 상한에 안 걸리게
+  if (filters?.pendingOnly) {
+    query = query.is("payments", null);
   }
 
   const { data } = await query.limit(50000);

@@ -199,7 +199,7 @@ export default function AdminSettingsPage() {
                 </thead>
                 <tbody>
                   {admins.map((admin) => (
-                    <tr key={admin.id} className="border-b last:border-0 hover:bg-muted/30">
+                    <tr key={admin.id} className="border-b last:border-0 transition-colors hover:bg-muted/50">
                       <td className="px-2 py-3 text-center font-medium">
                         {extractAdminId(admin.email)}
                       </td>

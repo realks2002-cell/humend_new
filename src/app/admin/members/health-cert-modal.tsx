@@ -28,7 +28,7 @@ export function HealthCertModal({ member, open, onOpenChange }: HealthCertModalP
         <div className="space-y-3 pt-2">
           {member.health_cert_date && (
             <p className="text-sm text-muted-foreground">
-              진단일: <span className="font-medium text-foreground">{formatDate(member.health_cert_date)}</span>
+              진단일: <span className="font-medium text-foreground">{member.health_cert_date.slice(0, 4)}/{formatDate(member.health_cert_date)}</span>
             </p>
           )}
 

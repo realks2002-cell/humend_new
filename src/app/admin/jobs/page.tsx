@@ -98,12 +98,13 @@ export default async function AdminJobsPage() {
                             <div className="flex items-center gap-1.5">
                               <Badge
                                 className={`text-[10px] font-semibold border-0 ${
+                                  job.status === "open" && job.is_urgent ? "bg-orange-500/15 text-orange-700" :
                                   job.status === "open" ? "bg-emerald-500/10 text-emerald-700" :
                                   job.status === "closed" ? "bg-red-500/10 text-red-700" :
                                   "bg-muted text-muted-foreground"
                                 }`}
                               >
-                                {job.status === "open" ? "모집중" : job.status === "closed" ? "마감" : "종료"}
+                                {job.status === "open" ? (job.is_urgent ? "급구" : "모집중") : job.status === "closed" ? "마감" : "종료"}
                               </Badge>
                               <EditJobButton job={job} />
                               <DeleteJobButton postingId={job.id} />
@@ -139,12 +140,13 @@ export default async function AdminJobsPage() {
                             <div className="flex items-center gap-1.5">
                               <Badge
                                 className={`text-[10px] font-semibold border-0 ${
+                                  job.status === "open" && job.is_urgent ? "bg-orange-500/15 text-orange-700" :
                                   job.status === "open" ? "bg-emerald-500/10 text-emerald-700" :
                                   job.status === "closed" ? "bg-red-500/10 text-red-700" :
                                   "bg-muted text-muted-foreground"
                                 }`}
                               >
-                                {job.status === "open" ? "모집중" : job.status === "closed" ? "마감" : "종료"}
+                                {job.status === "open" ? (job.is_urgent ? "급구" : "모집중") : job.status === "closed" ? "마감" : "종료"}
                               </Badge>
                               <EditJobButton job={job} />
                               <DeleteJobButton postingId={job.id} />

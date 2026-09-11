@@ -4,6 +4,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { exportToSheets, importFromSheets, protectColumns, formatColumns } from "@/lib/google/sheets";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/require-admin";
+import { notifyPaymentPaid } from "@/lib/push/notify";
 
 const ID_HEADER = "ID(수정금지)";
 const WAGE_TYPES = ["시급", "일급"];
@@ -18,10 +19,8 @@ function normalizeDate(value: string): string | null {
   return !isNaN(d.getTime()) && d.toISOString().startsWith(iso) ? iso : null;
 }
 
-function toSheetName(month: string) {
-  const [y, m] = month.split("-");
-  return `${y}년${Number(m)}월`;
-}
+// 월 구분 없이 미처리 급여요청 전체를 한 탭으로 관리
+const SHEET_NAME = "급여요청";
 
 // 시간을 소수점 형식으로 변환 (예: "12:30" -> "12.5")
 // 구글시트의 자동 시간 형식 변환을 방지하기 위해 문자열로 반환
@@ -69,7 +68,7 @@ function createAdminClient() {
   return createSupabaseClient(url, key);
 }
 
-export async function exportPayrollToSheets(month: string, recordIds?: string[]) {
+export async function exportPayrollToSheets(recordIds?: string[]) {
   await requireAdmin();
   try {
     const supabase = createAdminClient();
@@ -82,13 +81,8 @@ export async function exportPayrollToSheets(month: string, recordIds?: string[])
     if (recordIds && recordIds.length > 0) {
       query = query.in("id", recordIds);
     } else {
-      // fallback: signed_at 기준 월별 필터
-      const [yearStr, monthStr] = month.split("-");
-      const startTs = `${month}-01T00:00:00`;
-      const nextMonth = new Date(Number(yearStr), Number(monthStr), 1);
-      const endTs = nextMonth.toISOString();
-      query = query.gte("signed_at", startTs).lt("signed_at", endTs)
-        .not("signature_url", "is", null);
+      // 서명 완료 + payment 없는 건 전체 (SQL에서 걸러 1,000행 상한 회피)
+      query = query.not("signature_url", "is", null).is("payments", null);
     }
 
     const { data: records } = await query;
@@ -99,7 +93,7 @@ export async function exportPayrollToSheets(month: string, recordIds?: string[])
       return !payments || payments.length === 0;
     });
 
-    const sheetName = toSheetName(month);
+    const sheetName = SHEET_NAME;
 
     const headers = [
       "상태", "이름", "전화번호", "주민번호", "고객사", "근무일",
@@ -215,32 +209,63 @@ function parseNum(value: string | undefined): number {
   return isNaN(n) ? 0 : n;
 }
 
-export async function importPayrollFromSheets(month: string) {
+// 이번 가져오기로 지급된 건 중 알림 안 보낸 건만 notified_at으로 선점 → 회원별 1회 푸시 (재가져오기 중복 방지)
+async function notifyNewlyPaid(supabase: ReturnType<typeof createAdminClient>, workRecordIds: string[]) {
+  const claimedWrIds: string[] = [];
+  for (let i = 0; i < workRecordIds.length; i += 200) {
+    const { data, error } = await supabase
+      .from("payments")
+      .update({ notified_at: new Date().toISOString() })
+      .in("work_record_id", workRecordIds.slice(i, i + 200))
+      .is("notified_at", null)
+      .select("work_record_id");
+    if (error) {
+      console.error("❌ 지급 알림 선점 실패:", error.message);
+      continue;
+    }
+    claimedWrIds.push(...(data ?? []).map((p: { work_record_id: string }) => p.work_record_id));
+  }
+
+  const memberIds = new Set<string>();
+  for (let i = 0; i < claimedWrIds.length; i += 200) {
+    const { data } = await supabase
+      .from("work_records")
+      .select("member_id")
+      .in("id", claimedWrIds.slice(i, i + 200));
+    for (const wr of data ?? []) memberIds.add(wr.member_id as string);
+  }
+
+  const ids = [...memberIds];
+  for (let i = 0; i < ids.length; i += 20) {
+    await Promise.allSettled(ids.slice(i, i + 20).map((id) => notifyPaymentPaid(id)));
+  }
+  return ids.length;
+}
+
+export async function importPayrollFromSheets() {
   await requireAdmin();
   try {
     const supabase = createAdminClient();
 
-    const sheetName = toSheetName(month);
-    const { data: rows } = await importFromSheets(sheetName);
+    // 내보내기가 탭을 하나만 남기므로 첫 탭을 읽음 (이전 "YYYY년M월" 탭도 그대로 가져오기 가능)
+    const { sheetName, data: rows } = await importFromSheets();
 
-    console.log("📊 Import 시작:", { month, sheetName, rowCount: rows.length });
+    console.log("📊 Import 시작:", { sheetName, rowCount: rows.length });
 
-    // 1. 해당 월의 모든 work_records를 DB에서 가져오기 (매칭용, signed_at 기준 — export와 동일)
-    const [yearStr, monthStr] = month.split("-");
-    const startTs = `${month}-01T00:00:00`;
-    const nextMonth = new Date(Number(yearStr), Number(monthStr), 1);
-    const endTs = nextMonth.toISOString();
-
-    const { data: workRecords } = await supabase
-      .from("work_records")
-      .select("id, client_name, work_date, wage_type, members(name, phone)")
-      .gte("signed_at", startTs)
-      .lt("signed_at", endTs)
-      .not("signature_url", "is", null)
-      .order("signed_at", { ascending: false })
-      .limit(100000);
-
-    const dbRecords = (workRecords ?? []) as Array<Record<string, unknown>>;
+    // 1. ID 없는 행 매칭용: 서명된 work_records 전체 (1,000행 상한 때문에 나눠서 조회)
+    const dbRecords: Array<Record<string, unknown>> = [];
+    for (let from = 0; ; from += 1000) {
+      const { data: page, error: pageError } = await supabase
+        .from("work_records")
+        .select("id, client_name, work_date, wage_type, members(name, phone)")
+        .not("signature_url", "is", null)
+        .order("signed_at", { ascending: false })
+        .order("id")
+        .range(from, from + 999);
+      if (pageError) throw new Error(`근무기록 조회 실패: ${pageError.message}`);
+      dbRecords.push(...(page ?? []));
+      if (!page || page.length < 1000) break;
+    }
     console.log("🗄️ DB work_records:", dbRecords.length, "건");
 
     // ID 열이 있는 행은 ID로 매칭 (근무일·고객사를 고쳐도 같은 건으로 인식)
@@ -260,6 +285,7 @@ export async function importPayrollFromSheets(month: string) {
     const errors: Array<{ name: string; error: string }> = [];
     let skipped = 0;
     const usedIds = new Set<string>(); // 중복 매칭 방지
+    const paidWorkRecordIds: string[] = []; // 지급 알림 대상
 
     for (const row of rows) {
       const sheetName2 = row["이름"]?.trim();
@@ -308,7 +334,7 @@ export async function importPayrollFromSheets(month: string) {
       }
 
       // 2. DB에서 매칭되는 work_record 찾기 (ID 우선, 없으면 이름·근무일·고객사·전화번호)
-      const matched = sheetId ? idRecords.get(sheetId) : dbRecords.find((wr) => {
+      let matched = sheetId ? idRecords.get(sheetId) : dbRecords.find((wr) => {
         if (usedIds.has(wr.id as string)) return false; // 이미 매칭된 ID 제외
         const rawMembers = wr.members as Record<string, unknown> | Array<Record<string, unknown>> | null;
         const m: Record<string, unknown> | null = Array.isArray(rawMembers)
@@ -346,6 +372,7 @@ export async function importPayrollFromSheets(month: string) {
         status: "지급",
       };
 
+      let newMemberId: string | null = null;
       if (!matched) {
         // 매칭 실패: members에서 이름+전화번호로 조회
         console.log("⚠️ 매칭 실패, 회원 조회 시도:", { 이름: sheetName2, 전화번호: sheetPhone, 고객사: sheetClient });
@@ -371,9 +398,25 @@ export async function importPayrollFromSheets(month: string) {
           continue;
         }
 
+        // 이전 가져오기에서 이미 수동 등록된 건이면 재사용 (가져올 때마다 중복 생성 방지)
+        const { data: prevManual } = await supabase
+          .from("work_records")
+          .select("id, client_name, work_date, wage_type")
+          .eq("member_id", member.id)
+          .eq("work_date", sheetDate)
+          .eq("client_name", sheetClient || "")
+          .eq("admin_memo", "구글시트 수동 등록")
+          .is("signature_url", null)
+          .limit(1)
+          .maybeSingle();
+        if (prevManual && !usedIds.has(prevManual.id)) matched = prevManual;
+        else newMemberId = member.id as string;
+      }
+
+      if (!matched && newMemberId) {
         // work_record 생성
         const workRecordData = {
-          member_id: member.id,
+          member_id: newMemberId,
           client_name: sheetClient || "",
           work_date: sheetDate,
           start_time: decimalToTime(row["시작시간"]),
@@ -423,9 +466,11 @@ export async function importPayrollFromSheets(month: string) {
         } else {
           console.log("✅ 신규 생성:", { 이름: sheetName2, workRecordId: newWr.id });
           created++;
+          paidWorkRecordIds.push(newWr.id);
         }
         continue;
       }
+      if (!matched) continue;
 
       const workRecordId = matched.id as string;
       usedIds.add(workRecordId); // 중복 매칭 방지
@@ -463,10 +508,13 @@ export async function importPayrollFromSheets(month: string) {
       } else {
         console.log("✅ 저장 성공:", { 이름: sheetName2, workRecordId });
         updated++;
+        paidWorkRecordIds.push(workRecordId);
       }
     }
 
-    console.log("📊 Import 완료:", { updated, created, skipped, errorCount: errors.length });
+    const notified = await notifyNewlyPaid(supabase, paidWorkRecordIds);
+
+    console.log("📊 Import 완료:", { updated, created, skipped, notified, errorCount: errors.length });
 
     revalidatePath("/admin/payroll");
 

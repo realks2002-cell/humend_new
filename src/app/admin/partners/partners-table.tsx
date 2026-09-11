@@ -71,7 +71,7 @@ export function PartnersTable({ inquiries }: { inquiries: Inquiry[] }) {
           {inquiries.map((inq) => {
             const cfg = statusConfig[inq.status] ?? statusConfig.pending;
             return (
-              <tr key={inq.id} className="hover:bg-muted/30 transition-colors">
+              <tr key={inq.id} className="hover:bg-muted/50 transition-colors">
                 <td className="whitespace-nowrap px-4 py-3 font-medium">{inq.company_name}</td>
                 <td className="whitespace-nowrap px-4 py-3">{inq.contact_person}</td>
                 <td className="whitespace-nowrap px-4 py-3">{inq.contact_phone}</td>

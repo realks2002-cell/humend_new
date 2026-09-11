@@ -47,7 +47,7 @@ function ApplicationItem({ app }: { app: Application }) {
         <Badge className={`text-[11px] font-semibold border-0 ${config.color}`}>
           {config.label}
         </Badge>
-        {(app.status === "대기" || app.status === "승인") && (
+        {app.status === "대기" && (
           <CancelButton applicationId={app.id} status={app.status} />
         )}
       </div>

@@ -1,4 +1,5 @@
 import { tool } from "ai";
+import { OVERRIDE_CLIENT_SELECT, applyApplicationOverride } from "@/lib/application-override";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 
@@ -15,11 +16,12 @@ export const getApplicationStatus = (memberId: string) =>
       const { data: apps } = await supabase
         .from("applications")
         .select(`
-          status, applied_at,
+          status, applied_at, override_client_id, override_start_time, override_end_time,
           job_postings (
             work_date, start_time, end_time,
             clients (company_name)
-          )
+          ),
+          ${OVERRIDE_CLIENT_SELECT}
         `)
         .eq("member_id", memberId)
         .order("applied_at", { ascending: false })
@@ -32,7 +34,7 @@ export const getApplicationStatus = (memberId: string) =>
       return {
         found: true,
         count: apps.length,
-        applications: apps.map((a) => {
+        applications: apps.map(applyApplicationOverride).map((a) => {
           const posting = a.job_postings as unknown as { work_date: string; start_time: string; end_time: string; clients: { company_name: string } } | null;
           return {
             workplace: posting?.clients?.company_name,

@@ -2,13 +2,16 @@ export const dynamic = "force-dynamic";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getAllApplications } from "@/lib/supabase/queries";
+import { getAllApplications, getAllClients } from "@/lib/supabase/queries";
 import type { Member } from "@/lib/supabase/queries";
 import { createAdminClient } from "@/lib/supabase/server";
 import { ApplicationTable } from "./application-table";
 
 export default async function AdminApplicationsPage() {
-  const all = await getAllApplications();
+  const [all, allClients] = await Promise.all([getAllApplications(), getAllClients()]);
+  const clients = allClients
+    .map((c) => ({ id: c.id, company_name: c.company_name }))
+    .sort((a, b) => a.company_name.localeCompare(b.company_name, "ko"));
 
   // applications에서 member_id 추출 → 필요한 회원만 조회
   const memberIds = [...new Set(all.map((a) => a.member_id))];
@@ -46,28 +49,28 @@ export default async function AdminApplicationsPage() {
         <TabsContent value="pending" className="mt-4">
           <Card className="overflow-hidden py-0">
             <CardContent className="p-0">
-              <ApplicationTable apps={pending} showActions membersMap={membersMap} profileImageUrls={{}} />
+              <ApplicationTable apps={pending} showActions membersMap={membersMap} profileImageUrls={{}} clients={clients} />
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="approved" className="mt-4">
           <Card className="overflow-hidden py-0">
             <CardContent className="p-0">
-              <ApplicationTable apps={approved} showActions membersMap={membersMap} profileImageUrls={{}} />
+              <ApplicationTable apps={approved} showActions membersMap={membersMap} profileImageUrls={{}} clients={clients} />
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="rejected" className="mt-4">
           <Card className="overflow-hidden py-0">
             <CardContent className="p-0">
-              <ApplicationTable apps={rejected} showActions membersMap={membersMap} profileImageUrls={{}} />
+              <ApplicationTable apps={rejected} showActions membersMap={membersMap} profileImageUrls={{}} clients={clients} />
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="all" className="mt-4">
           <Card className="overflow-hidden py-0">
             <CardContent className="p-0">
-              <ApplicationTable apps={all} showActions membersMap={membersMap} profileImageUrls={{}} />
+              <ApplicationTable apps={all} showActions membersMap={membersMap} profileImageUrls={{}} clients={clients} />
             </CardContent>
           </Card>
         </TabsContent>

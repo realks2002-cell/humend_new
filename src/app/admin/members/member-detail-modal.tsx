@@ -13,10 +13,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, Phone, MapPin, Calendar, Briefcase, CreditCard, Mail, IdCard, Ruler, Lock, StickyNote, Save, Loader2 } from "lucide-react";
+import { User, Phone, MapPin, Calendar, Briefcase, CreditCard, Mail, IdCard, Ruler, Lock, StickyNote, Save, Loader2, Stethoscope, FileSignature } from "lucide-react";
 import type { Member } from "@/lib/supabase/queries";
 import { formatPhone, formatDate } from "@/lib/utils/format";
-import { updateMemberMemo } from "./actions";
+import { getMemberHasConsent, updateMemberMemo } from "./actions";
 
 interface MemberDetailModalProps {
   member: Member | null;
@@ -42,11 +42,25 @@ export function MemberDetailModal({ member, profileImageUrl, workRecords, open, 
   const [memo, setMemo] = useState(member?.admin_memo ?? "");
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [consent, setConsent] = useState<{ memberId: string; has: boolean | null } | null>(null);
 
   useEffect(() => {
     setMemo(member?.admin_memo ?? "");
     setSaved(false);
   }, [member]);
+
+  useEffect(() => {
+    if (!member) return;
+    let cancelled = false;
+    getMemberHasConsent(member.id)
+      .then((has) => { if (!cancelled) setConsent({ memberId: member.id, has }); })
+      .catch(() => { if (!cancelled) setConsent({ memberId: member.id, has: null }); });
+    return () => { cancelled = true; };
+  }, [member]);
+
+  const consentLabel = consent?.memberId !== member?.id
+    ? "확인 중..."
+    : consent?.has === null ? "조회 실패" : consent?.has ? "제출" : "없음";
 
   function handleSaveMemo() {
     if (!member) return;
@@ -125,6 +139,12 @@ export function MemberDetailModal({ member, profileImageUrl, workRecords, open, 
             label="가입일"
             value={member.created_at ? new Date(member.created_at).toLocaleDateString("ko-KR") : "-"}
           />
+          <InfoRow
+            icon={Stethoscope}
+            label="보건증"
+            value={member.health_cert_image_url ? `있음${member.health_cert_date ? ` (진단일 ${member.health_cert_date.slice(0, 4)}/${formatDate(member.health_cert_date)})` : ""}` : "없음"}
+          />
+          <InfoRow icon={FileSignature} label="친권자 동의서" value={consentLabel} />
         </div>
 
         {/* Bank info */}

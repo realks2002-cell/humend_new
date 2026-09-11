@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Plus, Pencil } from "lucide-react";
 import { createJobPosting, updateJobPosting } from "./actions";
+import { toast } from "sonner";
 
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const h = String(Math.floor(i / 2)).padStart(2, "0");
@@ -388,6 +389,7 @@ interface JobData {
   end_time: string;
   headcount: number;
   status: string;
+  is_urgent?: boolean;
   posting_type?: 'daily' | 'fixed_term';
   start_date?: string | null;
   end_date?: string | null;
@@ -402,7 +404,8 @@ export function EditJobButton({ job }: { job: JobData }) {
   const [error, setError] = useState("");
   const [startTime, setStartTime] = useState(job.start_time.slice(0, 5));
   const [endTime, setEndTime] = useState(job.end_time.slice(0, 5));
-  const [status, setStatus] = useState(job.status);
+  const initialStatus = job.is_urgent && job.status === "open" ? "urgent" : job.status;
+  const [status, setStatus] = useState(initialStatus);
   const [workDays, setWorkDays] = useState<number[]>(job.work_days ?? [1, 2, 3, 4, 5]);
 
   const isFixedTerm = job.posting_type === "fixed_term";
@@ -412,7 +415,7 @@ export function EditJobButton({ job }: { job: JobData }) {
     if (nextOpen) {
       setStartTime(job.start_time.slice(0, 5));
       setEndTime(job.end_time.slice(0, 5));
-      setStatus(job.status);
+      setStatus(initialStatus);
       setWorkDays(job.work_days ?? [1, 2, 3, 4, 5]);
       setError("");
     }
@@ -420,6 +423,8 @@ export function EditJobButton({ job }: { job: JobData }) {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const becomesUrgent = status === "urgent" && initialStatus !== "urgent";
+    if (becomesUrgent && !confirm("급구로 저장하면 앱을 설치한 전 회원에게 알림이 바로 발송됩니다.\n진행할까요?")) return;
     setLoading(true);
     setError("");
 
@@ -441,6 +446,7 @@ export function EditJobButton({ job }: { job: JobData }) {
       return;
     }
 
+    if ("urgentNotified" in result && result.urgentNotified) toast.success("급구 알림을 전 회원에게 발송하고 있습니다.");
     setOpen(false);
     router.refresh();
   };
@@ -531,6 +537,7 @@ export function EditJobButton({ job }: { job: JobData }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="open">모집중</SelectItem>
+                <SelectItem value="urgent">급구 (전 회원 알림)</SelectItem>
                 <SelectItem value="closed">마감</SelectItem>
                 <SelectItem value="completed">종료</SelectItem>
               </SelectContent>

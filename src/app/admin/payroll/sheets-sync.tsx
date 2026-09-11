@@ -6,13 +6,13 @@ import { Upload, Download, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { exportPayrollToSheets, importPayrollFromSheets } from "./sheets-actions";
 
-export function SheetsSync({ month }: { month: string }) {
+export function SheetsSync() {
   const [loading, setLoading] = useState<"export" | "import" | null>(null);
   const [sheetUrl, setSheetUrl] = useState<string | null>(null);
 
   async function handleExport() {
     setLoading("export");
-    const result = await exportPayrollToSheets(month);
+    const result = await exportPayrollToSheets();
     if (result.success) {
       toast.success(`${result.count}건 내보내기 완료`);
       if (result.sheetUrl) {
@@ -27,7 +27,7 @@ export function SheetsSync({ month }: { month: string }) {
 
   async function handleImport() {
     setLoading("import");
-    const result = await importPayrollFromSheets(month);
+    const result = await importPayrollFromSheets();
     if (result.success) {
       const parts: string[] = [];
       if (result.updated) parts.push(`${result.updated}건 수정`);

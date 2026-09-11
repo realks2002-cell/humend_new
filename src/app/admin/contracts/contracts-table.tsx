@@ -167,7 +167,7 @@ export function ContractsTable({ records, page, pageSize, total, initialSearch =
                     ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 6)}-${rawPhone.slice(6)}`
                     : rawPhone;
                 return (
-                  <tr key={r.id} className="transition-colors hover:bg-muted/30">
+                  <tr key={r.id} className="transition-colors hover:bg-muted/50">
                     <td className="px-2 py-3 text-center">
                       <button
                         type="button"

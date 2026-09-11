@@ -216,11 +216,17 @@ export async function formatColumns(
 }
 
 /**
- * Google Sheets에서 데이터 가져오기
+ * Google Sheets에서 데이터 가져오기 (sheetName 생략 시 첫 번째 탭)
  */
-export async function importFromSheets(sheetName: string) {
+export async function importFromSheets(sheetName?: string) {
   const sheets = getSheets();
   const spreadsheetId = getSpreadsheetId();
+
+  if (!sheetName) {
+    const { data: spreadsheet } = await sheets.spreadsheets.get({ spreadsheetId, fields: "sheets(properties(title))" });
+    sheetName = spreadsheet.sheets?.[0]?.properties?.title ?? undefined;
+    if (!sheetName) throw new Error("시트 탭을 찾을 수 없습니다.");
+  }
 
   const { data } = await sheets.spreadsheets.values.get({
     spreadsheetId,
@@ -228,7 +234,7 @@ export async function importFromSheets(sheetName: string) {
   });
 
   const rows = data.values ?? [];
-  if (rows.length < 2) return { headers: [], data: [] };
+  if (rows.length < 2) return { sheetName, headers: [], data: [] };
 
   const headers = rows[0] as string[];
   const dataRows = rows.slice(1).map((row) => {
@@ -239,5 +245,5 @@ export async function importFromSheets(sheetName: string) {
     return obj;
   });
 
-  return { headers, data: dataRows };
+  return { sheetName, headers, data: dataRows };
 }

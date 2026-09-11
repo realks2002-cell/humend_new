@@ -24,6 +24,14 @@ export async function applyToJob(postingId: string) {
     return { error: "회원정보를 먼저 등록해주세요." };
   }
 
+  const { data: posting } = await createAdminClient()
+    .from("job_postings")
+    .select("status")
+    .eq("id", postingId)
+    .maybeSingle();
+  if (!posting) return { error: "존재하지 않는 공고입니다." };
+  if (posting.status !== "open") return { error: "마감되었습니다." };
+
   // 중복 지원 체크
   const { data: existing } = await supabase
     .from("applications")
@@ -42,6 +50,7 @@ export async function applyToJob(postingId: string) {
         .eq("id", existing.id)
         .select("id")
         .single();
+      if (error?.code === "P0001") return { error: error.message }; // DB 지원 제한(마감·하루 3건)
       if (error || !updated) return { error: "지원 실패" };
       revalidatePath("/jobs");
       revalidatePath("/my/applications");
@@ -56,6 +65,7 @@ export async function applyToJob(postingId: string) {
     status: "대기",
   });
 
+  if (error?.code === "P0001") return { error: error.message }; // DB 지원 제한(마감·하루 3건)
   if (error) {
     console.error("[applyToJob] error:", error.message, error.code, error.details);
     return { error: `지원 실패: ${error.message}` };

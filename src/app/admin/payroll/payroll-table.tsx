@@ -15,10 +15,9 @@ import { deleteWorkRecord, getMemberDetail, getSignatureUrl } from "./actions";
 
 interface PayrollTableProps {
   records: WorkRecord[];
-  month: string;
 }
 
-export function PayrollTable({ records, month }: PayrollTableProps) {
+export function PayrollTable({ records }: PayrollTableProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -167,7 +166,7 @@ export function PayrollTable({ records, month }: PayrollTableProps) {
                     ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 6)}-${rawPhone.slice(6)}`
                     : rawPhone;
                 return (
-                  <tr key={r.id} className="border-b hover:bg-muted/50">
+                  <tr key={r.id} className="border-b transition-colors hover:bg-muted/50">
                     <td className="py-2 px-2 text-center">
                       <button
                         type="button"

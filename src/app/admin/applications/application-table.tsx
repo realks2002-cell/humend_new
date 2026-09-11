@@ -16,6 +16,8 @@ import {
 import { formatDate, formatDateRange, formatWorkDays, formatPhone } from "@/lib/utils/format";
 import { ApplicationActions, RevertAction } from "./application-actions";
 import { MemberDetailModal } from "../members/member-detail-modal";
+import { EditWorkDialog } from "./edit-work-dialog";
+import { hasApplicationOverride } from "@/lib/application-override";
 import { batchApproveApplications, batchRejectApplications, batchDeleteApplications, deleteApplication, updateApplicationMemo } from "./actions";
 import { toast } from "sonner";
 import type { Member } from "@/lib/supabase/queries";
@@ -47,8 +49,12 @@ interface AppItem {
   status: string;
   applied_at?: string | null;
   admin_memo?: string | null;
+  override_client_id?: string | null;
+  override_start_time?: string | null;
+  override_end_time?: string | null;
   members: { name: string; phone: string } | null;
   job_postings: {
+    client_id: string;
     work_date: string;
     start_time: string;
     end_time: string;
@@ -72,9 +78,10 @@ interface ApplicationTableProps {
   showActions?: boolean;
   membersMap: Record<string, Member>;
   profileImageUrls: Record<string, string>;
+  clients: { id: string; company_name: string }[];
 }
 
-export function ApplicationTable({ apps, showActions, membersMap, profileImageUrls }: ApplicationTableProps) {
+export function ApplicationTable({ apps, showActions, membersMap, profileImageUrls, clients }: ApplicationTableProps) {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedProfileUrl, setSelectedProfileUrl] = useState<string | null>(null);
   const [selectedWorkRecords, setSelectedWorkRecords] = useState<Awaited<ReturnType<typeof getMemberWorkRecords>>>([]);
@@ -132,10 +139,11 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
       if (filterEndDate && d > filterEndDate) return false;
       if (filterClient !== "all" && a.job_postings.clients.company_name !== filterClient) return false;
       if (search) {
-        const s = search.replace(/-/g, "");
+        const q = search.trim();
+        const s = q.replace(/[-\s]/g, "");
         const name = a.members?.name ?? "";
         const phone = (a.members?.phone ?? "").replace(/-/g, "");
-        if (!name.includes(search) && !phone.includes(s)) return false;
+        if (!name.includes(q) && !phone.includes(s)) return false;
       }
       return true;
     });
@@ -357,7 +365,7 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
               const config = statusConfig[app.status] ?? statusConfig["대기"];
               const member = membersMap[app.member_id];
               return (
-                <tr key={app.id} className="border-b last:border-0">
+                <tr key={app.id} className="border-b last:border-0 transition-colors hover:bg-muted/50">
                   {showActions && (
                     <td className="px-2 py-3 text-center">
                       <Checkbox
@@ -367,7 +375,12 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                       />
                     </td>
                   )}
-                  <td className="px-2 py-3 text-center">{app.job_postings.clients.company_name}</td>
+                  <td className="px-2 py-3 text-center">
+                    {app.job_postings.clients.company_name}
+                    {hasApplicationOverride(app) && (
+                      <Badge variant="outline" className="ml-1 border-amber-300 px-1 py-0 text-[10px] text-amber-600">수정됨</Badge>
+                    )}
+                  </td>
                   <td className="px-2 py-3 text-center whitespace-nowrap">
                     {app.job_postings.posting_type === "fixed_term" && app.job_postings.start_date && app.job_postings.end_date ? (
                       <span className="flex flex-col items-center gap-0.5">
@@ -379,7 +392,21 @@ export function ApplicationTable({ apps, showActions, membersMap, profileImageUr
                     )}
                   </td>
                   <td className="px-2 py-3 text-center whitespace-nowrap">
-                    {app.job_postings.start_time?.slice(0, 5)}~{app.job_postings.end_time?.slice(0, 5)}
+                    <span className="inline-flex items-center gap-0.5">
+                      {app.job_postings.start_time?.slice(0, 5)}~{app.job_postings.end_time?.slice(0, 5)}
+                      {app.status !== "취소" && (
+                        <EditWorkDialog
+                          applicationId={app.id}
+                          approved={app.status === "승인"}
+                          overridden={hasApplicationOverride(app)}
+                          clientId={app.override_client_id ?? app.job_postings.client_id}
+                          clientName={app.job_postings.clients.company_name}
+                          startTime={app.job_postings.start_time?.slice(0, 5) ?? ""}
+                          endTime={app.job_postings.end_time?.slice(0, 5) ?? ""}
+                          clients={clients}
+                        />
+                      )}
+                    </span>
                   </td>
                   <td className="px-2 py-3 text-center">
                     {member?.gender === "male" ? "남" : member?.gender === "female" ? "여" : "-"}
