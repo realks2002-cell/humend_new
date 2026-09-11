@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export interface SavePaymentData {
   hourly_wage: number;
@@ -21,6 +22,7 @@ export interface SavePaymentData {
 }
 
 export async function savePayment(workRecordId: string, data: SavePaymentData) {
+  await requireAdmin();
   const supabase = await createClient();
 
   // 기존 payment 있는지 확인

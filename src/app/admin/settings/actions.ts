@@ -1,8 +1,10 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export async function getAdmins() {
+  await requireAdmin();
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("admins")
@@ -17,6 +19,7 @@ export async function getAdmins() {
 }
 
 export async function createAdmin(adminId: string, name: string, password: string) {
+  await requireAdmin();
   if (!adminId || !name || !password) {
     return { error: "모든 항목을 입력해주세요." };
   }
@@ -61,6 +64,7 @@ export async function createAdmin(adminId: string, name: string, password: strin
 }
 
 export async function deleteAdmin(id: string) {
+  await requireAdmin();
   if (!id) {
     return { error: "관리자 ID가 필요합니다." };
   }

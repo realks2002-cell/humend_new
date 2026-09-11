@@ -15,7 +15,7 @@ async function requireAdmin(): Promise<{ userId: string } | { error: string }> {
     .eq("id", user.id)
     .single();
 
-  if (!adminData && process.env.NODE_ENV !== "development") {
+  if (!adminData) {
     return { error: "관리자 권한이 필요합니다." };
   }
   return { userId: user.id };

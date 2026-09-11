@@ -1,8 +1,10 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export async function getDashboardStats(currentMonth: string) {
+  await requireAdmin();
   const admin = createAdminClient();
 
   const [selYear, selMonth] = currentMonth.split("-").map(Number);

@@ -3,8 +3,10 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { getWorkRecordsByMemberId } from "@/lib/supabase/queries";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export async function deleteMemberAction(memberId: string) {
+  await requireAdmin();
   const admin = createAdminClient();
 
   const { error } = await admin
@@ -21,6 +23,7 @@ export async function deleteMemberAction(memberId: string) {
 }
 
 export async function restoreMemberAction(memberId: string) {
+  await requireAdmin();
   const admin = createAdminClient();
 
   const { error } = await admin
@@ -37,10 +40,12 @@ export async function restoreMemberAction(memberId: string) {
 }
 
 export async function getMemberWorkRecords(memberId: string) {
+  await requireAdmin();
   return getWorkRecordsByMemberId(memberId);
 }
 
 export async function updateMemberMemo(memberId: string, memo: string) {
+  await requireAdmin();
   const admin = createAdminClient();
 
   const { error } = await admin

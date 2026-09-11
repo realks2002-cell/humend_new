@@ -4,8 +4,10 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { saveClientPhotos } from "@/lib/supabase/queries";
 import { put } from "@vercel/blob";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export async function createClientAction(formData: FormData) {
+  await requireAdmin();
   const supabase = await createClient();
 
   const latStr = formData.get("latitude") as string | null;
@@ -95,6 +97,7 @@ async function uploadBase64Images(jsonStr: string | null): Promise<string[]> {
 }
 
 export async function updateClientAction(clientId: string, formData: FormData) {
+  await requireAdmin();
   const admin = createAdminClient();
 
   const latStr = formData.get("latitude") as string | null;
@@ -150,6 +153,7 @@ export async function updateClientAction(clientId: string, formData: FormData) {
 }
 
 export async function updateClientSortOrder(orderedIds: string[]) {
+  await requireAdmin();
   const supabase = await createClient();
 
   const updates = orderedIds.map((id, index) =>
@@ -167,6 +171,7 @@ export async function updateClientSortOrder(orderedIds: string[]) {
 }
 
 export async function deleteClientAction(clientId: string) {
+  await requireAdmin();
   const supabase = await createClient();
 
   const { error } = await supabase

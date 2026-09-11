@@ -7,6 +7,7 @@ import {
   notifyShiftCancelled,
 } from "@/lib/push/attendance-notify";
 import { sendPush } from "@/lib/push/fcm";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export async function createShift(
   clientId: string,
@@ -21,6 +22,7 @@ export async function createShift(
     customRepeatMessage?: string;
   }
 ) {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const { data: client } = await supabase
@@ -75,6 +77,7 @@ export async function createShift(
 }
 
 export async function deleteShift(shiftId: string) {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const { data: shift } = await supabase
@@ -112,6 +115,7 @@ export async function deleteShift(shiftId: string) {
 }
 
 export async function deleteShiftGroup(shiftIds: string[]) {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const { data: shifts } = await supabase
@@ -157,6 +161,7 @@ export async function updateShiftGroup(
   newEndTime: string,
   newMemberIds: string[]
 ) {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const { data: existingShifts, error: fetchError } = await supabase
@@ -259,6 +264,7 @@ export async function updateShiftStatus(
   shiftId: string,
   status: "arrived" | "noshow"
 ) {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const updateData: Record<string, unknown> = {
@@ -282,6 +288,7 @@ export async function updateShiftStatus(
 }
 
 export async function updateShiftSortOrder(updates: { shiftIds: string[]; sortOrder: number }[]) {
+  await requireAdmin();
   const supabase = createAdminClient();
   for (const { shiftIds, sortOrder } of updates) {
     await supabase
@@ -299,6 +306,7 @@ export async function sendGroupFcm(
   body: string,
   memberShiftMap?: Record<string, string>
 ) {
+  await requireAdmin();
   if (!title.trim() || memberIds.length === 0) {
     return { error: "메시지와 대상 회원이 필요합니다." };
   }

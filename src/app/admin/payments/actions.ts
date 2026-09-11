@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import type { Member, ParentalConsent } from "@/lib/supabase/queries";
 import { escapeIlike, orValue } from "@/lib/supabase/filter-escape";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export interface PaymentRecord {
   id: string;
@@ -46,6 +47,7 @@ export interface PaymentRecord {
 }
 
 export async function getPaymentsByMonth(month: string): Promise<PaymentRecord[]> {
+  await requireAdmin();
   const admin = createAdminClient();
 
   const start = `${month}-01`;
@@ -72,6 +74,7 @@ export async function getAllPayments(
   pageSize: number,
   search?: string,
 ): Promise<{ data: PaymentRecord[]; total: number }> {
+  await requireAdmin();
   const admin = createAdminClient();
   const from = (page - 1) * pageSize;
 
@@ -138,6 +141,7 @@ export async function getAllPayments(
 }
 
 export async function getPaymentsForCsvExport(startDate: string, endDate: string) {
+  await requireAdmin();
   const admin = createAdminClient();
 
   const { data, error } = await admin
@@ -163,6 +167,7 @@ export async function getPaymentsForCsvExport(startDate: string, endDate: string
 }
 
 export async function getMemberDetail(memberId: string): Promise<{ member: Member | null; profileImageUrl: string | null }> {
+  await requireAdmin();
   const admin = createAdminClient();
   const { data } = await admin.from("members").select("*").eq("id", memberId).single();
   if (!data) return { member: null, profileImageUrl: null };
@@ -184,6 +189,7 @@ export async function getMemberDetail(memberId: string): Promise<{ member: Membe
 }
 
 export async function getConsentForMember(memberId: string): Promise<ParentalConsent | null> {
+  await requireAdmin();
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("parental_consents")
@@ -201,6 +207,7 @@ export async function getConsentForMember(memberId: string): Promise<ParentalCon
 }
 
 export async function deletePayment(paymentId: string) {
+  await requireAdmin();
   const admin = createAdminClient();
   const { error } = await admin.from("payments").delete().eq("id", paymentId);
   if (error) {

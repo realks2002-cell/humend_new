@@ -2,8 +2,10 @@
 
 import { createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export async function updateInquiryStatus(id: string, status: string) {
+  await requireAdmin();
   if (!["pending", "contacted", "closed"].includes(status)) {
     return { error: "유효하지 않은 상태입니다." };
   }

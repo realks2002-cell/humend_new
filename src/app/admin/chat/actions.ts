@@ -2,8 +2,10 @@
 
 import { createAdminClient } from "@/lib/supabase/server";
 import { notifyChatMessage } from "@/lib/push/notify";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export async function getChatRooms() {
+  await requireAdmin();
   const admin = createAdminClient();
 
   const { data: rooms } = await admin
@@ -19,6 +21,7 @@ export async function getChatRooms() {
 }
 
 export async function getChatMessages(roomId: string, cursor?: string) {
+  await requireAdmin();
   const admin = createAdminClient();
   const limit = 30;
 
@@ -42,6 +45,7 @@ export async function getChatMessages(roomId: string, cursor?: string) {
 }
 
 export async function sendAdminMessage(roomId: string, content: string, adminId: string) {
+  await requireAdmin();
   const admin = createAdminClient();
 
   const { data: message, error } = await admin
@@ -86,6 +90,7 @@ export async function sendAdminMessage(roomId: string, content: string, adminId:
 }
 
 export async function markAsRead(roomId: string) {
+  await requireAdmin();
   const admin = createAdminClient();
 
   // 회원 메시지 읽음 처리
@@ -104,6 +109,7 @@ export async function markAsRead(roomId: string) {
 }
 
 export async function switchChatMode(roomId: string, mode: "ai" | "admin") {
+  await requireAdmin();
   const admin = createAdminClient();
 
   await admin

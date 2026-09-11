@@ -1,8 +1,10 @@
 "use server";
 
 import { put } from "@vercel/blob";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export async function uploadClientImage(formData: FormData) {
+  await requireAdmin();
   const file = formData.get("file") as File;
   if (!file) return { error: "파일이 없습니다.", url: null };
 

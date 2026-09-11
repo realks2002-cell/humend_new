@@ -18,9 +18,6 @@ async function getAdminSupabase() {
     if (data) return admin;
   }
 
-  // 개발 환경에서는 미들웨어가 인증을 스킵하므로 허용
-  if (process.env.NODE_ENV === "development") return admin;
-
   return null;
 }
 

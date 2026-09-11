@@ -3,6 +3,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { exportToSheets, importFromSheets, protectColumns, formatColumns } from "@/lib/google/sheets";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 function toSheetName(month: string) {
   const [y, m] = month.split("-");
@@ -56,6 +57,7 @@ function createAdminClient() {
 }
 
 export async function exportPayrollToSheets(month: string, recordIds?: string[]) {
+  await requireAdmin();
   try {
     const supabase = createAdminClient();
 
@@ -200,6 +202,7 @@ function parseNum(value: string | undefined): number {
 }
 
 export async function importPayrollFromSheets(month: string) {
+  await requireAdmin();
   try {
     const supabase = createAdminClient();
 

@@ -2,6 +2,7 @@
 
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sendManualPush } from "@/lib/push/notify";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export async function sendNotification(formData: FormData) {
   const supabase = await createClient();
@@ -16,7 +17,7 @@ export async function sendNotification(formData: FormData) {
     .eq("id", user.id)
     .single();
 
-  if (!adminData && process.env.NODE_ENV !== "development") {
+  if (!adminData) {
     return { error: "관리자 권한이 필요합니다." };
   }
 
@@ -46,6 +47,7 @@ export async function sendNotification(formData: FormData) {
 }
 
 export async function getNotificationLogs() {
+  await requireAdmin();
   const admin = createAdminClient();
 
   const { data } = await admin
@@ -69,6 +71,7 @@ export async function getNotificationLogs() {
 }
 
 export async function getClients() {
+  await requireAdmin();
   const admin = createAdminClient();
   const { data } = await admin
     .from("clients")
@@ -79,6 +82,7 @@ export async function getClients() {
 }
 
 export async function getMembers() {
+  await requireAdmin();
   const admin = createAdminClient();
   const { data } = await admin
     .from("members")

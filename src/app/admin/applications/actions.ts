@@ -5,6 +5,7 @@ import { calculateWorkHours, calculateFullSalary } from "@/lib/utils/salary";
 import { getWorkDatesInRange } from "@/lib/utils/date";
 import { revalidatePath } from "next/cache";
 import { notifyApplicationApproved, notifyApplicationRejected } from "@/lib/push/notify";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 async function getHeadcountStatus(postingId: string) {
   const supabase = createAdminClient();
@@ -20,6 +21,7 @@ async function getHeadcountStatus(postingId: string) {
 }
 
 export async function approveApplication(applicationId: string) {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   // 모집인원 초과 체크
@@ -57,6 +59,7 @@ export async function approveApplication(applicationId: string) {
 }
 
 export async function rejectApplication(applicationId: string) {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const { error } = await supabase
@@ -199,6 +202,7 @@ async function createWorkRecordFromApproval(applicationId: string) {
 }
 
 export async function revertApplicationToPending(applicationId: string) {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const { error } = await supabase
@@ -222,6 +226,7 @@ export async function revertApplicationToPending(applicationId: string) {
 }
 
 export async function batchApproveApplications(applicationIds: string[]) {
+  await requireAdmin();
   let success = 0;
   let failed = 0;
   let skippedFull = 0;
@@ -283,6 +288,7 @@ export async function batchApproveApplications(applicationIds: string[]) {
 }
 
 export async function batchRejectApplications(applicationIds: string[]) {
+  await requireAdmin();
   let success = 0;
   let failed = 0;
   const supabase = createAdminClient();
@@ -316,6 +322,7 @@ export async function batchRejectApplications(applicationIds: string[]) {
 }
 
 export async function batchDeleteApplications(applicationIds: string[]) {
+  await requireAdmin();
   let success = 0;
   let failed = 0;
   const supabase = createAdminClient();
@@ -340,6 +347,7 @@ export async function batchDeleteApplications(applicationIds: string[]) {
 }
 
 export async function deleteApplication(applicationId: string) {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   // 관련 work_records 먼저 삭제
@@ -362,6 +370,7 @@ export async function updateApplicationMemo(
   applicationId: string,
   memo: string
 ) {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const { error } = await supabase

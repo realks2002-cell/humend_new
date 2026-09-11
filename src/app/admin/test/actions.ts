@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { notifyShiftAssigned } from "@/lib/push/attendance-notify";
 import { sendPush } from "@/lib/push/fcm";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 const SEED_MEMBERS = [
   { name: "이강석", phone: "01034061921" },
@@ -10,6 +11,7 @@ const SEED_MEMBERS = [
 ];
 
 export async function createTestClient(placeName: string, lat: number, lng: number) {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const { data: existing } = await supabase
@@ -43,6 +45,7 @@ export interface TestMember {
 }
 
 export async function getTestMembers(): Promise<TestMember[]> {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const seedPhones = SEED_MEMBERS.map((m) => m.phone);
@@ -60,6 +63,7 @@ export async function getTestMembers(): Promise<TestMember[]> {
 }
 
 export async function addTestMember(name: string, phone: string): Promise<TestMember> {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   // 기존 멤버 확인
@@ -93,6 +97,7 @@ export async function addTestMember(name: string, phone: string): Promise<TestMe
 }
 
 export async function removeTestMember(memberId: string) {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   // 해당 멤버의 오늘 배정 삭제
@@ -138,6 +143,7 @@ async function ensureTestMember(phone: string, name: string): Promise<string> {
 }
 
 export async function triggerCron() {
+  await requireAdmin();
   const supabase = createAdminClient();
   const now = new Date();
   const today = new Date(now.getTime() + 9 * 60 * 60 * 1000)
@@ -209,6 +215,7 @@ export async function createTestShift(
     alertMaxCount?: number;
   }
 ) {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   // 고객사 upsert (placeName 기준)
@@ -304,6 +311,7 @@ export async function createTestShift(
 }
 
 export async function cleanupTestClients() {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const { data: testClients } = await supabase
@@ -336,6 +344,7 @@ export async function cleanupTestClients() {
 }
 
 export async function updateClientLocation(clientId: string, lat: number, lng: number) {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const { error } = await supabase
@@ -347,6 +356,7 @@ export async function updateClientLocation(clientId: string, lat: number, lng: n
 }
 
 export async function deleteTestShift(shiftId: string) {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const { error } = await supabase
@@ -358,6 +368,7 @@ export async function deleteTestShift(shiftId: string) {
 }
 
 export async function bulkCreateTestMembers(count: number): Promise<string[]> {
+  await requireAdmin();
   const supabase = createAdminClient();
   const memberIds: string[] = [];
 
@@ -412,6 +423,7 @@ export async function bulkCreateTestShifts(
   lng: number,
   startTime: string
 ): Promise<string[]> {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   // 고객사 upsert
@@ -524,6 +536,7 @@ export async function bulkCreateTestShifts(
 }
 
 export async function markShiftsNoshow(shiftIds: string[]) {
+  await requireAdmin();
   const supabase = createAdminClient();
   const { error } = await supabase
     .from("daily_shifts")
@@ -533,6 +546,7 @@ export async function markShiftsNoshow(shiftIds: string[]) {
 }
 
 export async function resetTestShifts() {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const today = new Date(Date.now() + 9 * 60 * 60 * 1000)
@@ -581,6 +595,7 @@ export interface PushDiagnosis {
 }
 
 export async function diagnosePushStatus(memberId: string): Promise<PushDiagnosis> {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const { data: member } = await supabase
@@ -624,6 +639,7 @@ export async function diagnosePushStatus(memberId: string): Promise<PushDiagnosi
 }
 
 export async function sendTestPushToMember(memberId: string): Promise<{ sent: number; failed: number; noTokens: boolean }> {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const { data: tokens } = await supabase
@@ -652,6 +668,7 @@ export async function sendTestPushToMember(memberId: string): Promise<{ sent: nu
 }
 
 export async function getTestShifts() {
+  await requireAdmin();
   const supabase = createAdminClient();
 
   const today = new Date(Date.now() + 9 * 60 * 60 * 1000)
