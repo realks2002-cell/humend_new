@@ -22,6 +22,7 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const onDarkHero = pathname === "/mockup/hero";
 
   // 라우트 변경 시마다 인증 상태 재확인 (비활성 차단은 middleware가 담당)
   useEffect(() => {
@@ -65,7 +66,11 @@ export default function Header() {
     >
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <Link href="/" className="flex items-center">
-          <Image src="/logo.png" alt="HUMAN:D" width={120} height={32} className="h-[16px] w-auto" priority />
+          {onDarkHero ? (
+            <span className="text-xl font-bold tracking-wide text-white">HUMEND</span>
+          ) : (
+            <Image src="/logo.png" alt="HUMAN:D" width={120} height={32} className="h-[16px] w-auto" priority />
+          )}
         </Link>
 
         {/* Desktop Nav */}
@@ -74,7 +79,10 @@ export default function Header() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-base font-normal text-black transition-colors hover:text-black"
+              className={cn(
+                "text-base font-normal transition-colors",
+                onDarkHero ? "text-white hover:text-white/80" : "text-black hover:text-black"
+              )}
             >
               {link.label}
             </Link>
@@ -82,12 +90,12 @@ export default function Header() {
           {user ? (
             <div className="flex items-center gap-2">
               <Link href="/my">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className={cn(onDarkHero && "text-white hover:bg-white/10 hover:text-white")}>
                   <User className="mr-1 h-4 w-4" />
                   마이페이지
                 </Button>
               </Link>
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <Button variant="ghost" size="sm" onClick={handleSignOut} className={cn(onDarkHero && "text-white hover:bg-white/10 hover:text-white")}>
                 <LogOut className="mr-1 h-4 w-4" />
                 로그아웃
               </Button>
