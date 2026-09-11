@@ -62,16 +62,21 @@ export async function memberLogin(phone: string, password: string) {
   }
 }
 
-export async function memberSignup(phone: string, name: string, password: string) {
+export async function memberSignup(
+  phone: string,
+  name: string,
+  password: string,
+  verificationId?: string,
+): Promise<{ success: true } | { error: string; code?: string }> {
   try {
     const res = await fetch(`${API_BASE}/api/native/auth/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, name, password }),
+      body: JSON.stringify({ phone, name, password, verificationId }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => null);
-      return { error: data?.error || `서버 오류 (${res.status})` };
+      return { error: data?.error || `서버 오류 (${res.status})`, code: data?.code as string | undefined };
     }
     return res.json();
   } catch {

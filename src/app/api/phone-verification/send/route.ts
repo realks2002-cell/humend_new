@@ -34,10 +34,14 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json(BAD_REQUEST, { status: 400 });
   }
-  const rawPhone = (body as { phone?: unknown } | null)?.phone;
+  const { phone: rawPhone, purpose: rawPurpose } = (body ?? {}) as { phone?: unknown; purpose?: unknown };
   if (typeof rawPhone !== "string") {
     return NextResponse.json(BAD_REQUEST, { status: 400 });
   }
+  if (rawPurpose !== undefined && rawPurpose !== "signup" && rawPurpose !== "reset") {
+    return NextResponse.json(BAD_REQUEST, { status: 400 });
+  }
+  const purpose = rawPurpose ?? "signup";
 
   const phone = normalizePhone(rawPhone);
   if (!phone) {
@@ -65,10 +69,16 @@ export async function POST(req: NextRequest) {
     console.error("[phone-verification] members lookup error:", memberError?.message);
     return NextResponse.json(SERVER_ERROR, { status: 500 });
   }
-  if (members.length > 0) {
+  if (purpose === "signup" && members.length > 0) {
     return NextResponse.json(
       { error: "이미 가입된 번호예요.", code: "already_registered" },
       { status: 409 },
+    );
+  }
+  if (purpose === "reset" && members.length === 0) {
+    return NextResponse.json(
+      { error: "가입되지 않은 번호예요.", code: "not_registered" },
+      { status: 404 },
     );
   }
 
@@ -128,6 +138,18 @@ export async function POST(req: NextRequest) {
   }
   if (alert === "global_half" || alert === "global_full") {
     console.error("[phone-verification][ALERT] global daily usage", alert);
+  }
+
+  if (purpose === "reset") {
+    const { data: tagged, error: purposeError } = await admin
+      .from("phone_verifications")
+      .update({ purpose: "reset" })
+      .eq("id", id)
+      .select("id");
+    if (purposeError || tagged?.length !== 1) {
+      console.error("[phone-verification] purpose update error:", purposeError?.message);
+      return NextResponse.json(SERVER_ERROR, { status: 500 });
+    }
   }
 
   const sms = await sendVerificationSms(phone, code);

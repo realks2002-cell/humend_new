@@ -358,13 +358,22 @@ export async function resetPasswordByEmail(email: string) {
   const { createAdminClient } = await import("@/lib/supabase/server");
   const admin = createAdminClient();
 
-  // members 테이블에서 이메일로 회원 찾기
-  const { data: member } = await admin
+  // members 테이블에서 이메일로 회원 찾기 (대소문자 무시)
+  // ilike 와일드카드(\ % _)는 이스케이프, PostgREST가 %로 바꾸는 *는 한 글자(_)로 좁힌 뒤 JS에서 정확히 비교
+  const normalizedEmail = email.trim().toLowerCase();
+  const pattern = normalizedEmail.replace(/[\\%_]/g, (c) => `\\${c}`).replace(/\*/g, "_");
+  const { data: candidates } = await admin
     .from("members")
-    .select("id, phone, name")
-    .eq("email", email)
-    .maybeSingle();
+    .select("id, phone, name, email")
+    .ilike("email", pattern);
+  const matches = (candidates ?? []).filter(
+    (m) => typeof m.email === "string" && m.email.trim().toLowerCase() === normalizedEmail,
+  );
 
+  if (matches.length > 1) {
+    return { error: "같은 이메일을 쓰는 계정이 여러 개예요. 카카오톡 상담으로 문의해 주세요." };
+  }
+  const member = matches[0];
   if (!member) {
     return { error: "해당 이메일로 등록된 회원이 없습니다." };
   }

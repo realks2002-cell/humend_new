@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { consumePhoneVerification, isPhoneVerified } from "@/lib/phone-verification";
 import { NextRequest, NextResponse } from "next/server";
 
 function phoneToEmail(phone: string): string {
@@ -7,11 +8,13 @@ function phoneToEmail(phone: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const { phone, name, password } = (await req.json()) as {
+  const { phone, name, password, verificationId: rawVerificationId } = (await req.json()) as {
     phone?: string;
     name?: string;
     password?: string;
+    verificationId?: unknown;
   };
+  const verificationId = typeof rawVerificationId === "string" ? rawVerificationId : "";
 
   if (!phone || !name || !password) {
     return NextResponse.json({ error: "모든 항목을 입력해주세요." }, { status: 400 });
@@ -33,7 +36,23 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (existingMember) {
-    return NextResponse.json({ error: "이미 가입된 전화번호입니다." }, { status: 409 });
+    return NextResponse.json({ error: "이미 가입된 전화번호입니다.", code: "already_registered" }, { status: 409 });
+  }
+
+  if (verificationId) {
+    if (!(await isPhoneVerified(verificationId, cleanedPhone))) {
+      return NextResponse.json(
+        { error: "전화번호 인증이 필요합니다. 인증을 다시 진행해 주세요.", code: "verification_required" },
+        { status: 400 },
+      );
+    }
+  } else if (process.env.REQUIRE_APP_PHONE_VERIFICATION?.trim() === "true") {
+    return NextResponse.json(
+      { error: "앱을 최신 버전으로 업데이트한 뒤 다시 가입해 주세요.", code: "app_update_required" },
+      { status: 400 },
+    );
+  } else {
+    console.warn("[native-signup] unverified app signup");
   }
 
   // Supabase Auth 회원가입
@@ -61,16 +80,22 @@ export async function POST(req: NextRequest) {
           .maybeSingle();
 
         if (memberCheck) {
-          return NextResponse.json({ error: "이미 가입된 전화번호입니다." }, { status: 409 });
+          return NextResponse.json({ error: "이미 가입된 전화번호입니다.", code: "already_registered" }, { status: 409 });
         }
 
-        await admin.from("members").insert({
+        const { error: recoverError } = await admin.from("members").insert({
           id: existingUser.id,
           phone: cleanedPhone,
           name,
           password,
         });
 
+        if (recoverError) {
+          console.error("[signup API] members recover insert error:", recoverError.message);
+          return NextResponse.json({ error: "회원가입에 실패했습니다. 다시 시도해주세요." }, { status: 500 });
+        }
+
+        if (verificationId) await consumePhoneVerification(verificationId);
         return NextResponse.json({ success: true });
       }
     }
@@ -92,5 +117,6 @@ export async function POST(req: NextRequest) {
     console.error("[signup API] members insert error:", memberError.message);
   }
 
+  if (verificationId) await consumePhoneVerification(verificationId);
   return NextResponse.json({ success: true });
 }

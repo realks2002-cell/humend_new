@@ -9,6 +9,7 @@ const SOLAPI_TIMEOUT_MS = 5_000;
 const SOLAPI_SEND_URL = "https://api.solapi.com/messages/v4/send-many/detail";
 const RECIPIENT_FAILURE_CODES = ["1061", "1065", "2061", "2065"];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const NATIVE_APP_ORIGINS = ["https://localhost", "capacitor://localhost"];
 
 export type SmsResult =
   | { result: "sent" }
@@ -59,6 +60,7 @@ function truncate(value: string | null | undefined): string | null | undefined {
 export function rejectCrossOrigin(req: Request): NextResponse | null {
   const origin = req.headers.get("origin");
   if (origin === null) return null;
+  if (NATIVE_APP_ORIGINS.includes(origin)) return null;
 
   const forwardedHost = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
   const host = req.headers.get("host");
@@ -163,7 +165,13 @@ export async function sendVerificationSms(phone: string, code: string): Promise<
   return { result: "unavailable", detail };
 }
 
-export async function isPhoneVerified(id: string, phone: string): Promise<boolean> {
+export type VerificationPurpose = "signup" | "reset";
+
+export async function isPhoneVerified(
+  id: string,
+  phone: string,
+  purpose: VerificationPurpose = "signup",
+): Promise<boolean> {
   if (!isUuid(id)) return false;
 
   const { data, error } = await createAdminClient()
@@ -171,6 +179,7 @@ export async function isPhoneVerified(id: string, phone: string): Promise<boolea
     .select("id")
     .eq("id", id)
     .eq("phone", phone)
+    .eq("purpose", purpose)
     .is("consumed_at", null)
     .gte("verified_at", new Date(Date.now() - VERIFIED_TTL_MS).toISOString())
     .maybeSingle();
