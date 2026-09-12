@@ -37,6 +37,9 @@ echo "=== [3/8] 정적 빌드 호환성 위해 서버 전용 파일 제거 ==="
 # admin 디렉토리 전체 제거 (회원 전용 빌드)
 rm -rf src/app/admin
 
+# 목업/시연용 페이지 제거 (force-dynamic이라 정적 빌드 불가, 앱에서 쓰지 않음)
+rm -rf src/app/mockup
+
 # health-cert: 웹 전용 파일(Server Action) 제거, app-native page.tsx만 유지
 rm -f src/app/my/health-cert/health-cert-form.tsx
 rm -f src/app/my/health-cert/health-cert-view.tsx
