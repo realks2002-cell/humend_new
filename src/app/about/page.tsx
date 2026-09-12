@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ClipboardList, Users, CheckCircle, Banknote, Zap, Heart, Smartphone, CheckCircle2, Loader2 } from "lucide-react";
+import { ClipboardList, Users, CheckCircle, Banknote, Zap, Heart, Smartphone, CheckCircle2, Loader2, CornerDownRight } from "lucide-react";
 import { submitPartnerInquiry } from "./actions";
 
 const steps = [
@@ -65,6 +65,9 @@ const values = [
   },
 ];
 
+const FIELD_CLASS =
+  "h-14 rounded-none border-0 border-b border-white/25 bg-transparent px-0 text-xl text-white shadow-none placeholder:text-white/30 focus-visible:border-white focus-visible:ring-0 md:text-xl";
+
 function formatPhone(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 11);
   if (digits.length <= 3) return digits;
@@ -105,7 +108,7 @@ export default function AboutPage() {
   }
 
   return (
-    <div className="animate-in fade-in duration-500">
+    <div className={`animate-in fade-in duration-500 ${isNative ? "" : "footer-flush"}`}>
       {/* Vision */}
       <section
         className={`relative overflow-hidden px-4 text-center ${isNative ? "py-20 md:py-28 bg-gradient-to-br from-primary/5 via-background to-primary/10" : "pt-36 pb-40 md:pt-48 md:pb-56 bg-black text-white"}`}
@@ -210,113 +213,159 @@ export default function AboutPage() {
       </section>
 
       {/* Partner Inquiry Form */}
-      <section className={`px-4 py-20 ${isNative ? "hidden" : ""}`}>
-        <div className="mx-auto max-w-2xl">
-          <p className="mb-2 text-center text-sm font-semibold uppercase tracking-wider text-indigo-600">Contact</p>
-          <h2 className="text-center text-3xl font-bold md:text-4xl">파트너 제휴문의</h2>
-          <p className="mt-3 text-center text-xl text-muted-foreground">
-            인력파견 서비스가 필요하신가요? 기업 맞춤형 인력 솔루션을 제안드립니다.
-          </p>
+      <section className={`relative overflow-hidden bg-black px-4 py-12 text-white md:py-16 ${isNative ? "hidden" : ""}`}>
+        <img src="/contact-bg.webp" alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/25" />
 
-          {submitted ? (
-            <div className="mt-10 flex flex-col items-center gap-3 rounded-2xl border bg-green-50 p-8 text-center">
-              <CheckCircle2 className="h-12 w-12 text-green-500" />
-              <p className="text-xl font-semibold">문의가 접수되었습니다</p>
-              <p className="text-base text-muted-foreground">
-                담당자가 확인 후 빠르게 연락드리겠습니다.
+        <div className="relative mx-auto max-w-[1229px]">
+          <p className="text-sm font-semibold uppercase tracking-wider text-indigo-300">Contact</p>
+          <h2 className="mt-4 text-[38px] font-black leading-[1.1] tracking-tight md:text-[64px]">
+            인력이 필요한
+            <br />
+            현장이 있나요?
+          </h2>
+
+          <div className="mt-10 grid gap-10 md:mt-10 md:grid-cols-2 md:gap-16">
+            {/* 좌측 — 안내 + 연락처 */}
+            <div>
+              <p className="max-w-md break-keep text-lg leading-relaxed text-white/70">
+                구체적인 계획이 없어도 괜찮습니다. 필요한 인원과 일정을 듣고,
+                현장에 맞는 인력 운영 방안을 정리해 제안드립니다.
               </p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => setSubmitted(false)}
+
+              <dl className="mt-12 space-y-8">
+                <div>
+                  <dt className="text-sm font-semibold text-indigo-300">전화</dt>
+                  <dd className="mt-2 text-lg text-white/85">
+                    <a href="tel:028758332" className="transition-colors hover:text-white">02-875-8332</a>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-semibold text-indigo-300">이메일</dt>
+                  <dd className="mt-2 text-lg text-white/85">
+                    <a href="mailto:support@humendhr.com" className="transition-colors hover:text-white">support@humendhr.com</a>
+                  </dd>
+                </div>
+              </dl>
+
+              <a
+                href="https://pf.kakao.com/_sPCKb/chat"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-12 inline-flex h-14 items-center justify-center rounded-[5px] bg-[#FEE500] px-10 text-lg font-bold text-[#3C1E1E] transition-transform duration-150 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
               >
-                추가 문의하기
-              </Button>
+                카톡 상담하기
+              </a>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="mt-8 space-y-6 rounded-lg border bg-white p-8 text-lg shadow-md md:p-10">
-              <div className="space-y-2">
-                <Label className="text-base" htmlFor="company_name">
-                  회사명 <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  className="h-12 text-base md:text-base"
-                  id="company_name"
-                  name="company_name"
-                  placeholder="회사명을 입력해주세요"
-                  required
-                />
-              </div>
 
-              <div className="space-y-2">
-                <Label className="text-base" htmlFor="contact_person">
-                  담당자명 <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  className="h-12 text-base md:text-base"
-                  id="contact_person"
-                  name="contact_person"
-                  placeholder="담당자명을 입력해주세요"
-                  required
-                />
-              </div>
+            {/* 우측 — 문의 폼 */}
+            <div className="md:-mt-[200px]">
+              {submitted ? (
+                <div className="flex flex-col items-start gap-3 border border-white/20 bg-white/5 p-8">
+                  <CheckCircle2 className="h-12 w-12 text-emerald-400" />
+                  <p className="text-xl font-semibold">문의가 접수되었습니다</p>
+                  <p className="text-base text-white/70">담당자가 확인 후 빠르게 연락드리겠습니다.</p>
+                  <Button
+                    variant="outline"
+                    className="mt-4 border-white/30 bg-transparent text-white hover:bg-white hover:text-black"
+                    onClick={() => setSubmitted(false)}
+                  >
+                    추가 문의하기
+                  </Button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label className="text-lg font-normal text-white" htmlFor="company_name">
+                      회사명(Company) <span className="text-indigo-300">*</span>
+                    </Label>
+                    <Input
+                      className={FIELD_CLASS}
+                      id="company_name"
+                      name="company_name"
+                      required
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label className="text-base" htmlFor="contact_phone">
-                  연락처 <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  className="h-12 text-base md:text-base"
-                  id="contact_phone"
-                  name="contact_phone"
-                  type="tel"
-                  inputMode="tel"
-                  placeholder="010-0000-0000"
-                  maxLength={13}
-                  value={phone}
-                  onChange={(e) => setPhone(formatPhone(e.target.value))}
-                  required
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label className="text-lg font-normal text-white" htmlFor="contact_person">
+                      담당자명(Name) <span className="text-indigo-300">*</span>
+                    </Label>
+                    <Input
+                      className={FIELD_CLASS}
+                      id="contact_person"
+                      name="contact_person"
+                      required
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label className="text-base" htmlFor="contact_email">이메일</Label>
-                <Input
-                  className="h-12 text-base md:text-base"
-                  id="contact_email"
-                  name="contact_email"
-                  type="email"
-                  placeholder="example@company.com"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label className="text-lg font-normal text-white" htmlFor="contact_phone">
+                      연락처(Phone) <span className="text-indigo-300">*</span>
+                    </Label>
+                    <Input
+                      className={FIELD_CLASS}
+                      id="contact_phone"
+                      name="contact_phone"
+                      type="tel"
+                      inputMode="tel"
+                      placeholder="010-0000-0000"
+                      maxLength={13}
+                      value={phone}
+                      onChange={(e) => setPhone(formatPhone(e.target.value))}
+                      required
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label className="text-base" htmlFor="message">문의내용</Label>
-                <Textarea
-                  id="message"
-                  name="message"
-                  placeholder="문의내용을 입력해주세요"
-                  rows={4}
-                  className="min-h-32 text-base md:text-base"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label className="text-lg font-normal text-white" htmlFor="contact_email">
+                      이메일(E-mail)
+                    </Label>
+                    <Input
+                      className={FIELD_CLASS}
+                      id="contact_email"
+                      name="contact_email"
+                      type="email"
+                    />
+                  </div>
 
-              {error && (
-                <p className="text-base text-red-500">{error}</p>
+                  <div className="space-y-2">
+                    <Label className="text-lg font-normal text-white" htmlFor="message">
+                      어떤 인력이 필요하신가요?
+                    </Label>
+                    <Textarea
+                      id="message"
+                      name="message"
+                      rows={3}
+                      className={`${FIELD_CLASS} min-h-24 resize-none py-2`}
+                    />
+                  </div>
+
+                  {error && <p className="text-base text-red-400">{error}</p>}
+
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="group inline-flex items-center gap-2 py-2 text-lg font-medium text-white transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:opacity-50"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          제출 중...
+                        </>
+                      ) : (
+                        <>
+                          <CornerDownRight className="h-5 w-5 text-indigo-300" />
+                          문의하기
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
               )}
-
-              <Button type="submit" className="w-full h-14 text-lg" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    제출 중...
-                  </>
-                ) : (
-                  "제휴문의하기"
-                )}
-              </Button>
-            </form>
-          )}
+            </div>
+          </div>
         </div>
       </section>
     </div>
