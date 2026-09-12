@@ -60,6 +60,8 @@ dependencies {
     implementation 'com.google.android.gms:play-services-location:21.1.0'
     implementation 'com.google.firebase:firebase-messaging:24.0.0'
     implementation 'androidx.work:work-runtime:2.9.1'
+    // OTA 플러그인이 guava 33.x를 가져오면서 listenablefuture가 빈 아티팩트로 해석됨 → 앱 모듈에 직접 추가
+    implementation 'com.google.guava:guava:33.6.0-android'
 }
 
 apply from: 'capacitor.build.gradle'
