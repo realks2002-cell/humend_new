@@ -68,7 +68,7 @@ export default function Header() {
       <div className="mx-auto flex h-[68px] max-w-6xl items-center justify-between px-4">
         <Link href="/" className="flex items-center">
           {dark ? (
-            <span className="text-2xl font-semibold tracking-wide text-white">
+            <span className="text-[22px] font-semibold tracking-wide text-white">
               <span className="text-[#97AED4]">HUM</span>AN:D
             </span>
           ) : (
@@ -83,8 +83,8 @@ export default function Header() {
               key={link.href}
               href={link.href}
               className={cn(
-                "text-xl font-normal transition-colors",
-                dark ? "text-white hover:text-white/80" : "text-black hover:text-black"
+                "text-lg font-normal transition-colors",
+                dark ? "text-[#97AED4] hover:text-white" : "text-black hover:text-black"
               )}
             >
               {link.label}
@@ -93,11 +93,11 @@ export default function Header() {
           {user ? (
             <div className="flex items-center gap-2">
               <Link href="/my">
-                <Button variant="ghost" size="sm" className={cn("h-11 px-4 text-xl [&_svg]:!size-6", dark && "text-white hover:bg-white/10 hover:text-white")}>
+                <Button variant="ghost" size="sm" className={cn("h-11 px-4 text-lg [&_svg]:!size-6", dark && "text-[#97AED4] hover:bg-white/10 hover:text-white")}>
                   마이페이지
                 </Button>
               </Link>
-              <Button variant="ghost" size="sm" onClick={handleSignOut} className={cn("h-11 px-4 text-xl [&_svg]:!size-6", dark && "text-white hover:bg-white/10 hover:text-white")}>
+              <Button variant="ghost" size="sm" onClick={handleSignOut} className={cn("h-11 px-4 text-lg [&_svg]:!size-6", dark && "text-[#97AED4] hover:bg-white/10 hover:text-white")}>
                 <LogOut className="mr-1 h-5 w-5" />
                 로그아웃
               </Button>
@@ -105,10 +105,10 @@ export default function Header() {
           ) : (
             <div className="flex items-center gap-2">
               <Link href="/login">
-                <Button size="sm" className="h-11 px-5 text-lg bg-indigo-600 hover:bg-indigo-700">로그인</Button>
+                <Button size="sm" className="h-[38px] px-[15px] text-[14px] bg-indigo-600 hover:bg-indigo-700">로그인</Button>
               </Link>
               <Link href="/signup">
-                <Button variant="outline" size="sm" className="h-11 px-5 text-lg">회원가입</Button>
+                <Button variant="outline" size="sm" className="h-[38px] px-[15px] text-[14px]">회원가입</Button>
               </Link>
             </div>
           )}
