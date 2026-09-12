@@ -6,15 +6,7 @@ import { createAnnouncement } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Megaphone, Plus, X, ClipboardPaste } from "lucide-react";
+import { Megaphone, Plus, X, ClipboardPaste, Check } from "lucide-react";
 import { toast } from "sonner";
 
 type Member = { id: string; name: string | null; phone: string };
@@ -212,33 +204,31 @@ export default function AnnouncementForm({ members }: { members: Member[] }) {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium text-[#091413]">글씨 크기</label>
-              <Select value={fontSize} onValueChange={setFontSize}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {FONT_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select
+                value={fontSize}
+                onChange={(e) => setFontSize(e.target.value)}
+                className="h-10 w-full rounded-[5px] border border-[#D7D7D7] bg-white px-3 text-sm text-[#091413] outline-none focus-visible:border-[#447D9B] focus-visible:ring-2 focus-visible:ring-[#447D9B]/30"
+              >
+                {FONT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-[#091413]">만료</label>
-              <Select value={expiry} onValueChange={setExpiry}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXPIRY_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select
+                value={expiry}
+                onChange={(e) => setExpiry(e.target.value)}
+                className="h-10 w-full rounded-[5px] border border-[#D7D7D7] bg-white px-3 text-sm text-[#091413] outline-none focus-visible:border-[#447D9B] focus-visible:ring-2 focus-visible:ring-[#447D9B]/30"
+              >
+                {EXPIRY_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -315,16 +305,31 @@ export default function AnnouncementForm({ members }: { members: Member[] }) {
                   {filtered.map((m) => {
                     const checked = selected.some((x) => x.id === m.id);
                     return (
-                      <button
+                      <div
                         key={m.id}
-                        type="button"
+                        role="button"
+                        tabIndex={0}
                         onClick={() => toggleMember(m)}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-[#F5F5F5]"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            toggleMember(m);
+                          }
+                        }}
+                        className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm hover:bg-[#F5F5F5]"
                       >
-                        <Checkbox checked={checked} className="pointer-events-none" />
+                        <span
+                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border ${
+                            checked
+                              ? "border-[#447D9B] bg-[#447D9B] text-white"
+                              : "border-[#D7D7D7] bg-white"
+                          }`}
+                        >
+                          {checked && <Check className="h-3 w-3" strokeWidth={3} />}
+                        </span>
                         <span className="font-medium text-[#091413]">{m.name ?? "(이름없음)"}</span>
                         <span className="font-mono text-[#6B7280]">{m.phone}</span>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
