@@ -233,7 +233,7 @@ export default function MobileHome() {
                 <div>
                   <h4 className="font-bold text-lg mb-1">빠른 매칭</h4>
                   <p className="text-hd-on-surface-variant text-sm leading-relaxed">
-                    지원 후 최대 1시간 내에 확정. 기다림 없이 내일 바로 일을 시작할 수 있습니다.
+                    지원 후 빠르게 확정. 기다림 없이 내일 바로 일을 시작할 수 있습니다.
                   </p>
                 </div>
               </div>

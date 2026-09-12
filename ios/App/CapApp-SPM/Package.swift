@@ -11,7 +11,8 @@ let package = Package(
             targets: ["CapApp-SPM"])
     ],
     dependencies: [
-        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.2.0"),
+        // 로컬 경로 지정: 지오펜싱 플러그인이 7.x를 요구해 충돌 → 경로 의존으로 버전 제약 우회
+        .package(name: "capacitor-swift-pm", path: "../../vendor/capacitor-swift-pm"),
         .package(url: "https://github.com/firebase/firebase-ios-sdk.git", from: "12.0.0"),
         .package(name: "CapacitorCommunityBackgroundGeolocation", path: "../../../node_modules/@capacitor-community/background-geolocation"),
         .package(name: "CapacitorApp", path: "../../../node_modules/@capacitor/app"),
