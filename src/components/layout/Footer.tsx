@@ -3,11 +3,11 @@ import Link from "next/link";
 export default function Footer() {
   return (
     <footer className="text-white">
-      <svg aria-hidden viewBox="0 0 1440 64" preserveAspectRatio="none" className="relative block h-10 w-full md:h-20 md:[body:has(.footer-bleed)_&]:-mt-20">
-        <path d="M0 64V54Q720-26 1440 54V64Z" fill="#262626" />
+      <svg aria-hidden viewBox="0 0 1440 64" preserveAspectRatio="none" className="relative block h-10 w-full md:h-20 md:[body:has(.footer-bleed)_&]:-mt-20 [body:has(.footer-flush)_&]:hidden">
+        <path d="M0 64V54Q720-26 1440 54V64Z" fill="#000814" />
       </svg>
-      <div style={{ backgroundColor: "#262626", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-      <div className="mx-auto max-w-5xl px-4 py-8">
+      <div style={{ backgroundColor: "#000814", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <div className="mx-auto max-w-[1229px] px-4 py-[70px]">
         <div className="flex flex-col gap-6 md:flex-row md:justify-between">
           <div>
             <p className="text-lg font-bold">휴멘드 에이치알</p>
@@ -32,14 +32,14 @@ export default function Footer() {
           </nav>
         </div>
         <div className="mt-6 border-t border-white/30 pt-4 text-center">
-          <p className="text-base font-medium text-white/70">
+          <p className="text-[21px] font-medium text-orange-400">
             Developed by{" "}
-            <a href="https://www.bizstart.shop" target="_blank" rel="noopener noreferrer" className="hover:text-white">
+            <a href="https://www.bizstart.co.kr" target="_blank" rel="noopener noreferrer" className="hover:text-orange-300">
               Bizstart(비즈스타트)
             </a>
             ,{" "}
-            <a href="https://www.bizstart.shop" target="_blank" rel="noopener noreferrer" className="hover:text-white">
-              www.bizstart.shop
+            <a href="https://www.bizstart.co.kr" target="_blank" rel="noopener noreferrer" className="hover:text-orange-300">
+              www.bizstart.co.kr
             </a>
           </p>
         </div>

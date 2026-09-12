@@ -15,29 +15,32 @@ import KakaoFloatingButton from "@/components/home/KakaoFloatingButton";
 const MobileHome = dynamic_import(() => import("@/components/home/MobileHome"));
 
 const stats = [
-  { label: "등록 회원", value: 12000, suffix: "+", icon: Users, color: "text-gray-700" },
-  { label: "제휴 고객사", value: 200, suffix: "+", icon: Building2, color: "text-gray-700" },
-  { label: "매칭 완료", value: 30000, suffix: "+", icon: Handshake, color: "text-gray-700" },
+  { label: "등록 회원", value: 12000, suffix: "+", icon: Users, photo: "/images/stat-hall.jpg" },
+  { label: "제휴 고객사", value: 200, suffix: "+", icon: Building2, photo: "/images/stat-catering.jpg" },
+  { label: "매칭 완료", value: 30000, suffix: "+", icon: Handshake, photo: "/images/stat-convention.jpg" },
 ];
 
 const services = [
   {
     title: "빠른 매칭",
+    watermark: "text-[#C66508]/[0.10] group-hover:text-[#C66508]/[0.16]",
+    accent: "bg-[#C66508]/10 text-[#C66508] group-hover:bg-[#C66508] group-hover:text-white",
     description: "원하는 날짜에 바로 지원하고, 빠르게 승인받으세요.",
     icon: Zap,
-    color: "bg-gray-100 text-gray-700",
   },
   {
     title: "다양한 현장",
+    watermark: "text-[#CF1742]/[0.10] group-hover:text-[#CF1742]/[0.16]",
+    accent: "bg-[#CF1742]/10 text-[#CF1742] group-hover:bg-[#CF1742] group-hover:text-white",
     description: "웨딩홀, 케이터링, 컨벤션 등 다양한 근무처를 제공합니다.",
     icon: MapPin,
-    color: "bg-gray-100 text-gray-700",
   },
   {
     title: "투명한 급여",
+    watermark: "text-[#058760]/[0.10] group-hover:text-[#058760]/[0.16]",
+    accent: "bg-[#058760]/10 text-[#058760] group-hover:bg-[#058760] group-hover:text-white",
     description: "시급 사전 공개, 근무 후 정확한 급여 정산을 보장합니다.",
     icon: Shield,
-    color: "bg-gray-100 text-gray-700",
   },
 ];
 
@@ -76,8 +79,8 @@ export default async function Home() {
       <HeroStatsSection />
 
       {/* 알바공고 (일별) */}
-      <section className="bg-muted/20 px-4 py-20">
-        <div className="mx-auto max-w-5xl">
+      <section className="bg-muted/20 py-20">
+        <div className="mx-auto max-w-[1400px] px-4">
           <div className="mb-10 flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold md:text-3xl">알바공고</h2>
@@ -103,7 +106,7 @@ export default async function Home() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-6 grid-cols-2 md:grid-cols-4">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {dailyClients.map((client) => (
                 <Link key={client.id} href={`/jobs/${client.id}`}>
                   <Card className="group overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg py-0 rounded-[10px]">
@@ -236,20 +239,27 @@ export default async function Home() {
       )}
 
       {/* Services */}
-      <section className="bg-[color-mix(in_oklch,#001946_4%,white)] px-4 pt-20 pb-4">
-        <div className="mx-auto max-w-5xl">
-        <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wider text-indigo-600">Service</p>
-        <h2 className="mb-2 text-center text-2xl font-bold md:text-3xl">서비스 소개</h2>
-        <p className="mb-12 text-center text-muted-foreground">Humend가 제공하는 핵심 서비스</p>
+      <section className="bg-[#F9F9F9] px-4 pt-20 pb-48">
+        <div className="mx-auto max-w-[1170px]">
+        <p className="mb-2 text-center text-base font-semibold uppercase tracking-wider text-indigo-600">Service</p>
+        <h2 className="mb-2 text-center text-[35px] font-bold md:text-[43px]">서비스 소개</h2>
+        <p className="mb-12 text-center text-[23px] text-muted-foreground">Humend가 제공하는 핵심 서비스</p>
         <div className="grid gap-6 md:grid-cols-3">
           {services.map((service) => (
-            <Card key={service.title} className="group transition-all hover:-translate-y-1 hover:shadow-lg">
-              <CardContent className="pt-6">
-                <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl ${service.color}`}>
-                  <service.icon className="h-6 w-6" />
+            <Card
+              key={service.title}
+              className="group relative overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:border-[#001946]/30 hover:shadow-xl"
+            >
+              <service.icon
+                aria-hidden
+                className={`pointer-events-none absolute -bottom-5 -right-4 h-32 w-32 transition-all duration-300 group-hover:scale-110 ${service.watermark}`}
+              />
+              <CardContent className="relative pt-6 pb-[72px]">
+                <div className={`mb-11 flex h-14 w-14 items-center justify-center rounded-xl transition-colors duration-200 ${service.accent}`}>
+                  <service.icon className="h-7 w-7" />
                 </div>
-                <h3 className="mb-2 text-lg font-semibold">{service.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">
+                <h3 className="mb-2 text-xl font-semibold">{service.title}</h3>
+                <p className="text-base leading-relaxed text-muted-foreground">
                   {service.description}
                 </p>
               </CardContent>
@@ -259,24 +269,24 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="footer-bleed bg-[color-mix(in_oklch,#001946_4%,white)] px-4 pt-16 pb-28">
-        <p className="mb-10 text-center text-xs font-semibold uppercase tracking-wider text-indigo-600">Numbers</p>
-        <div className="mx-auto grid max-w-3xl grid-cols-3 gap-4">
-          {stats.map((stat) => (
-            <div key={stat.label} className="text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-background shadow-sm">
-                <stat.icon className={`h-6 w-6 ${stat.color}`} />
-              </div>
-              <p className="text-3xl font-bold md:text-4xl">
+      {/* Stats — 사진 패널 3분할, 푸터와 맞닿음 */}
+      <section className="footer-flush grid md:grid-cols-3">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className="relative flex min-h-[280px] items-center justify-center overflow-hidden px-6 py-16 text-center"
+          >
+            <img src={stat.photo} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-black/75" />
+            <div className="relative">
+              <stat.icon className="mx-auto mb-4 h-8 w-8 text-white/60" />
+              <p className="text-5xl font-bold text-white md:text-6xl">
                 <CountUp end={stat.value} suffix={stat.suffix} />
               </p>
-              <p className="mt-1 text-xs text-muted-foreground md:text-sm">
-                {stat.label}
-              </p>
+              <p className="mt-3 text-base text-white/70 md:text-lg">{stat.label}</p>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </section>
     </div>
     </>

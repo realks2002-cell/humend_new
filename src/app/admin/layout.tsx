@@ -57,7 +57,7 @@ export default function AdminLayout({
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] pt-14">
+    <div className="flex min-h-[calc(100vh-3.5rem)] pt-[68px]">
       {/* Sidebar */}
       <aside
         className={cn(

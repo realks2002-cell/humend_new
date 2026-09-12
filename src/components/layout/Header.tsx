@@ -65,25 +65,25 @@ export default function Header() {
       )}
       style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
+      <div className="mx-auto flex h-[68px] max-w-6xl items-center justify-between px-4">
         <Link href="/" className="flex items-center">
           {dark ? (
-            <span className="text-xl font-semibold tracking-wide text-white">
+            <span className="text-2xl font-semibold tracking-wide text-white">
               <span className="text-[#97AED4]">HUM</span>AN:D
             </span>
           ) : (
-            <Image src="/logo.png" alt="HUMAN:D" width={120} height={32} className="h-[16px] w-auto" priority />
+            <Image src="/logo.png" alt="HUMAN:D" width={120} height={32} className="h-[19px] w-auto" priority />
           )}
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden items-center gap-10 md:flex" style={{ marginRight: "-50px" }}>
+        <nav className="hidden items-center gap-10 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
-                "text-base font-normal transition-colors",
+                "text-xl font-normal transition-colors",
                 dark ? "text-white hover:text-white/80" : "text-black hover:text-black"
               )}
             >
@@ -93,23 +93,22 @@ export default function Header() {
           {user ? (
             <div className="flex items-center gap-2">
               <Link href="/my">
-                <Button variant="ghost" size="sm" className={cn(dark && "text-white hover:bg-white/10 hover:text-white")}>
-                  <User className="mr-1 h-4 w-4" />
+                <Button variant="ghost" size="sm" className={cn("h-11 px-4 text-xl [&_svg]:!size-6", dark && "text-white hover:bg-white/10 hover:text-white")}>
                   마이페이지
                 </Button>
               </Link>
-              <Button variant="ghost" size="sm" onClick={handleSignOut} className={cn(dark && "text-white hover:bg-white/10 hover:text-white")}>
-                <LogOut className="mr-1 h-4 w-4" />
+              <Button variant="ghost" size="sm" onClick={handleSignOut} className={cn("h-11 px-4 text-xl [&_svg]:!size-6", dark && "text-white hover:bg-white/10 hover:text-white")}>
+                <LogOut className="mr-1 h-5 w-5" />
                 로그아웃
               </Button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <Link href="/login">
-                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700">로그인</Button>
+                <Button size="sm" className="h-11 px-5 text-lg bg-indigo-600 hover:bg-indigo-700">로그인</Button>
               </Link>
               <Link href="/signup">
-                <Button variant="outline" size="sm">회원가입</Button>
+                <Button variant="outline" size="sm" className="h-11 px-5 text-lg">회원가입</Button>
               </Link>
             </div>
           )}

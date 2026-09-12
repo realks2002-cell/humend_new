@@ -13,6 +13,7 @@ const steps = [
   {
     icon: ClipboardList,
     title: "공고 등록",
+    accent: "bg-sky-500/10 text-sky-600 group-hover:bg-sky-500 group-hover:text-white",
     description: "고객사 정보와 근무 일정을 등록합니다.",
     color: "bg-gray-100 text-gray-700",
     step: "01",
@@ -20,6 +21,7 @@ const steps = [
   {
     icon: Users,
     title: "인력 매칭",
+    accent: "bg-indigo-500/10 text-indigo-600 group-hover:bg-indigo-500 group-hover:text-white",
     description: "등록된 인력 중 적합한 인원을 매칭합니다.",
     color: "bg-gray-100 text-gray-700",
     step: "02",
@@ -27,6 +29,7 @@ const steps = [
   {
     icon: CheckCircle,
     title: "근무 확인",
+    accent: "bg-emerald-500/10 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white",
     description: "매칭된 인력이 현장에서 근무합니다.",
     color: "bg-gray-100 text-gray-700",
     step: "03",
@@ -34,6 +37,7 @@ const steps = [
   {
     icon: Banknote,
     title: "급여 정산",
+    accent: "bg-amber-500/10 text-amber-600 group-hover:bg-amber-500 group-hover:text-white",
     description: "근무 완료 후 투명하게 급여를 정산합니다.",
     color: "bg-gray-100 text-gray-700",
     step: "04",
@@ -119,7 +123,7 @@ export default function AboutPage() {
           </svg>
         )}
         <div className="relative" style={{ marginTop: "30px" }}>
-          <h1 className="text-3xl font-bold md:text-5xl">
+          <h1 className={`font-bold ${isNative ? "text-3xl md:text-5xl" : "text-[44px] md:text-[72px]"}`}>
             사람과 현장을 연결하는
             <br />
             {isNative ? (
@@ -128,7 +132,7 @@ export default function AboutPage() {
               <span className="text-indigo-300">파트너</span>
             )}
           </h1>
-          <p className={`mx-auto mt-6 max-w-lg text-lg ${isNative ? "hidden" : "text-[rgb(162,170,190)]"}`}>
+          <p className={`mx-auto mt-6 break-keep ${isNative ? "hidden max-w-lg text-lg" : "max-w-2xl text-2xl text-[rgb(162,170,190)]"}`}>
             Humend HR은 웨딩홀, 케이터링, 컨벤션 등 행사 현장에
             <br />
             필요한 인력을 빠르고 정확하게 매칭하는 플랫폼입니다.
@@ -137,10 +141,10 @@ export default function AboutPage() {
       </section>
 
       {/* Process */}
-      <section className={`mx-auto px-4 py-20 ${isNative ? "" : "max-w-4xl"}`}>
-        {!isNative && <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wider text-indigo-600">Process</p>}
-        <h2 className="mb-2 text-center text-2xl font-bold md:text-3xl">서비스 프로세스</h2>
-        <p className="mb-12 text-center text-muted-foreground">4단계로 간편하게 진행됩니다</p>
+      <section className={`mx-auto px-4 py-20 ${isNative ? "" : "max-w-[1092px]"}`}>
+        {!isNative && <p className="mb-2 text-center text-sm font-semibold uppercase tracking-wider text-indigo-600">Process</p>}
+        <h2 className="mb-2 text-center text-3xl font-bold md:text-4xl">서비스 프로세스</h2>
+        <p className="mb-12 text-center text-xl text-muted-foreground">4단계로 간편하게 진행됩니다</p>
         {isNative ? (
           <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
             {steps.map((step) => (
@@ -166,13 +170,13 @@ export default function AboutPage() {
                   <div className="absolute right-0 top-12 hidden h-0.5 w-6 translate-x-3 bg-border md:block" />
                 )}
                 <Card className="group text-center transition-all hover:-translate-y-1 hover:shadow-lg">
-                  <CardContent className="pt-6">
-                    <span className="mb-2 block text-xs font-bold text-muted-foreground/50">{step.step}</span>
-                    <div className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl ${step.color} transition-transform group-hover:scale-110`}>
-                      <step.icon className="h-7 w-7" />
+                  <CardContent className="pt-6 pb-[53px]">
+                    <span className="mb-2 block text-sm font-bold text-muted-foreground/50">{step.step}</span>
+                    <div className={`mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl ${step.accent} transition-all duration-200 group-hover:scale-110`}>
+                      <step.icon className="h-8 w-8" />
                     </div>
-                    <h3 className="font-semibold">{step.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    <h3 className="text-xl font-semibold">{step.title}</h3>
+                    <p className="mt-2 text-base leading-relaxed text-muted-foreground">
                       {step.description}
                     </p>
                   </CardContent>
@@ -186,17 +190,17 @@ export default function AboutPage() {
       {/* Values */}
       <section className={`px-4 py-20 ${isNative ? "bg-muted/20" : "bg-[color-mix(in_oklch,#001946_4%,white)]"}`}>
         <div className="mx-auto max-w-4xl">
-          {!isNative && <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wider text-indigo-600">Values</p>}
-          <h2 className="mb-2 text-center text-2xl font-bold md:text-3xl">핵심 가치</h2>
-          <p className="mb-12 text-center text-muted-foreground">Humend HR이 추구하는 가치</p>
+          {!isNative && <p className="mb-2 text-center text-sm font-semibold uppercase tracking-wider text-indigo-600">Values</p>}
+          <h2 className={`mb-2 text-center font-bold ${isNative ? "text-2xl md:text-3xl" : "text-3xl md:text-4xl"}`}>핵심 가치</h2>
+          <p className={`mb-12 text-center text-muted-foreground ${isNative ? "" : "text-xl"}`}>Humend HR이 추구하는 가치</p>
           <div className="grid grid-cols-3 gap-4">
             {values.map((v) => (
               <div key={v.title} className="text-center">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-background shadow-sm md:h-16 md:w-16">
-                  <v.icon className={`h-6 w-6 md:h-8 md:w-8 ${v.color}`} />
+                <div className={`mx-auto mb-3 flex items-center justify-center rounded-full bg-background shadow-sm ${isNative ? "h-12 w-12 md:h-16 md:w-16" : "h-14 w-14 md:h-20 md:w-20"}`}>
+                  <v.icon className={`${isNative ? "h-6 w-6 md:h-8 md:w-8" : "h-7 w-7 md:h-10 md:w-10"} ${v.color}`} />
                 </div>
-                <p className="text-lg font-bold md:text-2xl">{v.title}</p>
-                <p className={`mt-1 text-xs text-muted-foreground md:mt-2 md:text-sm ${isNative ? "hidden" : ""}`}>
+                <p className={`font-bold ${isNative ? "text-lg md:text-2xl" : "text-xl md:text-3xl"}`}>{v.title}</p>
+                <p className={`mt-1 text-muted-foreground md:mt-2 ${isNative ? "hidden text-xs md:text-sm" : "text-sm md:text-base"}`}>
                   {v.description}
                 </p>
               </div>
@@ -207,18 +211,18 @@ export default function AboutPage() {
 
       {/* Partner Inquiry Form */}
       <section className={`px-4 py-20 ${isNative ? "hidden" : ""}`}>
-        <div className="mx-auto max-w-lg">
-          <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wider text-indigo-600">Contact</p>
-          <h2 className="text-center text-2xl font-bold md:text-3xl">파트너 제휴문의</h2>
-          <p className="mt-3 text-center text-muted-foreground">
+        <div className="mx-auto max-w-2xl">
+          <p className="mb-2 text-center text-sm font-semibold uppercase tracking-wider text-indigo-600">Contact</p>
+          <h2 className="text-center text-3xl font-bold md:text-4xl">파트너 제휴문의</h2>
+          <p className="mt-3 text-center text-xl text-muted-foreground">
             인력파견 서비스가 필요하신가요? 기업 맞춤형 인력 솔루션을 제안드립니다.
           </p>
 
           {submitted ? (
             <div className="mt-10 flex flex-col items-center gap-3 rounded-2xl border bg-green-50 p-8 text-center">
               <CheckCircle2 className="h-12 w-12 text-green-500" />
-              <p className="text-lg font-semibold">문의가 접수되었습니다</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xl font-semibold">문의가 접수되었습니다</p>
+              <p className="text-base text-muted-foreground">
                 담당자가 확인 후 빠르게 연락드리겠습니다.
               </p>
               <Button
@@ -230,12 +234,13 @@ export default function AboutPage() {
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5 rounded-lg border bg-white p-6 shadow-md md:p-8">
+            <form onSubmit={handleSubmit} className="mt-8 space-y-6 rounded-lg border bg-white p-8 text-lg shadow-md md:p-10">
               <div className="space-y-2">
-                <Label htmlFor="company_name">
+                <Label className="text-base" htmlFor="company_name">
                   회사명 <span className="text-red-500">*</span>
                 </Label>
                 <Input
+                  className="h-12 text-base md:text-base"
                   id="company_name"
                   name="company_name"
                   placeholder="회사명을 입력해주세요"
@@ -244,10 +249,11 @@ export default function AboutPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="contact_person">
+                <Label className="text-base" htmlFor="contact_person">
                   담당자명 <span className="text-red-500">*</span>
                 </Label>
                 <Input
+                  className="h-12 text-base md:text-base"
                   id="contact_person"
                   name="contact_person"
                   placeholder="담당자명을 입력해주세요"
@@ -256,10 +262,11 @@ export default function AboutPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="contact_phone">
+                <Label className="text-base" htmlFor="contact_phone">
                   연락처 <span className="text-red-500">*</span>
                 </Label>
                 <Input
+                  className="h-12 text-base md:text-base"
                   id="contact_phone"
                   name="contact_phone"
                   type="tel"
@@ -273,8 +280,9 @@ export default function AboutPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="contact_email">이메일</Label>
+                <Label className="text-base" htmlFor="contact_email">이메일</Label>
                 <Input
+                  className="h-12 text-base md:text-base"
                   id="contact_email"
                   name="contact_email"
                   type="email"
@@ -283,20 +291,21 @@ export default function AboutPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="message">문의내용</Label>
+                <Label className="text-base" htmlFor="message">문의내용</Label>
                 <Textarea
                   id="message"
                   name="message"
                   placeholder="문의내용을 입력해주세요"
                   rows={4}
+                  className="min-h-32 text-base md:text-base"
                 />
               </div>
 
               {error && (
-                <p className="text-sm text-red-500">{error}</p>
+                <p className="text-base text-red-500">{error}</p>
               )}
 
-              <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
+              <Button type="submit" className="w-full h-14 text-lg" disabled={loading}>
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

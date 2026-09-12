@@ -109,19 +109,19 @@ export default function HeroStatsSection() {
         <div className="flex flex-col gap-12 lg:flex-row lg:items-start lg:justify-between lg:gap-16">
           {/* Left: Headline + CTA */}
           <div className="flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-500 motion-reduce:animate-none">
-            <span className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white">
+            <span className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-base font-semibold text-white">
               <span className="h-2 w-2 rounded-full bg-green-500" />
               오늘도 새로운 알바가 널 기다리는 중
             </span>
             <h1
-              className="text-[40px] font-bold leading-[1.15] tracking-[-0.04em] sm:text-[50px] lg:text-[58px]"
+              className="text-[44px] font-bold leading-[1.15] tracking-[-0.04em] sm:text-[55px] lg:text-[64px]"
               style={{ color: COLORS.textPrimary }}
             >
               일할 준비 됐으면,
               <br />
               <span className="text-indigo-300">탭 한 번</span>이면 끝.
             </h1>
-            <p className="mt-4 text-xl font-semibold md:text-[25px]" style={{ color: COLORS.textSecondary }}>
+            <p className="mt-4 text-[22px] font-semibold md:text-[28px]" style={{ color: COLORS.textSecondary }}>
               오늘 지원하고, 내일 출근하자.
             </p>
 
@@ -129,14 +129,14 @@ export default function HeroStatsSection() {
               <button
                 type="button"
                 onClick={handleSalaryRequest}
-                className="inline-flex items-center gap-2 rounded-[5px] bg-white px-6 py-3 text-base font-semibold text-[#001946] transition-[transform,background-color] duration-150 hover:-translate-y-0.5 hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#001946]"
+                className="inline-flex items-center gap-2 rounded-[5px] bg-white px-7 py-3.5 text-lg font-semibold text-[#001946] transition-[transform,background-color] duration-150 hover:-translate-y-0.5 hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#001946]"
               >
                 회원 급여요청
                 <ArrowRight className="h-4 w-4" />
               </button>
               <Link
                 href="/jobs"
-                className="inline-flex items-center rounded-[5px] border border-white/25 px-6 py-3 text-base font-semibold text-white transition-[transform,background-color] duration-150 hover:-translate-y-0.5 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#001946]"
+                className="inline-flex items-center rounded-[5px] border border-white/25 px-7 py-3.5 text-lg font-semibold text-white transition-[transform,background-color] duration-150 hover:-translate-y-0.5 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#001946]"
               >
                 어떤 알바가 있을까?
               </Link>
@@ -152,7 +152,7 @@ export default function HeroStatsSection() {
             <div className="relative min-h-[120px] lg:min-h-[96px]" aria-live="polite">
               <p
                 key={activeIndex}
-                className="break-keep text-lg leading-relaxed animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none md:text-xl lg:text-[20px] lg:leading-[1.6]"
+                className="break-keep text-xl leading-relaxed animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none md:text-[22px] lg:leading-[1.6]"
                 style={{ color: COLORS.quote }}
               >
                 {active.quote}
@@ -163,13 +163,13 @@ export default function HeroStatsSection() {
               key={`meta-${activeIndex}`}
               className="mt-4 animate-in fade-in duration-300 motion-reduce:animate-none"
             >
-              <p className="text-base font-semibold text-white">{active.name}</p>
-              <p className="text-sm" style={{ color: COLORS.textMuted }}>
+              <p className="text-lg font-semibold text-white">{active.name}</p>
+              <p className="text-base" style={{ color: COLORS.textMuted }}>
                 {active.meta}
               </p>
             </div>
 
-            <div className="mt-6 flex -space-x-3">
+            <div className="mt-11 flex -space-x-3">
               {TESTIMONIALS.map((t, index) => {
                 const isActive = activeIndex === index;
                 return (
@@ -179,7 +179,7 @@ export default function HeroStatsSection() {
                     onClick={() => setActiveIndex(index)}
                     aria-label={`${t.name} 후기 보기`}
                     aria-pressed={isActive}
-                    className="relative h-12 w-12 overflow-hidden rounded-full transition-[transform,opacity,filter] duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#001946] md:h-14 md:w-14"
+                    className="relative h-[80px] w-[80px] overflow-hidden rounded-full transition-[transform,opacity,filter] duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#001946] md:h-[91px] md:w-[91px]"
                     style={{
                       backgroundColor: COLORS.background,
                       boxShadow: `0 0 0 ${isActive ? 2 : 1}px ${COLORS.border}`,
@@ -194,7 +194,7 @@ export default function HeroStatsSection() {
               })}
             </div>
 
-            <p className="mt-6 text-sm leading-relaxed md:text-base" style={{ color: COLORS.textMuted }}>
+            <p className="mt-6 text-base leading-relaxed md:text-lg" style={{ color: COLORS.textMuted }}>
               쉬운 지원, <strong className="text-white">확실한 급여</strong>.
               <br />
               첫 알바도 걱정 없어.
