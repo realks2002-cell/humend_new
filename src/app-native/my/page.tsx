@@ -76,6 +76,7 @@ function MyPageContent() {
   const pendingCount = applications.filter((a) => a.status === "대기").length;
   const approvedCount = applications.filter((a) => a.status === "승인").length;
   const hasResume = !!(profile?.name && profile?.bank_name);
+  const hasHealthCert = !!(profile?.health_cert_date && profile?.health_cert_image_url);
 
   const profileFields = [
     profile?.name,
@@ -98,7 +99,7 @@ function MyPageContent() {
     { href: "/my/history", icon: Clock, label: "근무내역", desc: "월별 근무내역 조회", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
     { href: "/my/consent", icon: FileSignature, label: "친권자 동의서", desc: consent ? "제출 완료" : "미성년자 동의서 작성", gradient: consent ? "from-emerald-500/5 to-green-500/5" : "from-amber-500/5 to-orange-500/5", iconBg: "", iconColor: consent ? "text-emerald-600" : "text-amber-600" },
     { href: "/my/family-cert", icon: Users, label: "가족관계증명서", desc: profile?.family_cert_path ? "업로드 완료" : "가족관계증명서 업로드", gradient: profile?.family_cert_path ? "from-emerald-500/5 to-green-500/5" : "from-amber-500/5 to-orange-500/5", iconBg: "", iconColor: profile?.family_cert_path ? "text-emerald-600" : "text-amber-600" },
-    { href: "/my/health-cert", icon: Shield, label: "보건증 제출", desc: "보건증 이미지 업로드", gradient: "from-slate-500/5 to-gray-500/5", iconBg: "", iconColor: "text-slate-700" },
+    { href: "/my/health-cert", icon: Shield, label: "보건증 제출", desc: hasHealthCert ? "제출 완료" : "보건증 이미지 업로드", gradient: hasHealthCert ? "from-emerald-500/5 to-green-500/5" : "from-amber-500/5 to-orange-500/5", iconBg: "", iconColor: hasHealthCert ? "text-emerald-600" : "text-amber-600" },
   ];
 
   const statCards = [
