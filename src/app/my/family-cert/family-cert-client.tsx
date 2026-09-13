@@ -109,7 +109,7 @@ export function FamilyCertClient({ initialUrl, initialUploadedAt }: FamilyCertCl
         <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
           <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-emerald-800">가족관계증명서 업로드 완료</p>
+            <p className="text-sm font-semibold text-emerald-800">가족관계증명서 제출 완료</p>
             <p className="text-xs text-emerald-600">{formatDate(cert.uploadedAt)} 업로드됨</p>
           </div>
         </div>
