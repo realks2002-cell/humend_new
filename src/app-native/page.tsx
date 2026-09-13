@@ -339,7 +339,7 @@ export default function NativeHomePage() {
             <p className="text-xs text-slate-500 leading-relaxed">
               휴멘드 에이치알 (HUMAN:D HR)
               <br />
-              대표: 이상훈 | 사업자번호: 396-87-03869
+              대표: 이혁 | 사업자번호: 396-87-03869
               <br />
               서울특별시 구로구 디지털로34번길 55
               <br />

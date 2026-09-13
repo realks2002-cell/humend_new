@@ -37,7 +37,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ target: 
   const html = `<!doctype html>
 <html lang="ko"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>휴멘드에이치알 앱 열기</title>
+<title>급여신청/계약서</title>
+<meta property="og:title" content="급여신청/계약서">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="휴멘드 에이치알">
 <style>
   body{margin:0;font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;background:#F5F5F5;color:#091413;display:flex;min-height:100vh;align-items:center;justify-content:center}
   .box{background:#fff;border:1px solid #D7D7D7;border-radius:12px;padding:32px 24px;max-width:320px;width:calc(100% - 48px);text-align:center}
