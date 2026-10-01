@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Users, ClipboardList, Building2, CalendarCheck, Wallet, HandCoins, ArrowRight, CheckCircle, Clock } from "lucide-react";
 import { getAllApplications } from "@/lib/supabase/queries";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
-import { ApplicationPieChart, PayrollBarChart } from "./dashboard-charts";
+import { AppInstallChart, ApplicationPieChart, PayrollBarChart } from "./dashboard-charts";
 import { CollapsibleSection } from "./collapsible-section";
 import { getDashboardStats } from "./actions";
 import { MonthSelector } from "@/components/ui/month-selector";
@@ -78,23 +78,40 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
       {/* Charts Row */}
       <CollapsibleSection label="차트">
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="overflow-hidden py-0">
-            <div className="bg-[#F2F7FF] px-5 py-3 border-b">
-              <h3 className="text-sm font-semibold">지원 현황</h3>
-            </div>
-            <CardContent className="p-5">
-              <ApplicationPieChart
-                pending={dashStats.pendingAppCount}
-                approved={dashStats.approvedAppCount}
-                rejected={dashStats.rejectedAppCount}
-              />
-            </CardContent>
-          </Card>
-          <Card className="overflow-hidden py-0">
+          <div className="flex flex-col gap-4">
+            <Card className="h-[250px] shrink-0 gap-0 overflow-hidden py-0">
+              <div className="bg-[#F2F7FF] px-5 py-3 border-b">
+                <h3 className="text-sm font-semibold">지원 현황</h3>
+              </div>
+              <CardContent className="flex flex-1 items-center justify-center px-5 py-3">
+                <ApplicationPieChart
+                  pending={dashStats.pendingAppCount}
+                  approved={dashStats.approvedAppCount}
+                  rejected={dashStats.rejectedAppCount}
+                />
+              </CardContent>
+            </Card>
+            <Card className="flex-1 gap-0 overflow-hidden py-0">
+              <div className="flex items-center justify-between bg-[#F2F7FF] px-5 py-3 border-b">
+                <h3 className="text-sm font-semibold">앱 설치 회원</h3>
+                <span className="text-sm font-semibold tabular-nums text-gray-800">
+                  총 {dashStats.appInstalls.total.toLocaleString("ko-KR")}명
+                </span>
+              </div>
+              <CardContent className="flex flex-1 flex-col justify-center px-5 py-4">
+                <AppInstallChart
+                  android={dashStats.appInstalls.android}
+                  ios={dashStats.appInstalls.ios}
+                  total={dashStats.appInstalls.total}
+                />
+              </CardContent>
+            </Card>
+          </div>
+          <Card className="gap-0 overflow-hidden py-0">
             <div className="bg-[#F2F7FF] px-5 py-3 border-b">
               <h3 className="text-sm font-semibold">월별 급여 추이</h3>
             </div>
-            <CardContent className="p-5">
+            <CardContent className="flex-1 p-5">
               <PayrollBarChart data={barData} />
             </CardContent>
           </Card>

@@ -20,6 +20,33 @@ async function fetchPaymentsInRange(admin: ReturnType<typeof createAdminClient>,
   return rows;
 }
 
+// 앱 설치 회원 = 푸시 토큰이 등록된 활성 회원 (회원당 1명, 플랫폼별)
+async function fetchAppInstallCounts(admin: ReturnType<typeof createAdminClient>) {
+  const platformsByMember = new Map<string, Set<string>>();
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await admin.from("device_tokens")
+      .select("member_id, platform, members!inner(status)")
+      .eq("members.status", "active")
+      .order("id")
+      .range(from, from + 999);
+    if (error) throw new Error(`앱 설치 회원 조회 실패: ${error.message}`);
+    for (const row of data) {
+      const platforms = platformsByMember.get(row.member_id) ?? new Set<string>();
+      platforms.add(row.platform);
+      platformsByMember.set(row.member_id, platforms);
+    }
+    if (data.length < 1000) break;
+  }
+
+  let android = 0;
+  let ios = 0;
+  for (const platforms of platformsByMember.values()) {
+    if (platforms.has("android")) android++;
+    if (platforms.has("ios")) ios++;
+  }
+  return { total: platformsByMember.size, android, ios };
+}
+
 export async function getDashboardStats(currentMonth: string) {
   await requireAdmin();
   const admin = createAdminClient();
@@ -43,6 +70,7 @@ export async function getDashboardStats(currentMonth: string) {
     { count: rejectedAppCount },
     { count: salaryRequestCount },
     paymentsData,
+    appInstalls,
   ] = await Promise.all([
     admin.from("members").select("*", { count: "exact", head: true }).eq("status", "active"),
     admin.from("clients").select("*", { count: "exact", head: true }).eq("status", "active"),
@@ -53,6 +81,7 @@ export async function getDashboardStats(currentMonth: string) {
     admin.from("work_records").select("id, payments(id)", { count: "exact", head: true })
       .not("signature_url", "is", null).is("payments", null),
     fetchPaymentsInRange(admin, rangeStart, end),
+    fetchAppInstallCounts(admin),
   ]);
 
   // 월별 급여 합산 (payments 테이블 기준)
@@ -87,5 +116,6 @@ export async function getDashboardStats(currentMonth: string) {
     workRecordCount: workRecordCount ?? 0,
     totalNet,
     monthlyPayroll,
+    appInstalls,
   };
 }
