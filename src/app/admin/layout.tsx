@@ -95,7 +95,7 @@ export default function AdminLayout({
                         className={cn(
                           "flex items-center justify-center rounded-xl p-2.5 transition-all",
                           isActive
-                            ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
+                            ? "bg-[#001946] text-white shadow-sm"
                             : "text-muted-foreground hover:bg-accent hover:text-foreground"
                         )}
                       >
@@ -116,7 +116,7 @@ export default function AdminLayout({
                   className={cn(
                     "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                     isActive
-                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
+                      ? "bg-[#001946] text-white shadow-sm"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
                   )}
                 >
@@ -142,7 +142,7 @@ export default function AdminLayout({
                     href={link.href}
                     className={cn(
                       "flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-xs transition-colors",
-                      isActive ? "text-blue-600" : "text-muted-foreground"
+                      isActive ? "text-[#001946]" : "text-muted-foreground"
                     )}
                   >
                     <link.icon className={cn("h-5 w-5", isActive && "drop-shadow-sm")} />

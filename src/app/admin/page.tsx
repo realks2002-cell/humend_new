@@ -28,7 +28,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
 
   const [selYear, selMonthNum] = currentMonth.split("-").map(Number);
   const barData = [];
-  for (let i = 5; i >= 0; i--) {
+  for (let i = 11; i >= 0; i--) {
     const d = new Date(selYear, selMonthNum - 1 - i, 1);
     const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const label = `${d.getMonth() + 1}월`;
@@ -38,38 +38,37 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const payrollLabel = currentMonth === defaultMonth ? "이번 달 급여" : `${selMonthNum}월 급여`;
 
   const stats = [
-    { label: "확정 근무", value: dashStats.workRecordCount, icon: CalendarCheck, gradient: "from-blue-600 to-indigo-600", lightBg: "from-blue-50 to-indigo-50" },
-    { label: "미처리 지원", value: dashStats.pendingAppCount, icon: ClipboardList, gradient: "from-amber-500 to-orange-500", lightBg: "from-amber-50 to-orange-50" },
-    { label: "등록 회원", value: dashStats.memberCount, icon: Users, gradient: "from-violet-500 to-purple-500", lightBg: "from-violet-50 to-purple-50" },
-    { label: "제휴 고객사", value: dashStats.clientCount, icon: Building2, gradient: "from-emerald-500 to-teal-500", lightBg: "from-emerald-50 to-teal-50" },
-    { label: payrollLabel, value: formatCurrency(dashStats.totalNet), icon: Wallet, gradient: "from-rose-500 to-pink-500", lightBg: "from-rose-50 to-pink-50", hasMonthSelector: true },
+    { label: "확정 근무", value: dashStats.workRecordCount, icon: CalendarCheck },
+    { label: "미처리 지원", value: dashStats.pendingAppCount, icon: ClipboardList, warn: dashStats.pendingAppCount > 0 },
+    { label: "등록 회원", value: dashStats.memberCount, icon: Users },
+    { label: "제휴 고객사", value: dashStats.clientCount, icon: Building2 },
+    { label: payrollLabel, value: formatCurrency(dashStats.totalNet), icon: Wallet, hasMonthSelector: true },
   ];
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">관리자 대시보드</h1>
-        <p className="mt-1 text-sm text-muted-foreground">오늘의 현황을 확인하세요.</p>
-      </div>
-
       {/* Stat Cards */}
       <CollapsibleSection label="카드">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200 shadow-sm sm:grid-cols-2 lg:grid-cols-5">
           {stats.map((stat) => (
-            <div key={stat.label} className="group relative overflow-hidden rounded-2xl border bg-card p-4 transition-all duration-300 hover:shadow-md">
-              <div className={`absolute inset-0 bg-gradient-to-br ${stat.lightBg} opacity-40`} />
-              <div className="relative">
-                <div className="flex items-center justify-between">
-                  <div className={`inline-flex rounded-xl bg-gradient-to-br ${stat.gradient} p-2 shadow-sm`}>
-                    <stat.icon className="h-4 w-4 text-white" />
-                  </div>
-                  {"hasMonthSelector" in stat && stat.hasMonthSelector && (
-                    <MonthSelector currentMonth={currentMonth} basePath="/admin" compact />
-                  )}
-                </div>
-                <p className="mt-3 text-2xl font-bold tracking-tight">{stat.value}</p>
-                <p className="text-xs font-semibold text-foreground">{stat.label}</p>
+            <div
+              key={stat.label}
+              className={`grid content-start gap-1 bg-white p-5 ${"hasMonthSelector" in stat ? "sm:col-span-2 lg:col-span-1" : ""}`}
+            >
+              <div className="flex h-7 items-center justify-between gap-2">
+                <p className="flex items-center gap-1.5 text-sm font-medium text-gray-600">
+                  <stat.icon className="h-4 w-4 text-gray-400" />
+                  {stat.label}
+                </p>
+                {"hasMonthSelector" in stat && stat.hasMonthSelector && (
+                  <MonthSelector currentMonth={currentMonth} basePath="/admin" compact />
+                )}
               </div>
+              <p
+                className={`text-3xl font-bold tracking-tight tabular-nums ${"warn" in stat && stat.warn ? "text-amber-700" : "text-gray-900"}`}
+              >
+                {stat.value}
+              </p>
             </div>
           ))}
         </div>
@@ -79,7 +78,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
       <CollapsibleSection label="차트">
         <div className="grid gap-4 lg:grid-cols-2">
           <Card className="overflow-hidden py-0">
-            <div className="bg-gradient-to-r from-slate-50 to-gray-50/50 px-5 py-3 border-b">
+            <div className="bg-[#F2F7FF] px-5 py-3 border-b">
               <h3 className="text-sm font-semibold">지원 현황</h3>
             </div>
             <CardContent className="p-5">
@@ -91,7 +90,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
             </CardContent>
           </Card>
           <Card className="overflow-hidden py-0">
-            <div className="bg-gradient-to-r from-slate-50 to-gray-50/50 px-5 py-3 border-b">
+            <div className="bg-[#F2F7FF] px-5 py-3 border-b">
               <h3 className="text-sm font-semibold">월별 급여 추이</h3>
             </div>
             <CardContent className="p-5">
@@ -104,7 +103,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
       {/* Pending Applications + Activity Timeline */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="overflow-hidden py-0">
-          <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50/50 px-5 py-3 border-b">
+          <div className="flex items-center justify-between bg-[#F2F7FF] px-5 py-3 border-b">
             <h3 className="text-sm font-semibold">미처리 지원 목록</h3>
             {pendingApps.length > 0 && (
               <Link href="/admin/applications">
@@ -142,7 +141,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
 
         {/* Recent Activity Timeline */}
         <Card className="overflow-hidden py-0">
-          <div className="bg-gradient-to-r from-slate-50 to-gray-50/50 px-5 py-3 border-b">
+          <div className="bg-[#F2F7FF] px-5 py-3 border-b">
             <h3 className="text-sm font-semibold">최근 활동</h3>
           </div>
           <CardContent className="p-5">

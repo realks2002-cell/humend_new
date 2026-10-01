@@ -31,9 +31,9 @@ export async function getDashboardStats(currentMonth: string) {
   const endDate = new Date(selYear, selMonth, 0);
   const end = `${currentMonth}-${String(endDate.getDate()).padStart(2, "0")}`;
 
-  // 6개월 범위 (선택 월 포함 최근 6개월)
-  const fourMonthsAgo = new Date(selYear, selMonth - 6, 1);
-  const rangeStart = `${fourMonthsAgo.getFullYear()}-${String(fourMonthsAgo.getMonth() + 1).padStart(2, "0")}-01`;
+  // 12개월 범위 (선택 월 포함 최근 12개월)
+  const rangeStartDate = new Date(selYear, selMonth - 12, 1);
+  const rangeStart = `${rangeStartDate.getFullYear()}-${String(rangeStartDate.getMonth() + 1).padStart(2, "0")}-01`;
 
   const [
     { count: memberCount },

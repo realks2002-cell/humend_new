@@ -8,6 +8,13 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 
+const CHART = {
+  navy: "#001946",
+  navyMid: "#3D68AD",
+  navyLight: "#9DB9E5",
+  axis: "#6B7280",
+};
+
 interface ApplicationChartProps {
   pending: number;
   approved: number;
@@ -15,17 +22,17 @@ interface ApplicationChartProps {
 }
 
 const appChartConfig = {
-  pending: { label: "대기", color: "hsl(38, 92%, 50%)" },
-  approved: { label: "승인", color: "hsl(142, 71%, 45%)" },
-  rejected: { label: "거절", color: "hsl(0, 84%, 60%)" },
+  approved: { label: "승인", color: CHART.navy },
+  pending: { label: "대기", color: CHART.navyMid },
+  rejected: { label: "거절", color: CHART.navyLight },
 } satisfies ChartConfig;
 
 export function ApplicationPieChart({ pending, approved, rejected }: ApplicationChartProps) {
   const data = [
-    { name: "대기", value: pending, fill: "hsl(38, 92%, 50%)" },
-    { name: "승인", value: approved, fill: "hsl(142, 71%, 45%)" },
-    { name: "거절", value: rejected, fill: "hsl(0, 84%, 60%)" },
-  ].filter((d) => d.value > 0);
+    { name: "승인", value: approved, fill: CHART.navy },
+    { name: "대기", value: pending, fill: CHART.navyMid },
+    { name: "거절", value: rejected, fill: CHART.navyLight },
+  ];
 
   const total = pending + approved + rejected;
 
@@ -38,26 +45,42 @@ export function ApplicationPieChart({ pending, approved, rejected }: Application
   }
 
   return (
-    <div>
-      <ChartContainer config={appChartConfig} className="mx-auto h-[200px] w-[200px]">
-        <PieChart>
-          <ChartTooltip content={<ChartTooltipContent />} />
-          <Pie data={data} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
-            {data.map((entry, i) => (
-              <Cell key={i} fill={entry.fill} />
-            ))}
-          </Pie>
-        </PieChart>
-      </ChartContainer>
-      <div className="mt-2 flex justify-center gap-4 text-xs">
-        {data.map((d) => (
-          <div key={d.name} className="flex items-center gap-1">
-            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: d.fill }} />
-            <span className="text-muted-foreground">{d.name}</span>
-            <span className="font-medium">{d.value}</span>
-          </div>
-        ))}
+    <div className="flex items-center justify-center gap-8 py-2">
+      <div className="relative h-[150px] w-[150px] shrink-0">
+        <ChartContainer config={appChartConfig} className="h-full w-full">
+          <PieChart>
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Pie
+              data={data.filter((d) => d.value > 0)}
+              dataKey="value"
+              nameKey="name"
+              innerRadius={52}
+              outerRadius={70}
+              paddingAngle={2}
+              stroke="none"
+              startAngle={90}
+              endAngle={-270}
+            >
+              {data.filter((d) => d.value > 0).map((entry) => (
+                <Cell key={entry.name} fill={entry.fill} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ChartContainer>
+        <div className="pointer-events-none absolute inset-0 grid place-content-center text-center">
+          <span className="text-2xl font-bold tabular-nums text-gray-900">{total}</span>
+          <span className="text-xs text-gray-500">전체 건</span>
+        </div>
       </div>
+      <ul className="grid gap-3">
+        {data.map((d) => (
+          <li key={d.name} className="grid grid-cols-[10px_1fr] items-center gap-x-2">
+            <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: d.fill }} />
+            <span className="text-sm text-gray-900">{d.name}</span>
+            <span className="col-start-2 text-xs tabular-nums text-gray-500">{d.value}건</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -67,7 +90,7 @@ interface PayrollBarChartProps {
 }
 
 const payrollChartConfig = {
-  amount: { label: "급여", color: "hsl(262, 83%, 58%)" },
+  amount: { label: "급여", color: CHART.navy },
 } satisfies ChartConfig;
 
 export function PayrollBarChart({ data }: PayrollBarChartProps) {
@@ -82,17 +105,20 @@ export function PayrollBarChart({ data }: PayrollBarChartProps) {
   return (
     <ChartContainer config={payrollChartConfig} className="h-[200px] w-full">
       <BarChart data={data} margin={{ top: 20 }}>
-        <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
+        <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} tick={{ fill: CHART.axis }} />
         <YAxis hide />
         <ChartTooltip content={<ChartTooltipContent />} />
-        <Bar dataKey="amount" fill="hsl(262, 83%, 58%)" radius={[4, 4, 0, 0]}>
+        <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
+          {data.map((_, i) => (
+            <Cell key={i} fill={i === data.length - 1 ? CHART.navy : CHART.navyMid} />
+          ))}
           <LabelList
             dataKey="amount"
             position="top"
-            fontSize={13}
-            fill="hsl(262, 83%, 58%)"
+            fontSize={11}
+            fill={CHART.navy}
             fontWeight={600}
-            formatter={(v: number) => (v === 0 ? "" : `${Math.round(v / 10000)}만`)}
+            formatter={(v: number) => (v === 0 ? "" : `${Math.round(v / 10000).toLocaleString("ko-KR")}만`)}
           />
         </Bar>
       </BarChart>
