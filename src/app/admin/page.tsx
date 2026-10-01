@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, ClipboardList, Building2, CalendarCheck, Wallet, ArrowRight, CheckCircle, Clock } from "lucide-react";
+import { Users, ClipboardList, Building2, CalendarCheck, Wallet, HandCoins, ArrowRight, CheckCircle, Clock } from "lucide-react";
 import { getAllApplications } from "@/lib/supabase/queries";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { ApplicationPieChart, PayrollBarChart } from "./dashboard-charts";
@@ -40,6 +40,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const stats = [
     { label: "확정 근무", value: dashStats.workRecordCount, icon: CalendarCheck },
     { label: "미처리 지원", value: dashStats.pendingAppCount, icon: ClipboardList, warn: dashStats.pendingAppCount > 0 },
+    { label: "급여요청", value: dashStats.salaryRequestCount, icon: HandCoins, warn: dashStats.salaryRequestCount > 0 },
     { label: "등록 회원", value: dashStats.memberCount, icon: Users },
     { label: "제휴 고객사", value: dashStats.clientCount, icon: Building2 },
     { label: payrollLabel, value: formatCurrency(dashStats.totalNet), icon: Wallet, hasMonthSelector: true },
@@ -49,15 +50,15 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     <div className="p-6 space-y-6">
       {/* Stat Cards */}
       <CollapsibleSection label="카드">
-        <div className="grid gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200 shadow-sm sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200 shadow-sm sm:grid-cols-3 xl:grid-cols-6">
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className={`grid content-start gap-1 bg-white p-5 ${"hasMonthSelector" in stat ? "sm:col-span-2 lg:col-span-1" : ""}`}
+              className="grid min-w-0 content-start gap-1 bg-white px-4 py-3"
             >
               <div className="flex h-7 items-center justify-between gap-2">
-                <p className="flex items-center gap-1.5 text-sm font-medium text-gray-600">
-                  <stat.icon className="h-4 w-4 text-gray-400" />
+                <p className="flex items-center gap-1.5 text-sm font-semibold text-gray-800">
+                  <stat.icon className="h-4 w-4 text-gray-500" />
                   {stat.label}
                 </p>
                 {"hasMonthSelector" in stat && stat.hasMonthSelector && (
@@ -65,7 +66,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
                 )}
               </div>
               <p
-                className={`text-3xl font-bold tracking-tight tabular-nums ${"warn" in stat && stat.warn ? "text-amber-700" : "text-gray-900"}`}
+                className={`text-center text-xl font-bold tracking-tight tabular-nums ${"warn" in stat && stat.warn ? "text-amber-700" : "text-gray-900"}`}
               >
                 {stat.value}
               </p>

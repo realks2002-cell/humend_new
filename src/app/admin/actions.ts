@@ -41,6 +41,7 @@ export async function getDashboardStats(currentMonth: string) {
     { count: pendingAppCount },
     { count: approvedAppCount },
     { count: rejectedAppCount },
+    { count: salaryRequestCount },
     paymentsData,
   ] = await Promise.all([
     admin.from("members").select("*", { count: "exact", head: true }).eq("status", "active"),
@@ -48,6 +49,9 @@ export async function getDashboardStats(currentMonth: string) {
     admin.from("applications").select("*", { count: "exact", head: true }).eq("status", "대기"),
     admin.from("applications").select("*", { count: "exact", head: true }).eq("status", "승인"),
     admin.from("applications").select("*", { count: "exact", head: true }).eq("status", "거절"),
+    // 미처리 급여요청 (/admin/payroll과 동일 기준: 서명 완료 + payment 없음)
+    admin.from("work_records").select("id, payments(id)", { count: "exact", head: true })
+      .not("signature_url", "is", null).is("payments", null),
     fetchPaymentsInRange(admin, rangeStart, end),
   ]);
 
@@ -79,6 +83,7 @@ export async function getDashboardStats(currentMonth: string) {
     pendingAppCount: pendingAppCount ?? 0,
     approvedAppCount: approvedAppCount ?? 0,
     rejectedAppCount: rejectedAppCount ?? 0,
+    salaryRequestCount: salaryRequestCount ?? 0,
     workRecordCount: workRecordCount ?? 0,
     totalNet,
     monthlyPayroll,

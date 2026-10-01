@@ -96,7 +96,7 @@ export default function AdminLayout({
                           "flex items-center justify-center rounded-xl p-2.5 transition-all",
                           isActive
                             ? "bg-[#001946] text-white shadow-sm"
-                            : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                            : "text-gray-800 hover:bg-accent hover:text-gray-950"
                         )}
                       >
                         <link.icon className="h-4 w-4" />
@@ -114,10 +114,10 @@ export default function AdminLayout({
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                    "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all",
                     isActive
                       ? "bg-[#001946] text-white shadow-sm"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                      : "text-gray-800 hover:bg-accent hover:text-gray-950"
                   )}
                 >
                   <link.icon className="h-4 w-4" />
