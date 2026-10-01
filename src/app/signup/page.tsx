@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { validatePassword } from "@/lib/utils/password";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Loader2, User, Phone, Lock, Eye, EyeOff, ExternalLink, ShieldCheck, Check } from "lucide-react";
@@ -298,8 +299,9 @@ export default function SignupPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("비밀번호는 6자리 이상이어야 합니다.");
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
 
@@ -581,7 +583,7 @@ export default function SignupPage() {
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="영문+숫자 6자리 이상"
+              placeholder="영문+숫자 6자 이상"
               className="pl-10 pr-10"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

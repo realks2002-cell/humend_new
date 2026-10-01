@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { validatePassword } from "@/lib/utils/password";
 import {
   Dialog,
   DialogContent,
@@ -41,8 +42,9 @@ export function ChangePasswordButton() {
       setError("현재 비밀번호를 입력해주세요.");
       return;
     }
-    if (!newPassword || newPassword.length < 6) {
-      setError("새 비밀번호는 6자리 이상이어야 합니다.");
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -104,7 +106,7 @@ export function ChangePasswordButton() {
             <div className="relative">
               <Input
                 type={showNew ? "text" : "password"}
-                placeholder="새 비밀번호 (6자리 이상)"
+                placeholder="새 비밀번호 (영문+숫자 6자 이상)"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 disabled={loading}

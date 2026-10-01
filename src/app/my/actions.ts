@@ -3,10 +3,12 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { createClient as createBareClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
+import { validatePassword, WEAK_PASSWORD_MESSAGE } from "@/lib/utils/password";
 
 export async function changePassword(currentPassword: string, newPassword: string) {
-  if (!newPassword || newPassword.length < 6) {
-    return { error: "새 비밀번호는 6자리 이상이어야 합니다." };
+  const passwordError = validatePassword(newPassword || "");
+  if (passwordError) {
+    return { error: passwordError };
   }
 
   const supabase = await createClient();
@@ -40,6 +42,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
   });
 
   if (updateError) {
+    if (updateError.code === "weak_password") return { error: WEAK_PASSWORD_MESSAGE };
     return { error: "비밀번호 변경에 실패했습니다." };
   }
 

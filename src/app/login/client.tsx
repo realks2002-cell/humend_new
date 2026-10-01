@@ -256,7 +256,7 @@ export default function LoginClient() {
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="숫자+영어 6자리 이상"
+              placeholder="비밀번호"
               className="pl-10 pr-10"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

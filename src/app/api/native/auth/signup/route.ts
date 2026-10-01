@@ -1,6 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { consumePhoneVerification, isPhoneVerified } from "@/lib/phone-verification";
 import { NextRequest, NextResponse } from "next/server";
+import { validatePassword } from "@/lib/utils/password";
+import { SIGNUP_FAILED_MESSAGE, signupErrorMessage } from "@/lib/utils/signup-error";
 
 function phoneToEmail(phone: string): string {
   const cleaned = phone.replace(/[^0-9]/g, "");
@@ -20,8 +22,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "모든 항목을 입력해주세요." }, { status: 400 });
   }
 
-  if (password.length < 6) {
-    return NextResponse.json({ error: "비밀번호는 6자리 이상이어야 합니다." }, { status: 400 });
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return NextResponse.json({ error: passwordError }, { status: 400 });
   }
 
   const admin = createAdminClient();
@@ -92,18 +95,22 @@ export async function POST(req: NextRequest) {
 
         if (recoverError) {
           console.error("[signup API] members recover insert error:", recoverError.message);
-          return NextResponse.json({ error: "회원가입에 실패했습니다. 다시 시도해주세요." }, { status: 500 });
+          return NextResponse.json({ error: SIGNUP_FAILED_MESSAGE }, { status: 500 });
         }
 
         if (verificationId) await consumePhoneVerification(verificationId);
         return NextResponse.json({ success: true });
       }
     }
-    return NextResponse.json({ error: "회원가입에 실패했습니다. 다시 시도해주세요." }, { status: 500 });
+    console.error("[signup API] createUser error:", error.code, error.message);
+    return NextResponse.json(
+      { error: signupErrorMessage(error.code), code: error.code },
+      { status: error.status ?? 500 },
+    );
   }
 
   if (!data.user) {
-    return NextResponse.json({ error: "회원가입에 실패했습니다." }, { status: 500 });
+    return NextResponse.json({ error: SIGNUP_FAILED_MESSAGE }, { status: 500 });
   }
 
   const { error: memberError } = await admin.from("members").insert({

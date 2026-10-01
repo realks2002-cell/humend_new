@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { validatePassword } from "@/lib/utils/password";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Phone, Lock, KeyRound, ArrowLeft, Eye, EyeOff, CheckCircle2, ShieldCheck, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -308,7 +309,7 @@ export default function LoginClient() {
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="숫자+영어 6자리 이상"
+              placeholder="비밀번호"
               className="pl-10 pr-10"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -618,8 +619,9 @@ function PasswordReset({ onBack }: { onBack: () => void }) {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setError("비밀번호는 6자리 이상이어야 합니다.");
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
 
@@ -859,7 +861,7 @@ function PasswordReset({ onBack }: { onBack: () => void }) {
                       id="new-password"
                       type={showPassword ? "text" : "password"}
                       autoComplete="new-password"
-                      placeholder="새 비밀번호 (영문+숫자 6자리 이상)"
+                      placeholder="새 비밀번호 (영문+숫자 6자 이상)"
                       className="pl-10 pr-10"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}

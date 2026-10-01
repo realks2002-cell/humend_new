@@ -6,6 +6,7 @@ import {
   normalizePhone,
   rejectCrossOrigin,
 } from "@/lib/phone-verification";
+import { validatePassword, WEAK_PASSWORD_MESSAGE } from "@/lib/utils/password";
 
 const BAD_REQUEST = { error: "잘못된 요청입니다.", code: "bad_request" };
 const SERVER_ERROR = {
@@ -39,9 +40,10 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
-  if (newPassword.length < 6) {
+  const passwordError = validatePassword(newPassword);
+  if (passwordError) {
     return NextResponse.json(
-      { error: "비밀번호는 6자리 이상이어야 합니다.", code: "weak_password" },
+      { error: passwordError, code: "weak_password" },
       { status: 400 },
     );
   }
@@ -72,6 +74,9 @@ export async function POST(req: NextRequest) {
 
   const { error: updateError } = await admin.auth.admin.updateUserById(member.id, { password: newPassword });
   if (updateError) {
+    if (updateError.code === "weak_password") {
+      return NextResponse.json({ error: WEAK_PASSWORD_MESSAGE, code: "weak_password" }, { status: 400 });
+    }
     console.error("[password-reset] auth update error:", updateError.message);
     return NextResponse.json(
       { error: "비밀번호 변경에 실패했어요. 잠시 후 다시 시도해 주세요.", code: "server_error" },

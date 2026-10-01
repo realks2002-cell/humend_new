@@ -1,8 +1,11 @@
 "use server";
 
+import { randomInt } from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { consumePhoneVerification, isPhoneVerified } from "@/lib/phone-verification";
+import { validatePassword } from "@/lib/utils/password";
+import { SIGNUP_FAILED_MESSAGE, signupErrorMessage } from "@/lib/utils/signup-error";
 
 // 전화번호 → Supabase Auth용 이메일 변환
 function phoneToEmail(phone: string): string {
@@ -26,8 +29,9 @@ export async function memberSignup(formData: FormData) {
     return { error: "모든 항목을 입력해주세요." };
   }
 
-  if (password.length < 6) {
-    return { error: "비밀번호는 6자리 이상이어야 합니다." };
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return { error: passwordError };
   }
 
   const supabase = await createClient();
@@ -102,17 +106,18 @@ export async function memberSignup(formData: FormData) {
       if (recoverError) {
         console.error("[memberSignup] orphan recovery insert error:", recoverError.message);
         await supabase.auth.signOut();
-        return { error: "회원가입에 실패했습니다. 다시 시도해주세요." };
+        return { error: SIGNUP_FAILED_MESSAGE };
       }
 
       await consumePhoneVerification(verificationId);
       return { success: true };
     }
-    return { error: "회원가입에 실패했습니다. 다시 시도해주세요." };
+    console.error("[memberSignup] signUp error:", error.code, error.message);
+    return { error: signupErrorMessage(error.code), code: error.code };
   }
 
   if (!data.user) {
-    return { error: "회원가입에 실패했습니다." };
+    return { error: SIGNUP_FAILED_MESSAGE };
   }
 
   // members 테이블에 레코드 생성
@@ -378,8 +383,9 @@ export async function resetPasswordByEmail(email: string) {
     return { error: "해당 이메일로 등록된 회원이 없습니다." };
   }
 
-  // 임시 비밀번호 생성 (숫자 6자리)
-  const tempPassword = String(Math.floor(100000 + Math.random() * 900000));
+  // 임시 비밀번호 생성 (영문 4자 + 숫자 4자)
+  const tempLetters = Array.from({ length: 4 }, () => "abcdefghjkmnpqrstuvwxyz"[randomInt(23)]).join("");
+  const tempPassword = tempLetters + String(randomInt(1000, 10000));
 
   // Supabase Auth 비밀번호 업데이트
   const { error } = await admin.auth.admin.updateUserById(member.id, {

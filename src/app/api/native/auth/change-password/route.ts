@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { createClient as createBareClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { validatePassword, WEAK_PASSWORD_MESSAGE } from "@/lib/utils/password";
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -25,11 +26,9 @@ export async function POST(req: NextRequest) {
     newPassword?: string;
   };
 
-  if (!newPassword || newPassword.length < 6) {
-    return NextResponse.json(
-      { error: "새 비밀번호는 6자리 이상이어야 합니다." },
-      { status: 400 },
-    );
+  const passwordError = validatePassword(newPassword || "");
+  if (passwordError) {
+    return NextResponse.json({ error: passwordError }, { status: 400 });
   }
 
   // 현재 비밀번호 검증 (별도 클라이언트로 세션 충돌 방지)
@@ -57,6 +56,9 @@ export async function POST(req: NextRequest) {
   );
 
   if (updateError) {
+    if (updateError.code === "weak_password") {
+      return NextResponse.json({ error: WEAK_PASSWORD_MESSAGE }, { status: 400 });
+    }
     return NextResponse.json(
       { error: "비밀번호 변경에 실패했습니다." },
       { status: 500 },
